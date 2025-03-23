@@ -1,0 +1,24 @@
+syntax = "proto3";
+package warfare;
+
+message SpawnUnitRequest {
+  bytes session_uuid = 2;
+  bytes user_uuid = 3;
+}
+
+message SpawnUnitResponse {}
+
+message ListUnitsRequest {
+  bytes session_uuid = 2;
+  bytes user_uuid = 3;
+}
+
+message ListUnitsResponse {
+  repeated UnitInfo units = 1;
+}
+
+message UnitInfo {
+  bytes uuid = 1;
+  bytes session_uuid = 2;
+  bytes user_uuid = 3;
+}

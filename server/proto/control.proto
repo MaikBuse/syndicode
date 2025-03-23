@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package control;
+
+import "economy.proto";
+import "warfare.proto";
+
+service Control {
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc GameStreamRpc(stream UserRequest) returns (stream GameUpdate);
+}
+
+message UserRequest {
+  oneof request_enum {
+    CreateUserRequest create_user = 10000;
+    InitGameRequest init_game = 10001;
+    StartGameRequest start_game = 10002;
+    EndGameRequest end_game = 10003;
+    JoinGameRequest join_game = 10004;
+    economy.GetCorporationRequest get_corporation = 20000;
+    warfare.SpawnUnitRequest spawn_unit = 30000;
+    warfare.ListUnitsRequest list_unit = 30001;
+  }
+}
+
+message GameUpdate {
+  oneof response_enum {
+    CreateUserResponse create_user = 15000;
+    InitGameResponse init_game = 15001;
+    StartGameResponse start_game = 15002;
+    EndGameResponse end_game = 15003;
+    JoinGameResponse join_game = 15004;
+    economy.GetCorporationResponse get_corporation = 25000;
+    warfare.SpawnUnitResponse spawn_unit = 35000;
+    warfare.ListUnitsResponse list_units = 35001;
+  }
+}
+
+// Message for a request to login with a username and password
+message LoginRequest {
+    string username = 1;  // Username of the player attempting to login
+    string password = 2;  // Password of the player attempting to login
+}
+
+// Message for the response after a successful login, containing a JWT token
+message LoginResponse {
+    string jwt = 1;  // JSON Web Token (JWT) for the authenticated session
+}
+
+enum UserRole {
+  ROLE_UNSPECIFIED = 0;
+  USER = 1;
+  ADMIN = 2;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  bytes password = 2;
+  UserRole role = 3;
+}
+
+message CreateUserResponse {
+  bytes uuid = 1;
+  string name = 2;
+  UserRole role = 3;
+}
+
+// Message for the request to initialize a new game
+message InitGameRequest {}
+
+// Message for the response after initializing a new game, containing session info
+message InitGameResponse {
+  SessionInfo session = 1;  // Session details of the initialized game
+}
+
+// Message for starting a game, requires the session UUID
+message StartGameRequest {
+  bytes session_uuid = 1;  // Unique identifier for the game session
+}
+
+// Empty response indicating the game has started
+message StartGameResponse {}
+
+// Message for ending a game, requires the session UUID
+message EndGameRequest {
+  bytes session_uuid = 1;  // Unique identifier for the game session
+}
+
+// Empty response indicating the game has ended
+message EndGameResponse {}
+
+// Message for joining an existing game, requires session UUID and corporation name
+message JoinGameRequest {
+  bytes session_uuid = 1;  // Unique identifier for the game session
+  string corporation_name = 2;  // Name of the corporation the player wants to join
+}
+
+// Message for the response after a player joins a game, containing corporation details
+message JoinGameResponse {
+  economy.CorporationInfo corporation = 1;  // Information about the corporation the player joined
+}
+
+// Enum to define the possible states of a game session
+enum SessionState {
+  SESSION_STATE_UNSPECIFIED = 0;
+  INITIATING = 1;  // The game is being initialized
+  RUNNING = 2;     // The game is currently running
+}
+
+// Message for storing session-related information
+message SessionInfo {
+    bytes uuid = 1;          // Unique identifier for the session
+    int64 interval = 2;      // Time interval (e.g., for updates) for the session
+    SessionState state = 3;  // Current state of the session (e.g., INITIATING, RUNNING)
+}
