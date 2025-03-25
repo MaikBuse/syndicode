@@ -1,12 +1,12 @@
-build-server:
+server-build:
   cargo build -p server
 
-run-server:
+server-run:
   cargo run -p server
 
-setup-db:
+db-setup:
   sqlx db create
   sqlx migrate run --source ./server/migrations
 
-drop-db:
+db-drop:
   sqlx db drop
