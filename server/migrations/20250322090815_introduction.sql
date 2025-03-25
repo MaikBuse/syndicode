@@ -3,8 +3,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS users (
   uuid BLOB PRIMARY KEY NOT NULL,
   name TEXT NOT NULL UNIQUE,
-  password_hash BLOB NOT NULL,
-  salt BLOB NOT NULL,
+  password_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('Admin', 'Player'))
 );
 

@@ -2,16 +2,17 @@ pub mod control;
 pub mod economy;
 pub mod warfare;
 
-use argon2::Argon2;
-use rand::TryRngCore;
-use sqlx::{Pool, Sqlite, SqlitePool};
-use std::env;
-use uuid::Uuid;
-
 use crate::domain::{
     model::control::{UserModel, UserRole},
     repository::control::ControlDatabaseRepository,
 };
+use argon2::password_hash::{rand_core::OsRng, SaltString};
+use argon2::{Argon2, PasswordHasher};
+use sqlx::{Pool, Sqlite, SqlitePool};
+use std::env;
+use uuid::Uuid;
+
+const ADMIN_USERNAME: &str = "admin";
 
 #[derive(Debug)]
 pub struct SqliteDatabase {
@@ -25,32 +26,37 @@ impl SqliteDatabase {
 
         let pool = SqlitePool::connect(&database_url).await?;
 
-        let user_uuid = Uuid::now_v7();
-        let mut salt = [0u8; 16];
-        if let Err(err) = rand::rng().try_fill_bytes(&mut salt) {
-            return Err(anyhow::anyhow!("Failed to generate salt: {}", err).into());
-        }
-
-        let argon = Argon2::default();
-
-        let mut password_hashed = Vec::<u8>::new();
-        if let Err(err) =
-            argon.hash_password_into(&admin_password.as_bytes(), &salt, &mut password_hashed)
-        {
-            return Err(anyhow::anyhow!("Failed to hash password: {}", err).into());
-        }
-
-        let user = UserModel {
-            uuid: user_uuid.into(),
-            name: "Admin".to_string(),
-            password_hash: password_hashed,
-            salt: salt.into(),
-            role: UserRole::Admin.to_string(),
-        };
-
         let sqlite_db = Self { pool };
 
-        sqlite_db.create_user(user).await?;
+        if sqlite_db
+            .get_user_by_name(ADMIN_USERNAME.to_string())
+            .await
+            .is_err()
+        {
+            let user_uuid = Uuid::now_v7();
+
+            let argon2 = Argon2::default();
+            let salt = SaltString::generate(&mut OsRng);
+
+            let password_hash = match argon2.hash_password(admin_password.as_bytes(), &salt) {
+                Ok(pw) => pw,
+                Err(err) => {
+                    return Err(anyhow::anyhow!(
+                        "Failed to hash password: {}",
+                        err.to_string()
+                    ))
+                }
+            };
+
+            let user = UserModel {
+                uuid: user_uuid.into(),
+                name: ADMIN_USERNAME.to_string(),
+                password_hash: password_hash.to_string(),
+                role: UserRole::Admin.to_string(),
+            };
+
+            sqlite_db.create_user(user).await?;
+        }
 
         Ok(sqlite_db)
     }

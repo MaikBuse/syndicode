@@ -1,1 +1,6 @@
 /target
+
+# SQLite
+syndicode.db
+syndicode.db-shm
+syndicode.db-sal

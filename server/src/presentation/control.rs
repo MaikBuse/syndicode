@@ -17,16 +17,17 @@ use crate::domain::model::control::UserRole;
 use crate::engine::Job;
 use crate::service::control::ControlService;
 use crate::service::economy::EconomyService;
+use crate::service::error::ServiceError;
 use crate::service::warfare::WarfareService;
 use crate::{
     domain::model::control::SessionState, presentation::proto::control::game_update::ResponseEnum,
-    service::control::ControlServiceError,
 };
 use dashmap::DashMap;
 use std::collections::VecDeque;
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, Sender};
 use tokio_stream::StreamExt;
 use tokio_stream::{wrappers::ReceiverStream, Stream};
 use tonic::async_trait;
@@ -99,138 +100,51 @@ impl Control for ControlPresenter {
             while let Some(Ok(action)) = stream.next().await {
                 if let Some(request_enum) = action.request_enum {
                     match request_enum {
-                        RequestEnum::CreateUser(create_user_request) => {
-                            match create_user(create_user_request, Arc::clone(&control_service))
-                                .await
-                            {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                        RequestEnum::CreateUser(req) => {
+                            handle_request(|| create_user(req, Arc::clone(&control_service)), &tx)
+                                .await;
                         }
-                        RequestEnum::InitGame(init_game_request) => {
-                            match init_game(init_game_request, Arc::clone(&control_service)).await {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                        RequestEnum::InitGame(req) => {
+                            handle_request(|| init_game(req, Arc::clone(&control_service)), &tx)
+                                .await;
                         }
-                        RequestEnum::StartGame(start_game_request) => {
-                            match start_game(start_game_request, Arc::clone(&control_service)).await
-                            {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                        RequestEnum::StartGame(req) => {
+                            handle_request(|| start_game(req, Arc::clone(&control_service)), &tx)
+                                .await;
                         }
-                        RequestEnum::EndGame(end_game_request) => {
-                            match end_game(end_game_request, Arc::clone(&control_service)).await {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                        RequestEnum::EndGame(req) => {
+                            handle_request(|| end_game(req, Arc::clone(&control_service)), &tx)
+                                .await;
                         }
-                        RequestEnum::JoinGame(join_game_request) => {
-                            match join_game(
-                                join_game_request,
-                                Arc::clone(&control_service),
-                                user_uuid.clone(),
+                        RequestEnum::JoinGame(req) => {
+                            handle_request(
+                                || join_game(req, Arc::clone(&control_service), user_uuid.clone()),
+                                &tx,
                             )
-                            .await
-                            {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                            .await;
                         }
-                        RequestEnum::GetCorporation(get_corporation_request) => {
-                            match get_corporation(
-                                get_corporation_request,
-                                Arc::clone(&economy_service),
-                                user_uuid.clone(),
+                        RequestEnum::GetCorporation(req) => {
+                            handle_request(
+                                || {
+                                    get_corporation(
+                                        req,
+                                        Arc::clone(&economy_service),
+                                        user_uuid.clone(),
+                                    )
+                                },
+                                &tx,
                             )
-                            .await
-                            {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                            .await;
                         }
-                        RequestEnum::SpawnUnit(spawn_unit_request) => {
-                            match spawn_unit(spawn_unit_request, Arc::clone(&jobs)).await {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                        RequestEnum::SpawnUnit(req) => {
+                            handle_request(|| spawn_unit(req, Arc::clone(&jobs)), &tx).await;
                         }
-                        RequestEnum::ListUnit(list_units_request) => {
-                            match list_units(
-                                list_units_request,
-                                Arc::clone(&warfare_service),
-                                user_uuid.clone(),
+                        RequestEnum::ListUnit(req) => {
+                            handle_request(
+                                || list_units(req, Arc::clone(&warfare_service), user_uuid.clone()),
+                                &tx,
                             )
-                            .await
-                            {
-                                Ok(resp) => {
-                                    if let Err(err) = tx.send(Ok(resp)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                                Err(status) => {
-                                    if let Err(err) = tx.send(Err(status)).await {
-                                        tracing::error!("{}", err);
-                                    }
-                                }
-                            }
+                            .await;
                         }
                     }
                 }
@@ -240,6 +154,25 @@ impl Control for ControlPresenter {
         Ok(Response::new(
             Box::pin(player_rx) as Self::GameStreamRpcStream
         ))
+    }
+}
+
+async fn handle_request<F, Fut>(fut: F, tx: &Arc<Sender<Result<GameUpdate, Status>>>)
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<GameUpdate, Status>>,
+{
+    match fut().await {
+        Ok(resp) => {
+            if let Err(err) = tx.send(Ok(resp)).await {
+                tracing::error!("{}", err);
+            }
+        }
+        Err(status) => {
+            if let Err(err) = tx.send(Err(status)).await {
+                tracing::error!("{}", err);
+            }
+        }
     }
 }
 
@@ -365,18 +298,17 @@ async fn join_game(
     })
 }
 
-fn control_error_into_status(err: ControlServiceError) -> Status {
+fn control_error_into_status(err: ServiceError) -> Status {
     match err {
-        ControlServiceError::WrongUserCredentials => Status::unauthenticated(err.to_string()),
-        ControlServiceError::SessionAlreadyRunning
-        | ControlServiceError::SessionNotRunning
-        | ControlServiceError::SessionAlreadyInitialized => {
-            Status::invalid_argument(err.to_string())
-        }
-        ControlServiceError::UuidFromSlice => Status::internal(err.to_string()),
-        ControlServiceError::ControlDatabase(_)
-        | ControlServiceError::EconomyDatabase(_)
-        | ControlServiceError::Other(_) => Status::internal(err.to_string()),
+        ServiceError::WrongUserCredentials => Status::unauthenticated(err.to_string()),
+        ServiceError::SessionAlreadyRunning
+        | ServiceError::SessionNotRunning
+        | ServiceError::SessionAlreadyInitialized => Status::invalid_argument(err.to_string()),
+        ServiceError::UuidFromSlice => Status::internal(err.to_string()),
+        ServiceError::ControlDatabase(_)
+        | ServiceError::EconomyDatabase(_)
+        | ServiceError::WarfareDatabase(_)
+        | ServiceError::Other(_) => Status::internal(err.to_string()),
     }
 }
 

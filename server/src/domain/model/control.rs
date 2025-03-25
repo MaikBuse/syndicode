@@ -52,8 +52,7 @@ impl Display for UserRole {
 pub struct UserModel {
     pub uuid: Vec<u8>,
     pub name: String,
-    pub password_hash: Vec<u8>,
-    pub salt: Vec<u8>,
+    pub password_hash: String,
     pub role: String,
 }
 

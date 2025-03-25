@@ -80,8 +80,8 @@ pub struct LoginResponse {
 pub struct CreateUserRequest {
     #[prost(string, tag = "1")]
     pub username: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "2")]
-    pub password: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "2")]
+    pub password: ::prost::alloc::string::String,
     #[prost(enumeration = "UserRole", tag = "3")]
     pub role: i32,
 }

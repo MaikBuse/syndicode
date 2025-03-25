@@ -27,7 +27,7 @@ mod reflection {
 const JOB_INTERVAL: Duration = Duration::from_secs(1);
 
 const JWT_SECRET_ENV: &str = "JWT_SECRET";
-const ADMIN_PASSWORD: &str = "ADMIN_PASSWORD";
+const ADMIN_PASSWORD_ENV: &str = "ADMIN_PASSWORD";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -37,10 +37,10 @@ async fn main() -> anyhow::Result<()> {
 
     let jwt_secret =
         std::env::var(JWT_SECRET_ENV).expect("Environment variable 'JWT_SECRET' must be set");
-    let admin_password =
-        std::env::var(ADMIN_PASSWORD).expect("Environment variable 'ADMIN_PASSWORD' must be set");
+    let admin_password = std::env::var(ADMIN_PASSWORD_ENV)
+        .expect("Environment variable 'ADMIN_PASSWORD' must be set");
 
-    let sqlite_database = Arc::new(Mutex::new(SqliteDatabase::init(admin_password).await?));
+    let sqlite_database = Arc::new(SqliteDatabase::init(admin_password).await?);
     let sqlite_db_control_clone_1 = Arc::clone(&sqlite_database);
     let sqlite_db_control_clone_2 = Arc::clone(&sqlite_database);
     let sqlite_db_economy_clone_1 = Arc::clone(&sqlite_database);

@@ -15,21 +15,18 @@ impl ControlDatabaseRepository for SqliteDatabase {
                 uuid,
                 name,
                 password_hash,
-                salt,
                 role
             )
-            VALUES ( ?1, ?2, ?3, ?4, ?5 )
+            VALUES ( ?1, ?2, ?3, ?4 )
             RETURNING
                 uuid,
                 name,
                 password_hash,
-                salt,
                 role
             "#,
             user.uuid,
             user.name,
             user.password_hash,
-            user.salt,
             user.role
         )
         .fetch_one(&self.pool)
@@ -46,7 +43,6 @@ impl ControlDatabaseRepository for SqliteDatabase {
                 uuid,
                 name,
                 password_hash,
-                salt,
                 role
             FROM users
             WHERE
@@ -68,7 +64,6 @@ impl ControlDatabaseRepository for SqliteDatabase {
                 uuid,
                 name,
                 password_hash,
-                salt,
                 role
             FROM users
             WHERE

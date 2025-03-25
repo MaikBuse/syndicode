@@ -55,7 +55,7 @@ enum UserRole {
 
 message CreateUserRequest {
   string username = 1;
-  bytes password = 2;
+  string password = 2;
   UserRole role = 3;
 }
 

@@ -1,64 +1,35 @@
+use super::error::{ServiceError, ServiceResult};
 use crate::domain::{
     model::{
         control::{Claims, SessionModel, SessionState, SessionUser, UserModel, UserRole},
         economy::CorporationModel,
     },
-    repository::{
-        control::{ControlDatabaseError, ControlDatabaseRepository},
-        economy::{EconomyDatabaseError, EconomyDatabaseRepository},
-    },
+    repository::{control::ControlDatabaseRepository, economy::EconomyDatabaseRepository},
 };
-use argon2::Argon2;
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    PasswordHash, PasswordVerifier,
+};
+use argon2::{Argon2, PasswordHasher};
 use jsonwebtoken::{encode, EncodingKey, Header};
-use rand::TryRngCore;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::sync::Mutex;
 use uuid::Uuid;
 
 const DEFAULT_BALANCE: i64 = 1000000;
 
-#[derive(Debug, thiserror::Error)]
-pub enum ControlServiceError {
-    #[error("The game is already running")]
-    SessionAlreadyRunning,
-
-    #[error("The game is not running")]
-    SessionNotRunning,
-
-    #[error("The game is already initialized")]
-    SessionAlreadyInitialized,
-
-    #[error("Failed to turn slice of bytes into Uuid")]
-    UuidFromSlice,
-
-    #[error("The provided credentials are wrong")]
-    WrongUserCredentials,
-
-    #[error(transparent)]
-    ControlDatabase(#[from] ControlDatabaseError),
-
-    #[error(transparent)]
-    EconomyDatabase(#[from] EconomyDatabaseError),
-
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
-}
-
-pub type ControlServiceResult<T> = std::result::Result<T, ControlServiceError>;
-
 #[derive(Debug)]
 pub struct ControlService {
-    control_db: Arc<Mutex<dyn ControlDatabaseRepository>>,
-    economy_db: Arc<Mutex<dyn EconomyDatabaseRepository>>,
+    control_db: Arc<dyn ControlDatabaseRepository>,
+    economy_db: Arc<dyn EconomyDatabaseRepository>,
     argon: Argon2<'static>,
     jwt_secret: String,
 }
 
 impl ControlService {
     pub fn new(
-        control_db: Arc<Mutex<dyn ControlDatabaseRepository>>,
-        economy_db: Arc<Mutex<dyn EconomyDatabaseRepository>>,
+        control_db: Arc<dyn ControlDatabaseRepository>,
+        economy_db: Arc<dyn EconomyDatabaseRepository>,
         jwt_secret: String,
     ) -> Self {
         Self {
@@ -69,26 +40,26 @@ impl ControlService {
         }
     }
 
-    pub async fn login(&self, username: String, password: String) -> ControlServiceResult<String> {
-        let control_db = self.control_db.lock().await;
-        let Ok(user) = control_db.get_user_by_name(username).await else {
-            return Err(ControlServiceError::WrongUserCredentials);
+    pub async fn login(&self, username: String, password: String) -> ServiceResult<String> {
+        let Ok(user) = self.control_db.get_user_by_name(username).await else {
+            return Err(ServiceError::WrongUserCredentials);
         };
         let Ok(uuid) = Uuid::from_slice(&user.uuid) else {
-            return Err(ControlServiceError::UuidFromSlice);
+            return Err(ServiceError::UuidFromSlice);
         };
 
-        let mut password_hashed = Vec::<u8>::new();
-        if let Err(err) =
-            self.argon
-                .hash_password_into(password.as_bytes(), &user.salt, &mut password_hashed)
-        {
-            return Err(anyhow::anyhow!("Failed to hash password: {}", err).into());
-        }
+        let parsed_hash = match PasswordHash::new(&user.password_hash) {
+            Ok(password_hash) => password_hash,
+            Err(err) => {
+                return Err(
+                    anyhow::anyhow!("Failed to parse password hash: {}", err.to_string()).into(),
+                )
+            }
+        };
 
-        if password_hashed != user.password_hash {
-            return Err(ControlServiceError::WrongUserCredentials);
-        }
+        Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .map_err(|_| ServiceError::WrongUserCredentials)?;
 
         let expiration = SystemTime::now()
             .checked_add(Duration::from_secs(86400))
@@ -117,26 +88,23 @@ impl ControlService {
         Ok(jwt)
     }
 
-    pub async fn create_session(&self) -> ControlServiceResult<SessionModel> {
-        let control_db = self.control_db.lock().await;
-
-        let session = control_db.create_session(Uuid::now_v7().into()).await?;
-
-        Ok(session)
-    }
-
-    pub async fn get_session(&self, session_uuid: Vec<u8>) -> ControlServiceResult<SessionModel> {
-        let control_db = self.control_db.lock().await;
-
-        let session = control_db.get_session(session_uuid).await?;
+    pub async fn create_session(&self) -> ServiceResult<SessionModel> {
+        let session = self
+            .control_db
+            .create_session(Uuid::now_v7().into())
+            .await?;
 
         Ok(session)
     }
 
-    pub async fn list_sessions(&self) -> ControlServiceResult<Vec<SessionModel>> {
-        let control_db = self.control_db.lock().await;
+    pub async fn get_session(&self, session_uuid: Vec<u8>) -> ServiceResult<SessionModel> {
+        let session = self.control_db.get_session(session_uuid).await?;
 
-        let session = control_db.list_sessions().await?;
+        Ok(session)
+    }
+
+    pub async fn list_sessions(&self) -> ServiceResult<Vec<SessionModel>> {
+        let session = self.control_db.list_sessions().await?;
 
         Ok(session)
     }
@@ -145,29 +113,27 @@ impl ControlService {
         &self,
         session_uuid: Vec<u8>,
         req_session_state: SessionState,
-    ) -> ControlServiceResult<()> {
-        let control_db = self.control_db.lock().await;
-
-        let curr_session = control_db.get_session(session_uuid).await?;
+    ) -> ServiceResult<()> {
+        let curr_session = self.control_db.get_session(session_uuid).await?;
 
         let curr_session_state = SessionState::try_from(curr_session.state)?;
 
         match req_session_state {
             SessionState::Initializing => match curr_session_state {
                 SessionState::Initializing => {
-                    return Err(ControlServiceError::SessionAlreadyInitialized);
+                    return Err(ServiceError::SessionAlreadyInitialized);
                 }
                 _ => {}
             },
             SessionState::Running => match curr_session_state {
                 SessionState::Running => {
-                    return Err(ControlServiceError::SessionAlreadyRunning);
+                    return Err(ServiceError::SessionAlreadyRunning);
                 }
                 _ => {}
             },
         }
 
-        control_db
+        self.control_db
             .update_session(SessionModel {
                 uuid: curr_session.uuid,
                 interval: curr_session.interval,
@@ -178,25 +144,18 @@ impl ControlService {
         Ok(())
     }
 
-    pub async fn advance_session_interval(
-        &self,
-        session_uuid: Vec<u8>,
-    ) -> ControlServiceResult<()> {
-        let control_db = self.control_db.lock().await;
-
-        let mut session = control_db.get_session(session_uuid).await?;
+    pub async fn advance_session_interval(&self, session_uuid: Vec<u8>) -> ServiceResult<()> {
+        let mut session = self.control_db.get_session(session_uuid).await?;
 
         session.interval += 1;
 
-        control_db.update_session(session).await?;
+        self.control_db.update_session(session).await?;
 
         Ok(())
     }
 
-    pub async fn delete_session(&self, session_uuid: Vec<u8>) -> ControlServiceResult<()> {
-        let control_db = self.control_db.lock().await;
-
-        Ok(control_db.delete_session(session_uuid).await?)
+    pub async fn delete_session(&self, session_uuid: Vec<u8>) -> ServiceResult<()> {
+        Ok(self.control_db.delete_session(session_uuid).await?)
     }
 
     pub async fn join_game(
@@ -204,18 +163,14 @@ impl ControlService {
         session_uuid: Vec<u8>,
         user_uuid: Vec<u8>,
         corporation_name: String,
-    ) -> ControlServiceResult<CorporationModel> {
-        let control_db = self.control_db.lock().await;
-
+    ) -> ServiceResult<CorporationModel> {
         let session_user = SessionUser {
             uuid: Uuid::now_v7().into(),
             session_uuid: session_uuid.clone(),
             user_uuid: session_uuid.clone(),
         };
 
-        control_db.create_session_user(session_user).await?;
-
-        let economy_db = self.economy_db.lock().await;
+        self.control_db.create_session_user(session_user).await?;
 
         let corporation = CorporationModel {
             uuid: Uuid::now_v7().into(),
@@ -225,44 +180,35 @@ impl ControlService {
             balance: DEFAULT_BALANCE,
         };
 
-        Ok(economy_db.create_corporation(corporation).await?)
+        Ok(self.economy_db.create_corporation(corporation).await?)
     }
 
     pub async fn create_user(
         &self,
         username: String,
-        password: Vec<u8>,
+        password: String,
         user_role: UserRole,
-    ) -> ControlServiceResult<UserModel> {
-        let mut salt = [0u8; 16];
-        if let Err(err) = rand::rng().try_fill_bytes(&mut salt) {
-            return Err(anyhow::anyhow!("Failed to generate salt: {}", err).into());
-        }
+    ) -> ServiceResult<UserModel> {
+        let salt = SaltString::generate(&mut OsRng);
 
-        let mut password_hashed = Vec::<u8>::new();
-        if let Err(err) = self
-            .argon
-            .hash_password_into(&password, &salt, &mut password_hashed)
-        {
-            return Err(anyhow::anyhow!("Failed to hash password: {}", err).into());
-        }
+        let password_hash = match self.argon.hash_password(password.as_bytes(), &salt) {
+            Ok(pw) => pw,
+            Err(err) => {
+                return Err(anyhow::anyhow!("Failed to hash password: {}", err.to_string()).into())
+            }
+        };
 
         let user = UserModel {
             uuid: Uuid::now_v7().into(),
             name: username,
-            password_hash: password_hashed,
-            salt: salt.into(),
+            password_hash: password_hash.to_string(),
             role: user_role.to_string(),
         };
 
-        let control_db = self.control_db.lock().await;
-
-        Ok(control_db.create_user(user).await?)
+        Ok(self.control_db.create_user(user).await?)
     }
 
-    pub async fn get_user(&self, user_uuid: Vec<u8>) -> ControlServiceResult<UserModel> {
-        let control_db = self.control_db.lock().await;
-
-        Ok(control_db.get_user(user_uuid).await?)
+    pub async fn get_user(&self, user_uuid: Vec<u8>) -> ServiceResult<UserModel> {
+        Ok(self.control_db.get_user(user_uuid).await?)
     }
 }

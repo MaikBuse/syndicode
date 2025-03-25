@@ -1,36 +1,20 @@
+use super::error::ServiceResult;
 use crate::domain::{
     model::economy::CorporationModel,
-    repository::{
-        control::{ControlDatabaseError, ControlDatabaseRepository},
-        economy::{EconomyDatabaseError, EconomyDatabaseRepository},
-    },
+    repository::{control::ControlDatabaseRepository, economy::EconomyDatabaseRepository},
 };
 use std::sync::Arc;
-use tokio::sync::Mutex;
-
-type Result<T> = std::result::Result<T, EconomyServiceError>;
-
-#[derive(Debug, thiserror::Error)]
-pub enum EconomyServiceError {
-    #[error(transparent)]
-    ControlDatabase(#[from] ControlDatabaseError),
-
-    #[error(transparent)]
-    EconomyDatabase(#[from] EconomyDatabaseError),
-}
-
-pub type EconomyServiceResult<T> = std::result::Result<T, EconomyServiceError>;
 
 #[derive(Debug)]
 pub struct EconomyService {
-    control_db: Arc<Mutex<dyn ControlDatabaseRepository>>,
-    economy_db: Arc<Mutex<dyn EconomyDatabaseRepository>>,
+    control_db: Arc<dyn ControlDatabaseRepository>,
+    economy_db: Arc<dyn EconomyDatabaseRepository>,
 }
 
 impl EconomyService {
     pub fn new(
-        control_db: Arc<Mutex<dyn ControlDatabaseRepository>>,
-        economy_db: Arc<Mutex<dyn EconomyDatabaseRepository>>,
+        control_db: Arc<dyn ControlDatabaseRepository>,
+        economy_db: Arc<dyn EconomyDatabaseRepository>,
     ) -> Self {
         Self {
             control_db,
@@ -42,10 +26,9 @@ impl EconomyService {
         &self,
         session_uuid: Vec<u8>,
         user_uuid: Vec<u8>,
-    ) -> EconomyServiceResult<CorporationModel> {
-        let economy_db = self.economy_db.lock().await;
-
-        Ok(economy_db
+    ) -> ServiceResult<CorporationModel> {
+        Ok(self
+            .economy_db
             .get_user_corporation(session_uuid, user_uuid)
             .await?)
     }
