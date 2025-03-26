@@ -20,7 +20,7 @@
   <p align="center">
     A competitive strategy game for programmers set in a cyberpunk Japan —  
     where digital warfare meets ancient honor. Lead a covert syndicate through  
-    the neon-lit underworld of Tokyo, manipulating code, loyalty, and power.
+    neon-lit Tokyo, manipulating code, loyalty, and power.
     <br />
     <a href="https://github.com/MaikBuse/syndicode"><strong>Explore the docs »</strong></a>
     <br />
@@ -34,226 +34,222 @@
 </div>
 
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
-
-
-
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
 [![Syndicode][product-screenshot]](https://github.com/MaikBuse/syndicode)
 
-Syndicode is not a traditional game. It is a digital battleground — a strategy engine running as a gRPC server, built to be language-agnostic and fiercely open-ended.
+Syndicode isn't a traditional game — it's a digital battleground.
 
-You are not just a player. You are a programmer, strategist, and syndicate architect. The core server exposes a powerful API designed to be accessed from any language — Rust, Python, Go, TypeScript, C++, and beyond.
+Built as a gRPC server, it provides an open-ended, language-agnostic playground for strategy, automation, and digital subterfuge.
 
-There is no official client. You are expected to build your own, tailor it to your style, optimize it for control, and extend it to dominate.
+There’s no official UI. You build your own client — script, dashboard, or bot — and use it to dominate Tokyo’s neon-shadowed underworld.
 
-Will you craft a sleek tactical dashboard? A code-driven command-line brain? Or an AI that plays while you sleep?
-
-Your creativity is your weapon. Your code is your empire.
+*Your creativity is your weapon. Your code is your empire.*
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-### Built With
+## 🎮 Gameplay
 
-* [![Rust][Rust]][rust-url]
-* [![SQLite][SQLite]][sqlite-url]
+*Syndicode is a competitive strategy game where players control powerful syndicates in futuristic Tokyo. These factions operate publicly — managing assets, negotiating influence, and executing code-driven decisions across every layer of the city.*
+
+---
+
+### 💴 Economy
+
+<img src="images/gameplay/economy.png" alt="Economy gameplay" width="100%" />
+
+*Syndicates influence the city’s markets through trade, logistics, and digital currency. From corporate front operations to underground exchanges, economic power is built in broad daylight.*
+
+---
+
+### 🕶️ Espionage
+
+<img src="images/gameplay/espionage.png" alt="Espionage gameplay" width="100%" />
+
+*Information is currency. Whether gathering intel, intercepting transmissions, or manipulating data flows — espionage operations are quiet, but their consequences are public.*
+
+---
+
+### ⚔️ Warfare
+
+<img src="images/gameplay/warfare.png" alt="Warfare gameplay" width="100%" />
+
+*When diplomacy fails, syndicates strike. Automated units, drones, and digital warfare tools are deployed to protect territory, settle disputes, or send a message — sometimes in full view of the city.*
+
+---
+
+### 🕊️ Diplomacy
+
+<img src="images/gameplay/diplomacy.png" alt="Diplomacy gameplay" width="100%" />
+
+*Broker alliances with politicians, factions, and rival syndicates in ritualized negotiations under glowing sakura and digital crests. Every agreement is a power move — and every peace, temporary.*
+*
+
+---
+
+> *No single path leads to dominance. Code is your interface — and strategy is everything.*
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
+<br>
 
 <!-- GETTING STARTED -->
 ## 🛠️ Getting Started: Build Your Own Client
 
 *Syndicode doesn’t give you a UI — it gives you a protocol.*
-To play, you’ll write your own client using the provided gRPC API. Your client can be a simple script, a terminal-based dashboard, or a fully-automated AI — the only limit is your creativity.
+
+To play, you’ll write your own client using the provided gRPC API. Your client can be anything:
+
+- A CLI script
+- A tactical dashboard
+- A fully autonomous AI
+
+The only limit is your creativity.
+
+---
 
 ### Step 1: Pick a Language
 
-Syndicode is powered by [gRPC](https://grpc.io/), with support for:
+Syndicode uses [gRPC](https://grpc.io/), with support for:
 
-- Rust  
-- Python  
-- Go  
-- C++  
-- JavaScript / TypeScript  
-- Java  
-- …and any other gRPC-compatible language
+* Rust  
+* C# / .NET
+* C++
+* Dart
+* Go
+* Java
+* Kotlin
+* Node
+* Objective-C
+* PHP
+* Python
+* Ruby
+* …and any other gRPC-compatible language
 
-> 💡 **Pro tip**: Choose a language you’re comfortable in — or one you want to weaponize.
+> 💡 **Pro tip**: Choose a language you already know — or maybe one you want to learn!
 
-
+<br>
 
 ### Step 2: Connect to the server
 
-Connect to the official public server at `https://api.syndicode.dev`.
+Use the official public server:
 
+```txt
+https://api.syndicode.dev
+```
 
+<br>
 
 ### Step 3: Get the API Definition
 
-You can either:
-
-Use [gRPC server reflection](https://grpc.io/docs/guides/reflection/) with the official public server.
-
-Or clone the repo or pull the `.proto` files:
+Use gRPC server reflection *or* clone the `.proto` files:
 
 ```bash
 git clone https://github.com/MaikBuse/syndicode.git
 cd syndicode/server/proto
 ```
 
-
+<br>
 
 ### Step 4: Build, Adapt, Compete
-You now have full access to your syndicate’s digital brain.
-What you build is up to you:
 
-* A tactical terminal UI
-* A real-time strategy GUI
-* A self-learning bot
-* A turn-based decision tree
-* Or something no one's thought of yet
+You now control your syndicate’s digital brain. Build anything:
 
+* A terminal UI
+* A real-time GUI
+* A self-learning AI
+* A turn-based engine
+* Or something no one’s imagined yet
 
+<br><br>
 
-## Self-host the server
+## ☁️ Self-Host the Server
 
-In case you would rather self-host your own server, here are the intructions.
+Prefer to run your own server? Here's how.
+
+---
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* sqlx
-  ```sh
-  cargo install sqlx-cli
-  ```
-* just
-  ```sh
-  cargo install just
-  ```
+Install these tools first:
+
+```bash
+cargo install sqlx-cli
+cargo install just
+```
+
+---
 
 ### Installation
 
-1. Clone the repo
-   ```sh
+1. Clone the repo:
+   ```bash
    git clone git@github.com:MaikBuse/syndicode.git
    ```
 
+2. Set up environment variables:
 
-2. Setup environment variables
+| Name            | Description                                                                                 | Required | Example                    |
+|-----------------|---------------------------------------------------------------------------------------------|----------|----------------------------|
+| `DATABASE_URL`  | SQLite database path                                                                        | ✅       | `sqlite:syndicode.db`      |
+| `JWT_SECRET`    | Secret key for token signing                                                                | ✅       | `some-super-secret-string` |
+| `ADMIN_PASSWORD`| Password for the default admin user (`admin`)                                               | ✅       | `my-great-password`        |
 
-| Name           | Description                                                                                 | Optional | Example                    |
-|----------------|---------------------------------------------------------------------------------------------|----------|----------------------------|
-| DATABASE_URL   | The url of the sqlite database                                                              | False    | "sqlite:syndicode.db"      |
-| JWT_SECRET     | The secret used to encrypt the json web token                                               | False    | "some-super-secret-string" |
-| ADMIN_PASSWORD | The password of the default user created on application startup. The user's name is 'admin' | False    | "my-great-password"        |
-
-
-3. Run the server
-   ```sh
+3. Start the server:
+   ```bash
    just server-run
    ```
 
-
-4. Change git remote url to avoid accidental pushes to base project when making changes yourself
-   ```sh
-   git remote set-url origin github_username/repo_name
-   git remote -v # confirm the changes
+4. Reset Git remote (to avoid pushing to original):
+   ```bash
+   git remote set-url origin git@github.com:your-username/your-repo.git
+   git remote -v  # verify changes
    ```
 
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<br>
 
+## 🤝 Contributing
 
-<!-- USAGE EXAMPLES -->
-## Gameplay
+Contributions make the open-source world better — and this project stronger.
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+If you have an idea, open a feature request. If you find a bug, submit a report. If you want to get hands-on, fork the repo and build something awesome.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+> ⭐ Don’t forget to star the project if you like it!
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+### Getting Started:
 
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
-
-See the [open issues](https://github.com/MaikBuse/syndicode/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- CONTRIBUTING -->
-## Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
+1. Fork the repo
+2. Create your branch: `git checkout -b feature/AmazingFeature`
+3. Commit your changes: `git commit -m 'Add AmazingFeature'`
+4. Push the branch: `git push origin feature/AmazingFeature`
 5. Open a Pull Request
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+See [open issues](https://github.com/MaikBuse/syndicode/issues) for current ideas.
 
-### Top contributors:
+### Top Contributors:
 
 <a href="https://github.com/MaikBuse/syndicode/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=MaikBuse/syndicode" alt="contrib.rocks image" />
+  <img src="https://contrib.rocks/image?repo=MaikBuse/syndicode" />
 </a>
-
-
-
-<!-- LICENSE -->
-## License
-
-Distributed under the project_license. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<br>
 
+## 📚 License
 
-<!-- CONTACT -->
-## Contact
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<br>
+
+## 💬 Contact
 
 Maik Buse - [Website](https://maikbuse.com) - contact@maikbuse.com
 
@@ -262,20 +258,7 @@ Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBus
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
-<!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
-
-* []()
-* []()
-* []()
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
 <!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [contributors-shield]: https://img.shields.io/github/contributors/MaikBuse/syndicode.svg?style=for-the-badge
 [contributors-url]: https://github.com/MaikBuse/syndicode/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/MaikBuse/syndicode.svg?style=for-the-badge
@@ -284,10 +267,6 @@ Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBus
 [stars-url]: https://github.com/MaikBuse/syndicode/stargazers
 [issues-shield]: https://img.shields.io/github/issues/MaikBuse/syndicode.svg?style=for-the-badge
 [issues-url]: https://github.com/MaikBuse/syndicode/issues
-[license-shield]: https://img.shields.io/github/license/github_username/repo_name.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/MaikBuse/syndicode.svg?style=for-the-badge
 [license-url]: https://github.com/MaikBuse/syndicode/blob/master/LICENSE.txt
 [product-screenshot]: images/hero.png
-[Rust]: https://img.shields.io/badge/Rust-000?logo=rust&logoColor=white&labelColor=000&style=flat-square
-[rust-url]: https://rust-lang.org/
-[SQLite]: https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white
-[sqlite-url]: https://sqlite.org/

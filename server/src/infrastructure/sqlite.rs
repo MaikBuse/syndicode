@@ -28,7 +28,7 @@ impl SqliteDatabase {
 
         let sqlite_db = Self { pool };
 
-        if sqlite_db
+         sqlite_db
             .get_user_by_name(ADMIN_USERNAME.to_string())
             .await
             .is_err()
