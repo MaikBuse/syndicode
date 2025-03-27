@@ -89,7 +89,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ---
 
-> *No single path leads to dominance. Code is your interface — and strategy is everything.*
+> *No single path leads to dominance, but specialization might get you ahead.*
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

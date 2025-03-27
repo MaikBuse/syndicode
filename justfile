@@ -1,12 +1,9 @@
-server-build:
-  cargo build -p server
+mod server
+mod db
 
-server-run:
-  cargo run -p server
+set dotenv-required := true
+set dotenv-load := true
 
-db-setup:
-  sqlx db create
-  sqlx migrate run --source ./server/migrations
-
-db-drop:
-  sqlx db drop
+default:
+  just --list server
+  just --list db
