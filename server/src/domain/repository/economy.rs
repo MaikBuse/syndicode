@@ -1,5 +1,6 @@
 use crate::domain::model::economy::CorporationModel;
 use tonic::async_trait;
+use uuid::Uuid;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EconomyDatabaseError {
@@ -18,8 +19,8 @@ pub trait EconomyDatabaseRepository: std::fmt::Debug + Send + Sync {
 
     async fn get_user_corporation(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
     ) -> EconomyDatabaseResult<CorporationModel>;
 
     async fn update_corporation(

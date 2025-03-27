@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO sessions (uuid)\n            VALUES ($1)\n            RETURNING\n                uuid,\n                interval,\n                state as \"state: _\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "interval",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "state: _",
+        "type_info": {
+          "Custom": {
+            "name": "session_state",
+            "kind": {
+              "Enum": [
+                "Initializing",
+                "Running"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "23c1dad2e49e7d3721b5f0e2909337070c22a27a4249b57e0dffd37ebac709de"
+}

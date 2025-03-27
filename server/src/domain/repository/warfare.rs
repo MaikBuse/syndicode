@@ -1,5 +1,6 @@
 use crate::domain::model::warfare::UnitModel;
 use tonic::async_trait;
+use uuid::Uuid;
 
 #[derive(Debug, thiserror::Error)]
 pub enum WarfareDatabaseError {
@@ -15,7 +16,7 @@ pub trait WarfareDatabaseRepository: std::fmt::Debug + Send + Sync {
 
     async fn list_user_units(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
     ) -> WarfareDatabaseResult<Vec<UnitModel>>;
 }

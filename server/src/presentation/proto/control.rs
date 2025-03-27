@@ -87,8 +87,8 @@ pub struct CreateUserRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CreateUserResponse {
-    #[prost(bytes = "vec", tag = "1")]
-    pub uuid: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "1")]
+    pub uuid: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub name: ::prost::alloc::string::String,
     #[prost(enumeration = "UserRole", tag = "3")]
@@ -108,8 +108,8 @@ pub struct InitGameResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StartGameRequest {
     /// Unique identifier for the game session
-    #[prost(bytes = "vec", tag = "1")]
-    pub session_uuid: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "1")]
+    pub session_uuid: ::prost::alloc::string::String,
 }
 /// Empty response indicating the game has started
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -118,8 +118,8 @@ pub struct StartGameResponse {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EndGameRequest {
     /// Unique identifier for the game session
-    #[prost(bytes = "vec", tag = "1")]
-    pub session_uuid: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "1")]
+    pub session_uuid: ::prost::alloc::string::String,
 }
 /// Empty response indicating the game has ended
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -128,8 +128,8 @@ pub struct EndGameResponse {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct JoinGameRequest {
     /// Unique identifier for the game session
-    #[prost(bytes = "vec", tag = "1")]
-    pub session_uuid: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "1")]
+    pub session_uuid: ::prost::alloc::string::String,
     /// Name of the corporation the player wants to join
     #[prost(string, tag = "2")]
     pub corporation_name: ::prost::alloc::string::String,
@@ -145,8 +145,8 @@ pub struct JoinGameResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SessionInfo {
     /// Unique identifier for the session
-    #[prost(bytes = "vec", tag = "1")]
-    pub uuid: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "1")]
+    pub uuid: ::prost::alloc::string::String,
     /// Time interval (e.g., for updates) for the session
     #[prost(int64, tag = "2")]
     pub interval: i64,
@@ -243,7 +243,7 @@ pub mod control_client {
     }
     impl<T> ControlClient<T>
     where
-        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T: tonic::client::GrpcService<tonic::body::Body>,
         T::Error: Into<StdError>,
         T::ResponseBody: Body<Data = Bytes> + std::marker::Send + 'static,
         <T::ResponseBody as Body>::Error: Into<StdError> + std::marker::Send,
@@ -264,13 +264,13 @@ pub mod control_client {
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
             T: tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
+                http::Request<tonic::body::Body>,
                 Response = http::Response<
-                    <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
+                    <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
             >,
             <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
+                http::Request<tonic::body::Body>,
             >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             ControlClient::new(InterceptedService::new(inner, interceptor))
@@ -446,7 +446,7 @@ pub mod control_server {
         B: Body + std::marker::Send + 'static,
         B::Error: Into<StdError> + std::marker::Send + 'static,
     {
-        type Response = http::Response<tonic::body::BoxBody>;
+        type Response = http::Response<tonic::body::Body>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
         fn poll_ready(
@@ -546,7 +546,9 @@ pub mod control_server {
                 }
                 _ => {
                     Box::pin(async move {
-                        let mut response = http::Response::new(empty_body());
+                        let mut response = http::Response::new(
+                            tonic::body::Body::default(),
+                        );
                         let headers = response.headers_mut();
                         headers
                             .insert(

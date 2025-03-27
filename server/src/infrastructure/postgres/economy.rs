@@ -1,12 +1,14 @@
-use super::SqliteDatabase;
 use crate::domain::{
     model::economy::CorporationModel,
     repository::economy::{EconomyDatabaseRepository, EconomyDatabaseResult},
 };
 use tonic::async_trait;
+use uuid::Uuid;
+
+use super::PostgresDatabase;
 
 #[async_trait]
-impl EconomyDatabaseRepository for SqliteDatabase {
+impl EconomyDatabaseRepository for PostgresDatabase {
     async fn create_corporation(
         &self,
         corporation: CorporationModel,
@@ -22,7 +24,7 @@ impl EconomyDatabaseRepository for SqliteDatabase {
             balance
         )
         VALUES (
-            ?1, ?2, ?3, ?4, ?5
+            $1, $2, $3, $4, $5
         )
         RETURNING uuid, session_uuid, user_uuid, name, balance
         "#,
@@ -40,8 +42,8 @@ impl EconomyDatabaseRepository for SqliteDatabase {
 
     async fn get_user_corporation(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
     ) -> EconomyDatabaseResult<CorporationModel> {
         let corporation = sqlx::query_as!(
             CorporationModel,
@@ -54,8 +56,8 @@ impl EconomyDatabaseRepository for SqliteDatabase {
                 balance
             FROM corporations
             WHERE
-                session_uuid = ?1
-                AND user_uuid = ?2
+                session_uuid = $1
+                AND user_uuid = $2
             "#,
             session_uuid,
             user_uuid
@@ -75,12 +77,12 @@ impl EconomyDatabaseRepository for SqliteDatabase {
             r#"
             UPDATE corporations
             SET
-                uuid = ?1,
-                session_uuid = ?2,
-                user_uuid = ?3,
-                name = ?4,
-                balance = ?5
-            WHERE uuid = ?1
+                uuid = $1,
+                session_uuid = $2,
+                user_uuid = $3,
+                name = $4,
+                balance = $5
+            WHERE uuid = $1
             RETURNING uuid, session_uuid, user_uuid, name, balance
             "#,
             corporation.uuid,

@@ -1,26 +1,32 @@
-use super::proto::{
-    control::{game_update::ResponseEnum, GameUpdate},
-    economy::{CorporationInfo, GetCorporationRequest, GetCorporationResponse},
+use super::{
+    common::parse_uuid,
+    proto::{
+        control::{game_update::ResponseEnum, GameUpdate},
+        economy::{CorporationInfo, GetCorporationRequest, GetCorporationResponse},
+    },
 };
 use crate::service::economy::EconomyService;
 use std::sync::Arc;
 use tonic::{Code, Status};
+use uuid::Uuid;
 
 pub async fn get_corporation(
     request: GetCorporationRequest,
     economy_service: Arc<EconomyService>,
-    user_uuid: Vec<u8>,
+    user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {
+    let session_uuid = parse_uuid(&request.session_uuid)?;
+
     match economy_service
-        .get_corporation(request.session_uuid, user_uuid)
+        .get_corporation(session_uuid, user_uuid)
         .await
     {
         Ok(corporation) => Ok(GameUpdate {
             response_enum: Some(ResponseEnum::GetCorporation(GetCorporationResponse {
                 corporation: Some(CorporationInfo {
-                    uuid: corporation.uuid,
-                    session_uuid: corporation.session_uuid,
-                    user_uuid: corporation.user_uuid,
+                    uuid: corporation.uuid.to_string(),
+                    session_uuid: corporation.session_uuid.to_string(),
+                    user_uuid: corporation.user_uuid.to_string(),
                     name: corporation.name,
                     balance: corporation.balance,
                 }),

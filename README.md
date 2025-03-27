@@ -85,7 +85,6 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 <img src="images/gameplay/diplomacy.png" alt="Diplomacy gameplay" width="100%" />
 
 *Broker alliances with politicians, factions, and rival syndicates in ritualized negotiations under glowing sakura and digital crests. Every agreement is a power move — and every peace, temporary.*
-*
 
 ---
 

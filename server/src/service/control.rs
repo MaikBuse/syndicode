@@ -44,9 +44,6 @@ impl ControlService {
         let Ok(user) = self.control_db.get_user_by_name(username).await else {
             return Err(ServiceError::WrongUserCredentials);
         };
-        let Ok(uuid) = Uuid::from_slice(&user.uuid) else {
-            return Err(ServiceError::UuidFromSlice);
-        };
 
         let parsed_hash = match PasswordHash::new(&user.password_hash) {
             Ok(password_hash) => password_hash,
@@ -69,9 +66,9 @@ impl ControlService {
             .as_secs() as usize;
 
         let claims = Claims {
-            sub: uuid.to_string(),
+            sub: user.uuid.to_string(),
             exp: expiration,
-            role: user.role,
+            role: user.role.to_string(),
         };
 
         let jwt = match encode(
@@ -97,7 +94,7 @@ impl ControlService {
         Ok(session)
     }
 
-    pub async fn get_session(&self, session_uuid: Vec<u8>) -> ServiceResult<SessionModel> {
+    pub async fn get_session(&self, session_uuid: Uuid) -> ServiceResult<SessionModel> {
         let session = self.control_db.get_session(session_uuid).await?;
 
         Ok(session)
@@ -111,21 +108,19 @@ impl ControlService {
 
     pub async fn update_session_state(
         &self,
-        session_uuid: Vec<u8>,
+        session_uuid: Uuid,
         req_session_state: SessionState,
     ) -> ServiceResult<()> {
         let curr_session = self.control_db.get_session(session_uuid).await?;
 
-        let curr_session_state = SessionState::try_from(curr_session.state)?;
-
         match req_session_state {
-            SessionState::Initializing => match curr_session_state {
+            SessionState::Initializing => match curr_session.state {
                 SessionState::Initializing => {
                     return Err(ServiceError::SessionAlreadyInitialized);
                 }
                 _ => {}
             },
-            SessionState::Running => match curr_session_state {
+            SessionState::Running => match curr_session.state {
                 SessionState::Running => {
                     return Err(ServiceError::SessionAlreadyRunning);
                 }
@@ -137,14 +132,14 @@ impl ControlService {
             .update_session(SessionModel {
                 uuid: curr_session.uuid,
                 interval: curr_session.interval,
-                state: req_session_state.to_string(),
+                state: req_session_state,
             })
             .await?;
 
         Ok(())
     }
 
-    pub async fn advance_session_interval(&self, session_uuid: Vec<u8>) -> ServiceResult<()> {
+    pub async fn advance_session_interval(&self, session_uuid: Uuid) -> ServiceResult<()> {
         let mut session = self.control_db.get_session(session_uuid).await?;
 
         session.interval += 1;
@@ -154,14 +149,14 @@ impl ControlService {
         Ok(())
     }
 
-    pub async fn delete_session(&self, session_uuid: Vec<u8>) -> ServiceResult<()> {
+    pub async fn delete_session(&self, session_uuid: Uuid) -> ServiceResult<()> {
         Ok(self.control_db.delete_session(session_uuid).await?)
     }
 
     pub async fn join_game(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
         corporation_name: String,
     ) -> ServiceResult<CorporationModel> {
         let session_user = SessionUser {
@@ -202,13 +197,13 @@ impl ControlService {
             uuid: Uuid::now_v7().into(),
             name: username,
             password_hash: password_hash.to_string(),
-            role: user_role.to_string(),
+            role: user_role,
         };
 
         Ok(self.control_db.create_user(user).await?)
     }
 
-    pub async fn get_user(&self, user_uuid: Vec<u8>) -> ServiceResult<UserModel> {
+    pub async fn get_user(&self, user_uuid: Uuid) -> ServiceResult<UserModel> {
         Ok(self.control_db.get_user(user_uuid).await?)
     }
 }

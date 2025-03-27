@@ -6,7 +6,7 @@ mod service;
 
 use dashmap::DashMap;
 use engine::Engine;
-use infrastructure::sqlite::SqliteDatabase;
+use infrastructure::postgres::PostgresDatabase;
 use presentation::control::ControlPresenter;
 use presentation::middleware::JwtAuthLayer;
 use presentation::proto::control::control_server::ControlServer;
@@ -40,27 +40,21 @@ async fn main() -> anyhow::Result<()> {
     let admin_password = std::env::var(ADMIN_PASSWORD_ENV)
         .expect("Environment variable 'ADMIN_PASSWORD' must be set");
 
-    let sqlite_database = Arc::new(SqliteDatabase::init(admin_password).await?);
-    let sqlite_db_control_clone_1 = Arc::clone(&sqlite_database);
-    let sqlite_db_control_clone_2 = Arc::clone(&sqlite_database);
-    let sqlite_db_economy_clone_1 = Arc::clone(&sqlite_database);
-    let sqlite_db_economy_clone_2 = Arc::clone(&sqlite_database);
-    let sqlite_db_warfare_clone_1 = Arc::clone(&sqlite_database);
-    let sqlite_db_warfare_clone_2 = Arc::clone(&sqlite_database);
+    let database = Arc::new(PostgresDatabase::init(admin_password).await?);
+    let db_control_clone_1 = Arc::clone(&database);
+    let db_control_clone_2 = Arc::clone(&database);
+    let db_economy_clone_1 = Arc::clone(&database);
+    let db_economy_clone_2 = Arc::clone(&database);
+    let db_warfare_clone_1 = Arc::clone(&database);
+    let db_warfare_clone_2 = Arc::clone(&database);
 
     let control_service = Arc::new(ControlService::new(
-        sqlite_db_control_clone_1,
-        sqlite_db_control_clone_2,
+        db_control_clone_1,
+        db_control_clone_2,
         jwt_secret.clone(),
     ));
-    let economy_service = Arc::new(EconomyService::new(
-        sqlite_db_economy_clone_1,
-        sqlite_db_economy_clone_2,
-    ));
-    let warfare_service = Arc::new(WarfareService::new(
-        sqlite_db_warfare_clone_1,
-        sqlite_db_warfare_clone_2,
-    ));
+    let economy_service = Arc::new(EconomyService::new(db_economy_clone_1, db_economy_clone_2));
+    let warfare_service = Arc::new(WarfareService::new(db_warfare_clone_1, db_warfare_clone_2));
 
     let jobs = Arc::new(DashMap::new());
     let user_channels = Arc::new(DashMap::new());

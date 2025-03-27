@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use std::fmt::Display;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -10,6 +11,8 @@ pub struct Claims {
     pub role: String,
 }
 
+#[derive(Debug, sqlx::Type)]
+#[sqlx(type_name = "user_role", rename_all = "PascalCase")]
 pub enum UserRole {
     Admin,
     User,
@@ -50,13 +53,14 @@ impl Display for UserRole {
 
 #[derive(Debug, FromRow)]
 pub struct UserModel {
-    pub uuid: Vec<u8>,
+    pub uuid: Uuid,
     pub name: String,
     pub password_hash: String,
-    pub role: String,
+    pub role: UserRole,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, sqlx::Type)]
+#[sqlx(type_name = "session_state", rename_all = "PascalCase")]
 pub enum SessionState {
     Initializing,
     Running,
@@ -97,14 +101,14 @@ impl Display for SessionState {
 
 #[derive(Debug, Clone, PartialEq, FromRow)]
 pub struct SessionModel {
-    pub uuid: Vec<u8>,
+    pub uuid: Uuid,
     pub interval: i64,
-    pub state: String,
+    pub state: SessionState,
 }
 
 #[derive(Debug, Clone, PartialEq, FromRow)]
 pub struct SessionUser {
-    pub uuid: Vec<u8>,
-    pub session_uuid: Vec<u8>,
-    pub user_uuid: Vec<u8>,
+    pub uuid: Uuid,
+    pub session_uuid: Uuid,
+    pub user_uuid: Uuid,
 }

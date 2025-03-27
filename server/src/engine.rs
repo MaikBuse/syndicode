@@ -4,14 +4,15 @@ use crate::{
 };
 use dashmap::DashMap;
 use std::{collections::VecDeque, sync::Arc};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum Job {
-    UnitSpawn { user_uuid: Vec<u8> },
+    UnitSpawn { user_uuid: Uuid },
 }
 
 pub struct Engine {
-    jobs: Arc<DashMap<Vec<u8>, VecDeque<Job>>>,
+    jobs: Arc<DashMap<Uuid, VecDeque<Job>>>,
     control_service: Arc<ControlService>,
     economy_service: Arc<EconomyService>,
     warfare_service: Arc<WarfareService>,
@@ -19,7 +20,7 @@ pub struct Engine {
 
 impl Engine {
     pub fn init(
-        jobs: Arc<DashMap<Vec<u8>, VecDeque<Job>>>,
+        jobs: Arc<DashMap<Uuid, VecDeque<Job>>>,
         control_service: Arc<ControlService>,
         economy_service: Arc<EconomyService>,
         warfare_service: Arc<WarfareService>,

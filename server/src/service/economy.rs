@@ -4,6 +4,7 @@ use crate::domain::{
     repository::{control::ControlDatabaseRepository, economy::EconomyDatabaseRepository},
 };
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct EconomyService {
@@ -24,8 +25,8 @@ impl EconomyService {
 
     pub async fn get_corporation(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
     ) -> ServiceResult<CorporationModel> {
         Ok(self
             .economy_db

@@ -1,4 +1,4 @@
-use http::{HeaderValue, Request};
+use http::HeaderValue;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -44,24 +44,22 @@ pub struct JwtAuthMiddleware<S> {
 
 type BoxFuture<'a, T> = Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
 
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for JwtAuthMiddleware<S>
+impl<S, ReqBody, ResBody> Service<http::Request<ReqBody>> for JwtAuthMiddleware<S>
 where
-    S: Service<Request<ReqBody>, Response = http::Response<ResBody>, Error = BoxError>
-        + Clone
-        + Send
-        + 'static,
+    S: Service<http::Request<ReqBody>, Response = http::Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
+    S::Error: Into<BoxError> + Send + 'static,
     ReqBody: Send + 'static,
 {
     type Response = S::Response;
-    type Error = S::Error;
+    type Error = BoxError;
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
+        self.inner.poll_ready(cx).map_err(Into::into)
     }
 
-    fn call(&mut self, mut req: Request<ReqBody>) -> Self::Future {
+    fn call(&mut self, mut req: http::Request<ReqBody>) -> Self::Future {
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
         let secret = Arc::clone(&self.secret);
@@ -95,7 +93,7 @@ where
             }
 
             // 4. Forward to inner service
-            inner.call(req).await
+            inner.call(req).await.map_err(Into::into)
         })
     }
 }

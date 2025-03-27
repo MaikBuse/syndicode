@@ -1,12 +1,13 @@
-use super::SqliteDatabase;
+use super::PostgresDatabase;
 use crate::domain::{
     model::warfare::UnitModel,
     repository::warfare::{WarfareDatabaseRepository, WarfareDatabaseResult},
 };
 use tonic::async_trait;
+use uuid::Uuid;
 
 #[async_trait]
-impl WarfareDatabaseRepository for SqliteDatabase {
+impl WarfareDatabaseRepository for PostgresDatabase {
     async fn create_unit(&self, unit: UnitModel) -> WarfareDatabaseResult<UnitModel> {
         let unit = sqlx::query_as!(
             UnitModel,
@@ -16,7 +17,7 @@ impl WarfareDatabaseRepository for SqliteDatabase {
                 session_uuid,
                 user_uuid
             )
-            VALUES ( ?1, ?2, ?3 )
+            VALUES ( $1, $2, $3 )
             RETURNING uuid, session_uuid, user_uuid
             "#,
             unit.uuid,
@@ -31,8 +32,8 @@ impl WarfareDatabaseRepository for SqliteDatabase {
 
     async fn list_user_units(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
     ) -> WarfareDatabaseResult<Vec<UnitModel>> {
         let units = sqlx::query_as!(
             UnitModel,
@@ -43,8 +44,8 @@ impl WarfareDatabaseRepository for SqliteDatabase {
                 user_uuid
             FROM units
             WHERE
-                session_uuid = ?1
-                AND user_uuid = ?2
+                session_uuid = $1
+                AND user_uuid = $2
             "#,
             session_uuid,
             user_uuid

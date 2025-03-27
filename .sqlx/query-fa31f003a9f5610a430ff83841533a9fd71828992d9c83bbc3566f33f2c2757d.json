@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                uuid,\n                interval,\n                state as \"state: _\"\n            FROM sessions\n            WHERE\n                uuid = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "interval",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "state: _",
+        "type_info": {
+          "Custom": {
+            "name": "session_state",
+            "kind": {
+              "Enum": [
+                "Initializing",
+                "Running"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "fa31f003a9f5610a430ff83841533a9fd71828992d9c83bbc3566f33f2c2757d"
+}

@@ -1,3 +1,4 @@
+use super::common::parse_uuid;
 use super::economy::get_corporation;
 use super::middleware::USER_UUID_KEY;
 use super::proto::control::control_server::Control;
@@ -34,12 +35,13 @@ use tonic::async_trait;
 use tonic::metadata::MetadataMap;
 use tonic::Streaming;
 use tonic::{Code, Request, Response, Status};
+use uuid::Uuid;
 
 type PlayerTx = mpsc::Sender<Result<GameUpdate, Status>>;
 
 pub struct ControlPresenter {
-    pub jobs: Arc<DashMap<Vec<u8>, VecDeque<Job>>>,
-    pub user_channels: Arc<DashMap<Vec<u8>, PlayerTx>>,
+    pub jobs: Arc<DashMap<Uuid, VecDeque<Job>>>,
+    pub user_channels: Arc<DashMap<Uuid, PlayerTx>>,
     pub control_service: Arc<ControlService>,
     pub economy_service: Arc<EconomyService>,
     pub warfare_service: Arc<WarfareService>,
@@ -208,7 +210,7 @@ async fn create_user(
 
             Ok(GameUpdate {
                 response_enum: Some(ResponseEnum::CreateUser(CreateUserResponse {
-                    uuid: user.uuid,
+                    uuid: user.uuid.to_string(),
                     name: user.name,
                     role: user_role.into(),
                 })),
@@ -232,7 +234,7 @@ async fn init_game(
             Ok(GameUpdate {
                 response_enum: Some(ResponseEnum::InitGame(InitGameResponse {
                     session: Some(SessionInfo {
-                        uuid: session.uuid,
+                        uuid: session.uuid.to_string(),
                         interval: session.interval,
                         state,
                     }),
@@ -247,8 +249,15 @@ async fn start_game(
     request: StartGameRequest,
     control_service: Arc<ControlService>,
 ) -> Result<GameUpdate, Status> {
+    let Ok(session_uuid) = Uuid::parse_str(request.session_uuid.as_str()) else {
+        return Err(Status::invalid_argument(format!(
+            "Failed to parse provided uuid: {}",
+            request.session_uuid,
+        )));
+    };
+
     if let Err(err) = control_service
-        .update_session_state(request.session_uuid, SessionState::Running)
+        .update_session_state(session_uuid, SessionState::Running)
         .await
     {
         return Err(control_error_into_status(err));
@@ -263,7 +272,9 @@ async fn end_game(
     request: EndGameRequest,
     control_service: Arc<ControlService>,
 ) -> Result<GameUpdate, Status> {
-    if let Err(err) = control_service.delete_session(request.session_uuid).await {
+    let session_uuid = parse_uuid(&request.session_uuid)?;
+
+    if let Err(err) = control_service.delete_session(session_uuid).await {
         return Err(control_error_into_status(err));
     }
 
@@ -275,10 +286,12 @@ async fn end_game(
 async fn join_game(
     request: JoinGameRequest,
     control_service: Arc<ControlService>,
-    user_uuid: Vec<u8>,
+    user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {
+    let session_uuid = parse_uuid(&request.session_uuid)?;
+
     let corporation = match control_service
-        .join_game(request.session_uuid, user_uuid, request.corporation_name)
+        .join_game(session_uuid, user_uuid, request.corporation_name)
         .await
     {
         Ok(corporation) => corporation,
@@ -288,9 +301,9 @@ async fn join_game(
     Ok(GameUpdate {
         response_enum: Some(ResponseEnum::JoinGame(JoinGameResponse {
             corporation: Some(CorporationInfo {
-                uuid: corporation.uuid,
-                session_uuid: corporation.session_uuid,
-                user_uuid: corporation.user_uuid,
+                uuid: corporation.uuid.to_string(),
+                session_uuid: corporation.session_uuid.to_string(),
+                user_uuid: corporation.user_uuid.to_string(),
                 name: corporation.name,
                 balance: corporation.balance,
             }),
@@ -312,20 +325,14 @@ fn control_error_into_status(err: ServiceError) -> Status {
     }
 }
 
-fn uuid_from_metadata(metadata: &MetadataMap) -> Result<Vec<u8>, Status> {
+fn uuid_from_metadata(metadata: &MetadataMap) -> Result<Uuid, Status> {
     let Some(uuid_metadata) = metadata.get(USER_UUID_KEY) else {
-        return Err(Status::new(Code::NotFound, "Failed to retrieve player id"));
+        return Err(Status::new(Code::NotFound, "Failed to retrieve user id"));
     };
 
-    let uuid: Vec<u8> = match uuid_metadata.to_bytes() {
-        Ok(uuid) => uuid.into(),
-        Err(err) => {
-            return Err(Status::new(
-                Code::InvalidArgument,
-                format!("Failed to retrieve user uuid: {}", err),
-            ));
-        }
+    let Ok(uuid_str) = uuid_metadata.to_str() else {
+        return Err(Status::internal("Failed to parse uuid metadata as string"));
     };
 
-    Ok(uuid)
+    parse_uuid(uuid_str)
 }

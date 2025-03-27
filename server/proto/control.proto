@@ -60,7 +60,7 @@ message CreateUserRequest {
 }
 
 message CreateUserResponse {
-  bytes uuid = 1;
+  string uuid = 1;
   string name = 2;
   UserRole role = 3;
 }
@@ -75,7 +75,7 @@ message InitGameResponse {
 
 // Message for starting a game, requires the session UUID
 message StartGameRequest {
-  bytes session_uuid = 1;  // Unique identifier for the game session
+  string session_uuid = 1;  // Unique identifier for the game session
 }
 
 // Empty response indicating the game has started
@@ -83,7 +83,7 @@ message StartGameResponse {}
 
 // Message for ending a game, requires the session UUID
 message EndGameRequest {
-  bytes session_uuid = 1;  // Unique identifier for the game session
+  string session_uuid = 1;  // Unique identifier for the game session
 }
 
 // Empty response indicating the game has ended
@@ -91,7 +91,7 @@ message EndGameResponse {}
 
 // Message for joining an existing game, requires session UUID and corporation name
 message JoinGameRequest {
-  bytes session_uuid = 1;  // Unique identifier for the game session
+  string session_uuid = 1;  // Unique identifier for the game session
   string corporation_name = 2;  // Name of the corporation the player wants to join
 }
 
@@ -109,7 +109,7 @@ enum SessionState {
 
 // Message for storing session-related information
 message SessionInfo {
-    bytes uuid = 1;          // Unique identifier for the session
+    string uuid = 1;          // Unique identifier for the session
     int64 interval = 2;      // Time interval (e.g., for updates) for the session
     SessionState state = 3;  // Current state of the session (e.g., INITIATING, RUNNING)
 }

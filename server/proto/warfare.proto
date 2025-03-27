@@ -2,15 +2,15 @@ syntax = "proto3";
 package warfare;
 
 message SpawnUnitRequest {
-  bytes session_uuid = 2;
-  bytes user_uuid = 3;
+  string session_uuid = 2;
+  string user_uuid = 3;
 }
 
 message SpawnUnitResponse {}
 
 message ListUnitsRequest {
-  bytes session_uuid = 2;
-  bytes user_uuid = 3;
+  string session_uuid = 2;
+  string user_uuid = 3;
 }
 
 message ListUnitsResponse {
@@ -18,7 +18,7 @@ message ListUnitsResponse {
 }
 
 message UnitInfo {
-  bytes uuid = 1;
-  bytes session_uuid = 2;
-  bytes user_uuid = 3;
+  string uuid = 1;
+  string session_uuid = 2;
+  string user_uuid = 3;
 }

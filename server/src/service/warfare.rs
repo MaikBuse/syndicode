@@ -25,8 +25,8 @@ impl WarfareService {
 
     pub async fn create_unit(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
     ) -> ServiceResult<UnitModel> {
         let unit = UnitModel {
             uuid: Uuid::now_v7().into(),
@@ -39,8 +39,8 @@ impl WarfareService {
 
     pub async fn list_units(
         &self,
-        session_uuid: Vec<u8>,
-        user_uuid: Vec<u8>,
+        session_uuid: Uuid,
+        user_uuid: Uuid,
     ) -> ServiceResult<Vec<UnitModel>> {
         let units = self
             .warfare_db

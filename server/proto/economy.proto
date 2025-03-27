@@ -2,7 +2,7 @@ syntax = "proto3";
 package economy;
 
 message GetCorporationRequest {
-  bytes session_uuid = 1;
+  string session_uuid = 1;
 }
 
 message GetCorporationResponse {
@@ -10,9 +10,9 @@ message GetCorporationResponse {
 }
 
 message CorporationInfo {
-  bytes uuid = 1;
-  bytes session_uuid = 2;
-  bytes user_uuid = 3;
+  string uuid = 1;
+  string session_uuid = 2;
+  string user_uuid = 3;
   string name = 4;
   int64 balance = 5;
 }
