@@ -18,7 +18,7 @@
 <p align="center"><em>Compile your power. Execute your enemies.</em></p>
 
   <p align="center">
-    A competitive strategy game for programmers set in a cyberpunk Japan —  
+    A competitive strategy game for programmers set in cyberpunk Japan —  
     where digital warfare meets ancient honor. Lead a covert syndicate through  
     neon-lit Tokyo, manipulating code, loyalty, and power.
     <br />
@@ -169,15 +169,27 @@ You now control your syndicate’s digital brain. Build anything:
 
 Prefer to run your own server? Here's how.
 
+### Built with
+* [![Rust][Rust]][rust-url]
+* [![PostgreSQL][PostgreSQL]][postgresql-url]
+
 ---
 
 ### Prerequisites
 
 Install these tools first:
 
+#### just
+A handy command runner that simplifies development workflows with reusable recipes — think of it like a more powerful Makefile for Rust projects.
+```bash
+cargo install just
+```
+You can print out all available recipes with the command `just` while being in the project root directory.
+
+#### sqlx-cli
+Enables you to run database migrations and prepare SQLx query metadata for compile-time validation.
 ```bash
 cargo install sqlx-cli
-cargo install just
 ```
 
 ---
@@ -189,7 +201,7 @@ cargo install just
    git clone git@github.com:MaikBuse/syndicode.git
    ```
 
-2. Set up environment variables:
+2. Copy the dot env example from `./examples/.env.example` and paste it under the project's root directory as `./.env`. Both just and sqlx-cli will now use the provided environment variables.
 
 | Name            | Description                                                                                 | Required | Example                    |
 |-----------------|---------------------------------------------------------------------------------------------|----------|----------------------------|
@@ -197,12 +209,22 @@ cargo install just
 | `JWT_SECRET`    | Secret key for token signing                                                                | ✅       | `some-super-secret-string` |
 | `ADMIN_PASSWORD`| Password for the default admin user (`admin`)                                               | ✅       | `my-great-password`        |
 
-3. Start the server:
+3. Start the database
    ```bash
-   just server-run
+   just db start
    ```
 
-4. Reset Git remote (to avoid pushing to original):
+4. Setup the database
+   ```bash
+   just db setup
+   ```
+
+5. Start the server:
+   ```bash
+   just server run
+   ```
+
+6. Reset Git remote (to avoid pushing to original):
    ```bash
    git remote set-url origin git@github.com:your-username/your-repo.git
    git remote -v  # verify changes
@@ -269,3 +291,7 @@ Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBus
 [license-shield]: https://img.shields.io/github/license/MaikBuse/syndicode.svg?style=for-the-badge
 [license-url]: https://github.com/MaikBuse/syndicode/blob/master/LICENSE.txt
 [product-screenshot]: images/hero.png
+[rust]: https://img.shields.io/badge/Rust-4A4A55?style=for-the-badge&logo=rust&logoColor=FF3E00
+[rust-url]: https://rust-lang.org/
+[postgresql]: https://img.shields.io/badge/PostgreSQL-4A4A55?style=for-the-badge&logo=postgresql&logoColor=FF3E00
+[postgresql-url]: https://postgresql.org/
