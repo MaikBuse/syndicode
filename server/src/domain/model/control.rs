@@ -11,11 +11,29 @@ pub struct Claims {
     pub role: String,
 }
 
-#[derive(Debug, sqlx::Type)]
-#[sqlx(type_name = "user_role", rename_all = "PascalCase")]
+#[derive(Debug, Clone)]
+#[repr(i16)]
 pub enum UserRole {
     Admin,
     User,
+}
+
+impl From<i16> for UserRole {
+    fn from(value: i16) -> Self {
+        match value {
+            1 => Self::Admin,
+            _ => Self::User,
+        }
+    }
+}
+
+impl From<UserRole> for i16 {
+    fn from(val: UserRole) -> Self {
+        match val {
+            UserRole::Admin => 1,
+            UserRole::User => 2,
+        }
+    }
 }
 
 impl TryFrom<String> for UserRole {
@@ -33,9 +51,9 @@ impl TryFrom<String> for UserRole {
     }
 }
 
-impl Into<i32> for UserRole {
-    fn into(self) -> i32 {
-        match self {
+impl From<UserRole> for i32 {
+    fn from(val: UserRole) -> Self {
+        match val {
             UserRole::Admin => 1,
             UserRole::User => 2,
         }
@@ -59,16 +77,43 @@ pub struct UserModel {
     pub role: UserRole,
 }
 
-#[derive(Debug, Clone, PartialEq, sqlx::Type)]
-#[sqlx(type_name = "session_state", rename_all = "PascalCase")]
+#[derive(Debug, Clone, PartialEq)]
+#[repr(i16)]
 pub enum SessionState {
     Initializing,
     Running,
 }
 
-impl Into<i32> for SessionState {
-    fn into(self) -> i32 {
-        match self {
+impl From<i16> for SessionState {
+    fn from(value: i16) -> Self {
+        match value {
+            1 => Self::Initializing,
+            _ => Self::Running,
+        }
+    }
+}
+
+impl From<SessionState> for i16 {
+    fn from(val: SessionState) -> Self {
+        match val {
+            SessionState::Initializing => 1,
+            SessionState::Running => 2,
+        }
+    }
+}
+
+impl From<i32> for SessionState {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => Self::Initializing,
+            _ => Self::Running,
+        }
+    }
+}
+
+impl From<SessionState> for i32 {
+    fn from(val: SessionState) -> Self {
+        match val {
             SessionState::Initializing => 1,
             SessionState::Running => 2,
         }

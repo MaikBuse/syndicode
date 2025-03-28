@@ -60,7 +60,7 @@ impl PostgresDatabase {
         };
 
         let user = UserModel {
-            uuid: user_uuid.into(),
+            uuid: user_uuid,
             name: ADMIN_USERNAME.to_string(),
             password_hash: password_hash.to_string(),
             role: UserRole::Admin,
@@ -69,7 +69,7 @@ impl PostgresDatabase {
         if let Err(err) = postgres_db.create_user(user).await {
             match err {
                 crate::domain::repository::control::ControlDatabaseError::Sqlx(error) => {
-                    println!("{}", error.to_string())
+                    println!("{}", error)
                 }
             }
         }

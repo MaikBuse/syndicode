@@ -37,27 +37,18 @@ impl Engine {
         let sessions = self.control_service.list_sessions().await?;
 
         'for_session: for session in sessions.into_iter() {
-            let state = match SessionState::try_from(session.state) {
-                Ok(state) => state,
-                Err(err) => {
-                    tracing::error!("{}", err.to_string());
-
-                    continue 'for_session;
-                }
-            };
-
-            if state != SessionState::Running {
+            if session.state != SessionState::Running {
                 continue 'for_session;
             }
 
-            let mut session_jobs = self.jobs.entry(session.uuid.clone()).or_default();
+            let mut session_jobs = self.jobs.entry(session.uuid).or_default();
 
             'while_job: while let Some(job) = session_jobs.pop_back() {
                 match job {
                     Job::UnitSpawn { user_uuid } => {
                         if let Err(err) = self
                             .warfare_service
-                            .create_unit(session.uuid.clone(), user_uuid)
+                            .create_unit(session.uuid, user_uuid)
                             .await
                         {
                             tracing::error!("{}", err.to_string());

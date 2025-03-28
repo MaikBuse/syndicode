@@ -1,5 +1,4 @@
 use super::PostgresDatabase;
-use crate::domain::model::control::{SessionState, UserRole};
 use crate::domain::{
     model::control::{SessionModel, SessionUser, UserModel},
     repository::control::{ControlDatabaseRepository, ControlDatabaseResult},
@@ -10,7 +9,9 @@ use uuid::Uuid;
 #[async_trait]
 impl ControlDatabaseRepository for PostgresDatabase {
     async fn create_user(&self, user: UserModel) -> ControlDatabaseResult<UserModel> {
-        let user = sqlx::query_as_unchecked!(
+        let user_role: i16 = user.role.into();
+
+        let user = sqlx::query_as!(
             UserModel,
             r#"
             INSERT INTO users (
@@ -19,17 +20,17 @@ impl ControlDatabaseRepository for PostgresDatabase {
                 password_hash,
                 role
             )
-            VALUES ( $1, $2, $3, $4::user_role )
+            VALUES ( $1, $2, $3, $4 )
             RETURNING
                 uuid,
                 name,
                 password_hash,
-                role as "role: _"
+                role
             "#,
             user.uuid,
             user.name,
             user.password_hash,
-            user.role
+            user_role
         )
         .fetch_one(&self.pool)
         .await?;
@@ -45,7 +46,7 @@ impl ControlDatabaseRepository for PostgresDatabase {
                 uuid,
                 name,
                 password_hash,
-                role as "role: _"
+                role
             FROM users
             WHERE
                 uuid = $1
@@ -66,7 +67,7 @@ impl ControlDatabaseRepository for PostgresDatabase {
                 uuid,
                 name,
                 password_hash,
-                role as "role: _"
+                role
             FROM users
             WHERE
                 name = $1
@@ -102,7 +103,7 @@ impl ControlDatabaseRepository for PostgresDatabase {
             RETURNING
                 uuid,
                 interval,
-                state as "state: _"
+                state
             "#,
             session_uuid
         )
@@ -119,7 +120,7 @@ impl ControlDatabaseRepository for PostgresDatabase {
             SELECT
                 uuid,
                 interval,
-                state as "state: _"
+                state
             FROM sessions
             WHERE
                 uuid = $1
@@ -139,7 +140,7 @@ impl ControlDatabaseRepository for PostgresDatabase {
             SELECT
                 uuid,
                 interval,
-                state as "state: _"
+                state
             FROM sessions
             "#
         )
@@ -150,13 +151,15 @@ impl ControlDatabaseRepository for PostgresDatabase {
     }
 
     async fn update_session(&self, session: SessionModel) -> ControlDatabaseResult<SessionModel> {
-        let session = sqlx::query_as_unchecked!(
+        let session_state: i16 = session.state.into();
+
+        let session = sqlx::query_as!(
             SessionModel,
             r#"
             UPDATE sessions
             SET
                 interval = $2,
-                state = $3::session_state
+                state = $3
             WHERE uuid = $1
             RETURNING
                 uuid,
@@ -165,7 +168,7 @@ impl ControlDatabaseRepository for PostgresDatabase {
             "#,
             session.uuid,
             session.interval,
-            session.state
+            session_state
         )
         .fetch_one(&self.pool)
         .await?;

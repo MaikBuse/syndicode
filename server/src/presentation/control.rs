@@ -86,7 +86,7 @@ impl Control for ControlPresenter {
         let (tx, rx) = mpsc::channel(16);
         let player_rx = ReceiverStream::new(rx);
 
-        self.user_channels.insert(user_uuid.clone(), tx.clone());
+        self.user_channels.insert(user_uuid, tx.clone());
 
         // Use Arc for shared ownership
         let tx_arc = Arc::new(tx);
@@ -120,20 +120,14 @@ impl Control for ControlPresenter {
                         }
                         RequestEnum::JoinGame(req) => {
                             handle_request(
-                                || join_game(req, Arc::clone(&control_service), user_uuid.clone()),
+                                || join_game(req, Arc::clone(&control_service), user_uuid),
                                 &tx,
                             )
                             .await;
                         }
                         RequestEnum::GetCorporation(req) => {
                             handle_request(
-                                || {
-                                    get_corporation(
-                                        req,
-                                        Arc::clone(&economy_service),
-                                        user_uuid.clone(),
-                                    )
-                                },
+                                || get_corporation(req, Arc::clone(&economy_service), user_uuid),
                                 &tx,
                             )
                             .await;
@@ -143,7 +137,7 @@ impl Control for ControlPresenter {
                         }
                         RequestEnum::ListUnit(req) => {
                             handle_request(
-                                || list_units(req, Arc::clone(&warfare_service), user_uuid.clone()),
+                                || list_units(req, Arc::clone(&warfare_service), user_uuid),
                                 &tx,
                             )
                             .await;
@@ -193,29 +187,16 @@ async fn create_user(
     };
 
     match control_service
-        .create_user(request.username, request.password, user_role)
+        .create_user(request.username, request.password, user_role.clone())
         .await
     {
-        Ok(user) => {
-            let user_role = match UserRole::try_from(user.role) {
-                Ok(user_role) => user_role,
-                Err(err) => {
-                    tracing::error!("{}", err);
-
-                    return Err(Status::invalid_argument(
-                        "The user role needs to either be 'User' or 'Admin'",
-                    ));
-                }
-            };
-
-            Ok(GameUpdate {
-                response_enum: Some(ResponseEnum::CreateUser(CreateUserResponse {
-                    uuid: user.uuid.to_string(),
-                    name: user.name,
-                    role: user_role.into(),
-                })),
-            })
-        }
+        Ok(user) => Ok(GameUpdate {
+            response_enum: Some(ResponseEnum::CreateUser(CreateUserResponse {
+                uuid: user.uuid.to_string(),
+                name: user.name,
+                role: user_role.into(),
+            })),
+        }),
         Err(err) => Err(control_error_into_status(err)),
     }
 }
@@ -225,22 +206,15 @@ async fn init_game(
     control_service: Arc<ControlService>,
 ) -> Result<GameUpdate, Status> {
     match control_service.create_session().await {
-        Ok(session) => {
-            let state = match SessionState::try_from(session.state) {
-                Ok(state) => state.into(),
-                Err(err) => return Err(Status::new(Code::Internal, err.to_string())),
-            };
-
-            Ok(GameUpdate {
-                response_enum: Some(ResponseEnum::InitGame(InitGameResponse {
-                    session: Some(SessionInfo {
-                        uuid: session.uuid.to_string(),
-                        interval: session.interval,
-                        state,
-                    }),
-                })),
-            })
-        }
+        Ok(session) => Ok(GameUpdate {
+            response_enum: Some(ResponseEnum::InitGame(InitGameResponse {
+                session: Some(SessionInfo {
+                    uuid: session.uuid.to_string(),
+                    interval: session.interval,
+                    state: session.state.into(),
+                }),
+            })),
+        }),
         Err(err) => Err(control_error_into_status(err)),
     }
 }

@@ -1,20 +1,16 @@
--- Define ENUM types
-CREATE TYPE user_role AS ENUM ('Admin', 'User');
-CREATE TYPE session_state AS ENUM ('Initializing', 'Running');
-
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   uuid UUID PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role user_role NOT NULL DEFAULT 'User'
+  role SMALLINT NOT NULL DEFAULT 2
 );
 
 -- Sessions table
 CREATE TABLE IF NOT EXISTS sessions (
   uuid UUID PRIMARY KEY,
   interval BIGINT NOT NULL DEFAULT 0,
-  state session_state NOT NULL DEFAULT 'Initializing'
+  state SMALLINT NOT NULL DEFAULT 1
 );
 
 -- Session ↔ Users mapping table
