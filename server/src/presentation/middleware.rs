@@ -1,16 +1,20 @@
+use crate::domain::model::control::Claims;
 use http::HeaderValue;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+use std::time::Instant;
 use tonic::Status;
 use tower::{BoxError, Layer, Service};
 
-use crate::domain::model::control::Claims;
-
 pub const USER_UUID_KEY: &str = "user_uuid";
 pub const AUTHORIZATION_KEY: &str = "authorization";
-const LOGIN_PATH: &str = "/control.Control/Login";
+
+const AUTH_EXCEPTED_PATHS: [&str; 2] = [
+    "/control.Control/Login",
+    "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
+];
 
 #[derive(Debug, Clone, Default)]
 pub struct JwtAuthLayer {
@@ -48,7 +52,7 @@ impl<S, ReqBody, ResBody> Service<http::Request<ReqBody>> for JwtAuthMiddleware<
 where
     S: Service<http::Request<ReqBody>, Response = http::Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError> + Send + 'static,
+    S::Error: Into<BoxError> + Send + std::fmt::Debug + 'static,
     ReqBody: Send + 'static,
 {
     type Response = S::Response;
@@ -64,14 +68,24 @@ where
         let mut inner = std::mem::replace(&mut self.inner, clone);
         let secret = Arc::clone(&self.secret);
 
+        let path = req.uri().path().to_string(); // clone for move
+        let start_time = Instant::now();
+
         Box::pin(async move {
-            // Skip auth for Login RPC
-            let path = req.uri().path();
-            if path == LOGIN_PATH {
-                return inner.call(req).await.map_err(Into::into);
+            let skip_auth = AUTH_EXCEPTED_PATHS.contains(&path.as_str());
+
+            tracing::info!(%path, %skip_auth, "Incoming request");
+
+            // Skip auth for exceptional paths
+            if skip_auth {
+                let response = inner.call(req).await.map_err(Into::into)?;
+
+                tracing::info!(%path, elapsed_ms = start_time.elapsed().as_millis(), "Request completed");
+
+                return Ok(response);
             }
 
-            // 1. Extract Bearer token
+            // Extract Bearer token
             let token = req
                 .headers()
                 .get(AUTHORIZATION_KEY)
@@ -79,7 +93,7 @@ where
                 .and_then(|s| s.strip_prefix("Bearer "))
                 .ok_or_else(|| Status::unauthenticated("Missing or malformed Bearer token"))?;
 
-            // 2. Decode JWT
+            // Decode JWT
             let token_data = decode::<Claims>(
                 token,
                 &DecodingKey::from_secret(secret.as_bytes()),
@@ -87,13 +101,34 @@ where
             )
             .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
 
-            // 3. Inject UUID into headers (as metadata)
-            if let Ok(uuid_header) = HeaderValue::from_str(&token_data.claims.sub) {
+            // Inject UUID
+            let user_uuid = &token_data.claims.sub;
+            if let Ok(uuid_header) = HeaderValue::from_str(user_uuid) {
                 req.headers_mut().insert(USER_UUID_KEY, uuid_header);
             }
 
-            // 4. Forward to inner service
-            inner.call(req).await.map_err(Into::into)
+            // Call inner service
+            match inner.call(req).await {
+                Ok(res) => {
+                    tracing::info!(
+                        %path,
+                        %user_uuid,
+                        elapsed_ms = start_time.elapsed().as_millis(),
+                        "Request succeeded"
+                    );
+                    Ok(res)
+                }
+                Err(err) => {
+                    tracing::error!(
+                        %path,
+                        %user_uuid,
+                        elapsed_ms = start_time.elapsed().as_millis(),
+                        error = ?err,
+                        "Request failed"
+                    );
+                    Err(err.into())
+                }
+            }
         })
     }
 }

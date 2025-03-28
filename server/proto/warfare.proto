@@ -22,3 +22,8 @@ message UnitInfo {
   string session_uuid = 2;
   string user_uuid = 3;
 }
+
+service Warfare {
+  rpc SpawnUnit (SpawnUnitRequest) returns (SpawnUnitResponse);
+  rpc ListUnits (ListUnitsRequest) returns (ListUnitsResponse);
+}

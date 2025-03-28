@@ -18,6 +18,8 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::{self, Instant};
 use tonic::transport::Server;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt, EnvFilter};
 
 mod reflection {
     pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
@@ -31,8 +33,9 @@ const ADMIN_PASSWORD_ENV: &str = "ADMIN_PASSWORD";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+    tracing_subscriber::registry()
+        .with(EnvFilter::from_default_env()) // reads RUST_LOG env var
+        .with(fmt::layer().pretty()) // use .json() instead of .pretty() for JSON logs
         .init();
 
     let jwt_secret =
@@ -102,6 +105,8 @@ async fn main() -> anyhow::Result<()> {
         economy_service: Arc::clone(&economy_service),
         warfare_service: Arc::clone(&warfare_service),
     };
+
+    tracing::info!("Starting server...");
 
     Server::builder()
         .layer(JwtAuthLayer::new(jwt_secret))

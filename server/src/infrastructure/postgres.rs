@@ -66,7 +66,13 @@ impl PostgresDatabase {
             role: UserRole::Admin,
         };
 
-        postgres_db.create_user(user).await?;
+        if let Err(err) = postgres_db.create_user(user).await {
+            match err {
+                crate::domain::repository::control::ControlDatabaseError::Sqlx(error) => {
+                    println!("{}", error.to_string())
+                }
+            }
+        }
 
         Ok(postgres_db)
     }
