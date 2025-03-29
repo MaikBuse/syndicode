@@ -33,6 +33,45 @@
   </p>
 </div>
 
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+    </li>
+    <li>
+      <a href="#-gameplay">Gameplay</a>
+      <ul>
+        <li><a href="#-economy">Economy</a></li>
+        <li><a href="#-espionage">Espionage</a></li>
+        <li><a href="#-warfare">Warfare</a></li>
+        <li><a href="#-diplomacy">Diplomacy</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#-getting-started-build-your-own-client">Getting Started</a>
+      <ul>
+        <li><a href="#step-1-pick-a-language">Step 1: Pick a Language</a></li>
+        <li><a href="#step-2-connect-to-the-server">Step 2: Connect to the server</a></li>
+        <li><a href="#step-3-get-the-api-definition">Step 3: Get the API Definition</a></li>
+        <li><a href="#step-4-generate-language-specific-client-code">Step 4: Generate language-specific client code</a></li>
+        <li><a href="#step-4-build-adapt-compete">Step 4: Build, Adapt, Compete</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#self-host-the-server">Self-Host the Server</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#-contributing">Contributing</a></li>
+    <li><a href="#-license">License</a></li>
+    <li><a href="#-contact">Contact</a></li>
+  </ol>
+</details>
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
@@ -202,11 +241,9 @@ protoc \
   ./proto/your_api.proto
 ```
 
+<br>
 
-...
-
-
-### Step 4: Build, Adapt, Compete
+### Step 5: Build, Adapt, Compete
 
 You now control your syndicate’s digital brain. Build anything:
 
@@ -216,7 +253,8 @@ You now control your syndicate’s digital brain. Build anything:
 * A turn-based engine
 * Or something no one’s imagined yet
 
-<br><br>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<br>
 
 ## ☁️ Self-Host the Server
 
@@ -284,7 +322,6 @@ cargo install sqlx-cli
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 <br>
 
 ## 🤝 Contributing
