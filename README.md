@@ -144,7 +144,14 @@ https://api.syndicode.dev
 
 ### Step 3: Get the API Definition
 
-Use gRPC server reflection *or* clone the `.proto` files:
+Use gRPC server reflection for example using `grpcurl`:
+
+```
+grpcurl -proto-out-dir ./proto api.syndicode.dev:443 describe list
+
+```
+
+*or* clone the `.proto` files from this repository:
 
 ```bash
 git clone https://github.com/MaikBuse/syndicode.git
@@ -152,6 +159,52 @@ cd syndicode/server/proto
 ```
 
 <br>
+
+### Step 4: Generate language-specific client code
+
+Once you have the .proto files, use your language’s gRPC tools to generate the necessary data structures and client stubs.
+
+> 🛠️ This step turns the API definition into usable code — including all request/response types and the client interface.
+
+📦 Rust (using tonic)
+```
+# In your build.rs
+tonic_build::compile_protos("proto/your_api.proto")?;
+
+# Or with protoc (if needed)
+protoc --proto_path=./proto --rust_out=./src ./proto/your_api.proto
+```
+
+🌐 Node.js
+```
+npx grpc-tools generate \
+  --proto_path=./proto \
+  --js_out=import_style=commonjs,binary:./generated \
+  --grpc_out=grpc_js:./generated \
+  ./proto/your_api.proto
+```
+
+🐍 Python
+```
+python -m grpc_tools.protoc \
+  -I ./proto \
+  --python_out=. \
+  --grpc_python_out=. \
+  ./proto/your_api.proto
+```
+
+☕ Java
+```
+protoc \
+  --proto_path=./proto \
+  --java_out=./src/main/java \
+  --grpc-java_out=./src/main/java \
+  ./proto/your_api.proto
+```
+
+
+...
+
 
 ### Step 4: Build, Adapt, Compete
 
