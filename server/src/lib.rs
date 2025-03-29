@@ -26,7 +26,7 @@ mod reflection {
         tonic::include_file_descriptor_set!("reflection_descriptor");
 }
 
-pub const SOCKET_ADDR: &str = "[::1]:50051";
+pub const SOCKET_ADDR: &str = "[::]:50051";
 
 const JOB_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -41,10 +41,10 @@ pub async fn run_server() -> anyhow::Result<()> {
         .init();
 
     // Check environment variables
-    let jwt_secret = std::env::var(JWT_SECRET_ENV)
-        .expect(format!("Environment variable '{}' must be set", JWT_SECRET_ENV).as_str());
+    let jwt_secret =
+        std::env::var(JWT_SECRET_ENV).expect("Environment variable 'JWT_SECRET' must be set");
     let admin_password = std::env::var(ADMIN_PASSWORD_ENV)
-        .expect(format!("Environment variable '{}' must be set", ADMIN_PASSWORD_ENV).as_str());
+        .expect("Environment variable 'ADMIN_PASSWORD' must be set");
 
     // Add health checks for servers
     let (health_reporter, health_service) = tonic_health::server::health_reporter();
