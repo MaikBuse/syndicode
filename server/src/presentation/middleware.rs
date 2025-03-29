@@ -11,9 +11,11 @@ use tower::{BoxError, Layer, Service};
 pub const USER_UUID_KEY: &str = "user_uuid";
 pub const AUTHORIZATION_KEY: &str = "authorization";
 
+const HEALTH_CHECK_PATH: &str = "/grpc.health.v1.Health/Check";
+
 const AUTH_EXCEPTED_PATHS: [&str; 3] = [
     "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
-    "/grpc.health.v1.Health/Check",
+    HEALTH_CHECK_PATH,
     "/control.Control/Login",
 ];
 
@@ -74,14 +76,19 @@ where
 
         Box::pin(async move {
             let skip_auth = AUTH_EXCEPTED_PATHS.contains(&path.as_str());
+            let skip_logging = path.as_str() != HEALTH_CHECK_PATH;
 
-            tracing::info!(%path, %skip_auth, "Incoming request");
+            if !skip_logging {
+                tracing::info!(%path, %skip_auth, "Incoming request");
+            }
 
             // Skip auth for exceptional paths
             if skip_auth {
                 let response = inner.call(req).await.map_err(Into::into)?;
 
-                tracing::info!(%path, elapsed_ms = start_time.elapsed().as_millis(), "Request completed");
+                if !skip_logging {
+                    tracing::info!(%path, elapsed_ms = start_time.elapsed().as_millis(), "Request completed");
+                }
 
                 return Ok(response);
             }
@@ -111,12 +118,14 @@ where
             // Call inner service
             match inner.call(req).await {
                 Ok(res) => {
-                    tracing::info!(
-                        %path,
-                        %user_uuid,
-                        elapsed_ms = start_time.elapsed().as_millis(),
-                        "Request succeeded"
-                    );
+                    if !skip_logging {
+                        tracing::info!(
+                            %path,
+                            %user_uuid,
+                            elapsed_ms = start_time.elapsed().as_millis(),
+                            "Request succeeded"
+                        );
+                    }
                     Ok(res)
                 }
                 Err(err) => {
