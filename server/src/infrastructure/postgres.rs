@@ -42,6 +42,8 @@ impl PostgresDatabase {
             .connect(&conn_string)
             .await?;
 
+        sqlx::migrate!().run(&pool).await?;
+
         let postgres_db = Self { pool };
 
         let user_uuid = Uuid::now_v7();
@@ -68,7 +70,9 @@ impl PostgresDatabase {
 
         if let Err(err) = postgres_db.create_user(user).await {
             match err {
-                ControlDatabaseError::UniqueConstraint => {}
+                ControlDatabaseError::UniqueConstraint => {
+                    tracing::info!("Default admin user has already been created");
+                }
                 _ => return Err(err.into()),
             }
         }
