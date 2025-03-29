@@ -11,9 +11,10 @@ use tower::{BoxError, Layer, Service};
 pub const USER_UUID_KEY: &str = "user_uuid";
 pub const AUTHORIZATION_KEY: &str = "authorization";
 
-const AUTH_EXCEPTED_PATHS: [&str; 2] = [
-    "/control.Control/Login",
+const AUTH_EXCEPTED_PATHS: [&str; 3] = [
     "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
+    "/grpc.health.v1.Health/Check",
+    "/control.Control/Login",
 ];
 
 #[derive(Debug, Clone, Default)]
