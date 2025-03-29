@@ -1,33 +1,34 @@
 use super::common::parse_uuid;
 use super::economy::get_corporation;
 use super::middleware::USER_UUID_KEY;
-use super::proto::control::control_server::Control;
-use super::proto::control::user_request::RequestEnum;
-use super::proto::control::{CreateUserRequest, GameUpdate, UserRequest};
-use super::proto::control::{CreateUserResponse, UserRole as ProtoUserRole};
-use super::proto::control::{LoginRequest, LoginResponse};
-use super::proto::{
-    control::{
-        EndGameRequest, EndGameResponse, InitGameRequest, InitGameResponse, JoinGameRequest,
-        JoinGameResponse, SessionInfo, StartGameRequest, StartGameResponse,
-    },
-    economy::CorporationInfo,
-};
 use super::warfare::{list_units, spawn_unit};
+use crate::domain::model::control::SessionState;
 use crate::domain::model::control::UserRole;
 use crate::engine::Job;
 use crate::service::control::ControlService;
 use crate::service::economy::EconomyService;
 use crate::service::error::ServiceError;
 use crate::service::warfare::WarfareService;
-use crate::{
-    domain::model::control::SessionState, presentation::proto::control::game_update::ResponseEnum,
-};
 use dashmap::DashMap;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use syndicode_proto::control::control_server::Control;
+use syndicode_proto::control::game_update::ResponseEnum;
+use syndicode_proto::control::user_request::RequestEnum;
+use syndicode_proto::control::{
+    CreateUserRequest, DeleteUserRequest, DeleteUserResponse, GameUpdate, UserRequest,
+};
+use syndicode_proto::control::{CreateUserResponse, UserRole as ProtoUserRole};
+use syndicode_proto::control::{LoginRequest, LoginResponse};
+use syndicode_proto::{
+    control::{
+        EndGameRequest, EndGameResponse, InitGameRequest, InitGameResponse, JoinGameRequest,
+        JoinGameResponse, SessionInfo, StartGameRequest, StartGameResponse,
+    },
+    economy::CorporationInfo,
+};
 use tokio::sync::mpsc::{self, Sender};
 use tokio_stream::StreamExt;
 use tokio_stream::{wrappers::ReceiverStream, Stream};
@@ -104,6 +105,10 @@ impl Control for ControlPresenter {
                     match request_enum {
                         RequestEnum::CreateUser(req) => {
                             handle_request(|| create_user(req, Arc::clone(&control_service)), &tx)
+                                .await;
+                        }
+                        RequestEnum::DeleteUser(req) => {
+                            handle_request(|| delete_user(req, Arc::clone(&control_service)), &tx)
                                 .await;
                         }
                         RequestEnum::InitGame(req) => {
@@ -196,6 +201,22 @@ async fn create_user(
                 name: user.name,
                 role: user_role.into(),
             })),
+        }),
+        Err(err) => Err(control_error_into_status(err)),
+    }
+}
+
+async fn delete_user(
+    request: DeleteUserRequest,
+    control_service: Arc<ControlService>,
+) -> Result<GameUpdate, Status> {
+    let Ok(user_uuid) = Uuid::parse_str(&request.uuid) else {
+        return Err(Status::invalid_argument("Failed to parse user uuid"));
+    };
+
+    match control_service.delete_user(user_uuid).await {
+        Ok(_) => Ok(GameUpdate {
+            response_enum: Some(ResponseEnum::DeleteUser(DeleteUserResponse {})),
         }),
         Err(err) => Err(control_error_into_status(err)),
     }

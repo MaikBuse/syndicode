@@ -13,10 +13,11 @@ service Control {
 message UserRequest {
   oneof request_enum {
     CreateUserRequest create_user = 10000;
-    InitGameRequest init_game = 10001;
-    StartGameRequest start_game = 10002;
-    EndGameRequest end_game = 10003;
-    JoinGameRequest join_game = 10004;
+    DeleteUserRequest delete_user = 10001;
+    InitGameRequest init_game = 10002;
+    StartGameRequest start_game = 10003;
+    EndGameRequest end_game = 10004;
+    JoinGameRequest join_game = 10005;
     economy.GetCorporationRequest get_corporation = 20000;
     warfare.SpawnUnitRequest spawn_unit = 30000;
     warfare.ListUnitsRequest list_unit = 30001;
@@ -26,10 +27,11 @@ message UserRequest {
 message GameUpdate {
   oneof response_enum {
     CreateUserResponse create_user = 15000;
-    InitGameResponse init_game = 15001;
-    StartGameResponse start_game = 15002;
-    EndGameResponse end_game = 15003;
-    JoinGameResponse join_game = 15004;
+    DeleteUserResponse delete_user = 15001;
+    InitGameResponse init_game = 15002;
+    StartGameResponse start_game = 15003;
+    EndGameResponse end_game = 15004;
+    JoinGameResponse join_game = 15005;
     economy.GetCorporationResponse get_corporation = 25000;
     warfare.SpawnUnitResponse spawn_unit = 35000;
     warfare.ListUnitsResponse list_units = 35001;
@@ -49,8 +51,8 @@ message LoginResponse {
 
 enum UserRole {
   ROLE_UNSPECIFIED = 0;
-  USER = 1;
-  ADMIN = 2;
+  ADMIN = 1;
+  USER = 2;
 }
 
 message CreateUserRequest {
@@ -64,6 +66,12 @@ message CreateUserResponse {
   string name = 2;
   UserRole role = 3;
 }
+
+message DeleteUserRequest {
+  string uuid = 1;
+}
+
+message DeleteUserResponse {}
 
 // Message for the request to initialize a new game
 message InitGameRequest {}

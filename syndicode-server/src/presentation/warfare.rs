@@ -1,15 +1,11 @@
-use super::{
-    common::parse_uuid,
-    proto::{
-        control::{game_update::ResponseEnum, GameUpdate},
-        warfare::{
-            ListUnitsRequest, ListUnitsResponse, SpawnUnitRequest, SpawnUnitResponse, UnitInfo,
-        },
-    },
-};
+use super::common::parse_uuid;
 use crate::{engine::Job, service::warfare::WarfareService};
 use dashmap::DashMap;
 use std::{collections::VecDeque, sync::Arc};
+use syndicode_proto::{
+    control::{game_update::ResponseEnum, GameUpdate},
+    warfare::{ListUnitsRequest, ListUnitsResponse, SpawnUnitRequest, SpawnUnitResponse, UnitInfo},
+};
 use tonic::{Code, Result, Status};
 use uuid::Uuid;
 

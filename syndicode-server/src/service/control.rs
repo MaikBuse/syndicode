@@ -198,6 +198,10 @@ impl ControlService {
         Ok(self.control_db.create_user(user).await?)
     }
 
+    pub async fn delete_user(&self, user_uuid: Uuid) -> ServiceResult<()> {
+        Ok(self.control_db.delete_user(user_uuid).await?)
+    }
+
     pub async fn get_user(&self, user_uuid: Uuid) -> ServiceResult<UserModel> {
         Ok(self.control_db.get_user(user_uuid).await?)
     }

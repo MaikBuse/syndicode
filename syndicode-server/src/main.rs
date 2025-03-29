@@ -1,7 +1,7 @@
 mod domain;
 mod engine;
-pub mod infrastructure;
-pub mod presentation;
+mod infrastructure;
+mod presentation;
 mod service;
 
 use dashmap::DashMap;
@@ -9,22 +9,17 @@ use engine::Engine;
 use infrastructure::postgres::PostgresDatabase;
 use presentation::control::ControlPresenter;
 use presentation::middleware::JwtAuthLayer;
-use presentation::proto::control::control_server::ControlServer;
 use service::control::ControlService;
 use service::economy::EconomyService;
 use service::warfare::WarfareService;
 use std::sync::Arc;
 use std::time::Duration;
+use syndicode_proto::control::control_server::ControlServer;
 use tokio::sync::Mutex;
 use tokio::time::{self, Instant};
 use tonic::transport::Server;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
-
-mod reflection {
-    pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
-        tonic::include_file_descriptor_set!("reflection_descriptor");
-}
 
 pub const SOCKET_ADDR: &str = "[::]:50051";
 
@@ -33,7 +28,8 @@ const JOB_INTERVAL: Duration = Duration::from_secs(1);
 const JWT_SECRET_ENV: &str = "JWT_SECRET";
 pub const ADMIN_PASSWORD_ENV: &str = "ADMIN_PASSWORD";
 
-pub async fn run_server() -> anyhow::Result<()> {
+#[tokio::main]
+pub async fn main() -> anyhow::Result<()> {
     // Setup logging
     tracing_subscriber::registry()
         .with(EnvFilter::from_default_env()) // reads RUST_LOG env var
@@ -102,9 +98,7 @@ pub async fn run_server() -> anyhow::Result<()> {
     });
 
     // Setup reflection service for service discovery
-    let reflection_service = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(reflection::FILE_DESCRIPTOR_SET)
-        .build_v1()?;
+    let reflection_service = syndicode_proto::create_reflection_service()?;
 
     let addr = SOCKET_ADDR.parse()?;
 

@@ -1,16 +1,15 @@
 [package]
-name = "server"
+name = "syndicode-server"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
-tokio-stream = "0.1.17"
-prost = "0.13.5"
-tonic = "0.13.0"
-tonic-reflection = "0.13.0"
+syndicode-proto = { path = "../syndicode-proto/" }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tonic = { workspace = true }
+uuid = { workspace = true }
 tonic-health = "0.13.0"
-uuid = { version = "1.16.0", features = ["v7"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
 anyhow = "1.0.97"
@@ -24,6 +23,3 @@ http = "1.3.1"
 argon2 = { version = "0.5", features = ["password-hash"] }
 rand_core = "0.9"
 urlencoding = "2.1.3"
-
-[build-dependencies]
-tonic-build = { version = "0.13.0" }

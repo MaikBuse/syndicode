@@ -1,0 +1,14 @@
+[package]
+name = "syndicode-proto"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tonic = { workspace = true }
+prost = "0.13.5"
+tonic-reflection = "0.13.0"
+
+[build-dependencies]
+tonic-build = { version = "0.13.0" }

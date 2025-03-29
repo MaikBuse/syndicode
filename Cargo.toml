@@ -1,6 +1,20 @@
 [workspace]
 resolver = "2"
 members = [
-    "client",
-    "server",
+    "syndicode-proto",
+    "syndicode-client",
+    "syndicode-server",
 ]
+
+
+[profile.dev]
+debug = true
+
+[profile.release]
+lto = true
+
+[workspace.dependencies]
+tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
+tokio-stream = "0.1.17"
+tonic = "0.13.0"
+uuid = { version = "1.16.0", features = ["v7"] }

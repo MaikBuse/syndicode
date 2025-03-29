@@ -1,0 +1,11 @@
+[package]
+name = "syndicode-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+syndicode-proto = { path = "../syndicode-proto" }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tonic = { workspace = true }
+uuid = { workspace = true }

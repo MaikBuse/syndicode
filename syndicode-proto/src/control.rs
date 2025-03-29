@@ -3,7 +3,7 @@
 pub struct UserRequest {
     #[prost(
         oneof = "user_request::RequestEnum",
-        tags = "10000, 10001, 10002, 10003, 10004, 20000, 30000, 30001"
+        tags = "10000, 10001, 10002, 10003, 10004, 10005, 20000, 30000, 30001"
     )]
     pub request_enum: ::core::option::Option<user_request::RequestEnum>,
 }
@@ -14,12 +14,14 @@ pub mod user_request {
         #[prost(message, tag = "10000")]
         CreateUser(super::CreateUserRequest),
         #[prost(message, tag = "10001")]
-        InitGame(super::InitGameRequest),
+        DeleteUser(super::DeleteUserRequest),
         #[prost(message, tag = "10002")]
-        StartGame(super::StartGameRequest),
+        InitGame(super::InitGameRequest),
         #[prost(message, tag = "10003")]
-        EndGame(super::EndGameRequest),
+        StartGame(super::StartGameRequest),
         #[prost(message, tag = "10004")]
+        EndGame(super::EndGameRequest),
+        #[prost(message, tag = "10005")]
         JoinGame(super::JoinGameRequest),
         #[prost(message, tag = "20000")]
         GetCorporation(super::super::economy::GetCorporationRequest),
@@ -33,7 +35,7 @@ pub mod user_request {
 pub struct GameUpdate {
     #[prost(
         oneof = "game_update::ResponseEnum",
-        tags = "15000, 15001, 15002, 15003, 15004, 25000, 35000, 35001"
+        tags = "15000, 15001, 15002, 15003, 15004, 15005, 25000, 35000, 35001"
     )]
     pub response_enum: ::core::option::Option<game_update::ResponseEnum>,
 }
@@ -44,12 +46,14 @@ pub mod game_update {
         #[prost(message, tag = "15000")]
         CreateUser(super::CreateUserResponse),
         #[prost(message, tag = "15001")]
-        InitGame(super::InitGameResponse),
+        DeleteUser(super::DeleteUserResponse),
         #[prost(message, tag = "15002")]
-        StartGame(super::StartGameResponse),
+        InitGame(super::InitGameResponse),
         #[prost(message, tag = "15003")]
-        EndGame(super::EndGameResponse),
+        StartGame(super::StartGameResponse),
         #[prost(message, tag = "15004")]
+        EndGame(super::EndGameResponse),
+        #[prost(message, tag = "15005")]
         JoinGame(super::JoinGameResponse),
         #[prost(message, tag = "25000")]
         GetCorporation(super::super::economy::GetCorporationResponse),
@@ -94,6 +98,13 @@ pub struct CreateUserResponse {
     #[prost(enumeration = "UserRole", tag = "3")]
     pub role: i32,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DeleteUserRequest {
+    #[prost(string, tag = "1")]
+    pub uuid: ::prost::alloc::string::String,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct DeleteUserResponse {}
 /// Message for the request to initialize a new game
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct InitGameRequest {}
@@ -158,8 +169,8 @@ pub struct SessionInfo {
 #[repr(i32)]
 pub enum UserRole {
     RoleUnspecified = 0,
-    User = 1,
-    Admin = 2,
+    Admin = 1,
+    User = 2,
 }
 impl UserRole {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -169,16 +180,16 @@ impl UserRole {
     pub fn as_str_name(&self) -> &'static str {
         match self {
             Self::RoleUnspecified => "ROLE_UNSPECIFIED",
-            Self::User => "USER",
             Self::Admin => "ADMIN",
+            Self::User => "USER",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
             "ROLE_UNSPECIFIED" => Some(Self::RoleUnspecified),
-            "USER" => Some(Self::User),
             "ADMIN" => Some(Self::Admin),
+            "USER" => Some(Self::User),
             _ => None,
         }
     }

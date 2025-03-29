@@ -194,7 +194,7 @@ grpcurl -proto-out-dir ./proto api.syndicode.dev:443 describe list
 
 ```bash
 git clone https://github.com/MaikBuse/syndicode.git
-cd syndicode/server/proto
+cd syndicode/syndicode-proto/buffers
 ```
 
 <br>

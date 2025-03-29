@@ -215,10 +215,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "client"
-version = "0.1.0"
-
-[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1695,33 +1691,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "dashmap",
- "http",
- "jsonwebtoken",
- "prost",
- "rand_core 0.9.3",
- "serde",
- "sqlx",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic",
- "tonic-build",
- "tonic-health",
- "tonic-reflection",
- "tower",
- "tracing",
- "tracing-subscriber",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2058,6 +2027,54 @@ name = "sync_wrapper"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
+
+[[package]]
+name = "syndicode-client"
+version = "0.1.0"
+dependencies = [
+ "syndicode-proto",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "uuid",
+]
+
+[[package]]
+name = "syndicode-proto"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-build",
+ "tonic-reflection",
+]
+
+[[package]]
+name = "syndicode-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "dashmap",
+ "http",
+ "jsonwebtoken",
+ "rand_core 0.9.3",
+ "serde",
+ "sqlx",
+ "syndicode-proto",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-health",
+ "tower",
+ "tracing",
+ "tracing-subscriber",
+ "urlencoding",
+ "uuid",
+]
 
 [[package]]
 name = "synstructure"

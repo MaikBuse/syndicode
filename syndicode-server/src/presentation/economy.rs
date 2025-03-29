@@ -1,12 +1,10 @@
-use super::{
-    common::parse_uuid,
-    proto::{
-        control::{game_update::ResponseEnum, GameUpdate},
-        economy::{CorporationInfo, GetCorporationRequest, GetCorporationResponse},
-    },
-};
+use super::common::parse_uuid;
 use crate::service::economy::EconomyService;
 use std::sync::Arc;
+use syndicode_proto::{
+    control::{game_update::ResponseEnum, GameUpdate},
+    economy::{CorporationInfo, GetCorporationRequest, GetCorporationResponse},
+};
 use tonic::{Code, Status};
 use uuid::Uuid;
 
