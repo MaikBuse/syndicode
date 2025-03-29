@@ -1,7 +1,7 @@
 use super::PostgresDatabase;
 use crate::domain::{
     model::control::{SessionModel, SessionUser, UserModel},
-    repository::control::{ControlDatabaseRepository, ControlDatabaseResult},
+    repository::control::{ControlDatabaseError, ControlDatabaseRepository, ControlDatabaseResult},
 };
 use tonic::async_trait;
 use uuid::Uuid;
@@ -11,7 +11,7 @@ impl ControlDatabaseRepository for PostgresDatabase {
     async fn create_user(&self, user: UserModel) -> ControlDatabaseResult<UserModel> {
         let user_role: i16 = user.role.into();
 
-        let user = sqlx::query_as!(
+        match sqlx::query_as!(
             UserModel,
             r#"
             INSERT INTO users (
@@ -33,9 +33,19 @@ impl ControlDatabaseRepository for PostgresDatabase {
             user_role
         )
         .fetch_one(&self.pool)
-        .await?;
-
-        Ok(user)
+        .await
+        {
+            Ok(user) => Ok(user),
+            Err(err) => match err {
+                sqlx::Error::Database(database_error) => {
+                    match database_error.is_unique_violation() {
+                        true => Err(ControlDatabaseError::UniqueConstraint),
+                        false => Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
+                    }
+                }
+                _ => Err(err.into()),
+            },
+        }
     }
 
     async fn get_user(&self, user_uuid: Uuid) -> ControlDatabaseResult<UserModel> {

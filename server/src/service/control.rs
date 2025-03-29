@@ -86,10 +86,7 @@ impl ControlService {
     }
 
     pub async fn create_session(&self) -> ServiceResult<SessionModel> {
-        let session = self
-            .control_db
-            .create_session(Uuid::now_v7().into())
-            .await?;
+        let session = self.control_db.create_session(Uuid::now_v7()).await?;
 
         Ok(session)
     }
@@ -114,18 +111,16 @@ impl ControlService {
         let curr_session = self.control_db.get_session(session_uuid).await?;
 
         match req_session_state {
-            SessionState::Initializing => match curr_session.state {
-                SessionState::Initializing => {
+            SessionState::Initializing => {
+                if curr_session.state == SessionState::Initializing {
                     return Err(ServiceError::SessionAlreadyInitialized);
                 }
-                _ => {}
-            },
-            SessionState::Running => match curr_session.state {
-                SessionState::Running => {
+            }
+            SessionState::Running => {
+                if curr_session.state == SessionState::Running {
                     return Err(ServiceError::SessionAlreadyRunning);
                 }
-                _ => {}
-            },
+            }
         }
 
         self.control_db
@@ -160,15 +155,15 @@ impl ControlService {
         corporation_name: String,
     ) -> ServiceResult<CorporationModel> {
         let session_user = SessionUser {
-            uuid: Uuid::now_v7().into(),
-            session_uuid: session_uuid.clone(),
-            user_uuid: session_uuid.clone(),
+            uuid: Uuid::now_v7(),
+            session_uuid,
+            user_uuid: session_uuid,
         };
 
         self.control_db.create_session_user(session_user).await?;
 
         let corporation = CorporationModel {
-            uuid: Uuid::now_v7().into(),
+            uuid: Uuid::now_v7(),
             session_uuid,
             user_uuid,
             name: corporation_name,
@@ -194,7 +189,7 @@ impl ControlService {
         };
 
         let user = UserModel {
-            uuid: Uuid::now_v7().into(),
+            uuid: Uuid::now_v7(),
             name: username,
             password_hash: password_hash.to_string(),
             role: user_role,

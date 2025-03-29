@@ -1,6 +1,7 @@
 # Load environment variables
 set dotenv-required := true
 set dotenv-load := true
+set export := true
 
 # Group: Server
 mod server

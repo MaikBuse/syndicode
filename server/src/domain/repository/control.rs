@@ -6,6 +6,12 @@ use uuid::Uuid;
 pub enum ControlDatabaseError {
     #[error(transparent)]
     Sqlx(#[from] sqlx::error::Error),
+
+    #[error("The database returned with a violation of a unique/primary key constraint")]
+    UniqueConstraint,
+
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
 pub type ControlDatabaseResult<T> = std::result::Result<T, ControlDatabaseError>;

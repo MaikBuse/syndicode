@@ -4,7 +4,7 @@ pub mod warfare;
 
 use crate::domain::{
     model::control::{UserModel, UserRole},
-    repository::control::ControlDatabaseRepository,
+    repository::control::{ControlDatabaseError, ControlDatabaseRepository},
 };
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHasher};
@@ -12,7 +12,7 @@ use sqlx::{pool::PoolOptions, PgPool, Pool, Postgres};
 use std::env;
 use uuid::Uuid;
 
-const ADMIN_USERNAME: &str = "admin";
+pub const ADMIN_USERNAME: &str = "admin";
 
 #[derive(Debug)]
 pub struct PostgresDatabase {
@@ -68,9 +68,8 @@ impl PostgresDatabase {
 
         if let Err(err) = postgres_db.create_user(user).await {
             match err {
-                crate::domain::repository::control::ControlDatabaseError::Sqlx(error) => {
-                    println!("{}", error)
-                }
+                ControlDatabaseError::UniqueConstraint => {}
+                _ => return Err(err.into()),
             }
         }
 

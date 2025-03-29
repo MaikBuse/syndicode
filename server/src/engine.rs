@@ -1,6 +1,6 @@
 use crate::{
     domain::model::control::SessionState,
-    service::{control::ControlService, economy::EconomyService, warfare::WarfareService},
+    service::{control::ControlService, warfare::WarfareService},
 };
 use dashmap::DashMap;
 use std::{collections::VecDeque, sync::Arc};
@@ -14,7 +14,6 @@ pub enum Job {
 pub struct Engine {
     jobs: Arc<DashMap<Uuid, VecDeque<Job>>>,
     control_service: Arc<ControlService>,
-    economy_service: Arc<EconomyService>,
     warfare_service: Arc<WarfareService>,
 }
 
@@ -22,14 +21,12 @@ impl Engine {
     pub fn init(
         jobs: Arc<DashMap<Uuid, VecDeque<Job>>>,
         control_service: Arc<ControlService>,
-        economy_service: Arc<EconomyService>,
         warfare_service: Arc<WarfareService>,
     ) -> Self {
         Self {
             jobs,
             control_service,
             warfare_service,
-            economy_service,
         }
     }
 

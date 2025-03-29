@@ -1,26 +1,16 @@
 use super::error::ServiceResult;
-use crate::domain::{
-    model::warfare::UnitModel,
-    repository::{control::ControlDatabaseRepository, warfare::WarfareDatabaseRepository},
-};
+use crate::domain::{model::warfare::UnitModel, repository::warfare::WarfareDatabaseRepository};
 use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct WarfareService {
-    control_db: Arc<dyn ControlDatabaseRepository>,
     warfare_db: Arc<dyn WarfareDatabaseRepository>,
 }
 
 impl WarfareService {
-    pub fn new(
-        control_db: Arc<dyn ControlDatabaseRepository>,
-        warfare_db: Arc<dyn WarfareDatabaseRepository>,
-    ) -> Self {
-        Self {
-            control_db,
-            warfare_db,
-        }
+    pub fn new(warfare_db: Arc<dyn WarfareDatabaseRepository>) -> Self {
+        Self { warfare_db }
     }
 
     pub async fn create_unit(
@@ -29,7 +19,7 @@ impl WarfareService {
         user_uuid: Uuid,
     ) -> ServiceResult<UnitModel> {
         let unit = UnitModel {
-            uuid: Uuid::now_v7().into(),
+            uuid: Uuid::now_v7(),
             session_uuid,
             user_uuid,
         };
