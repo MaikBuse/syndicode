@@ -1,10 +1,5 @@
+# cargo
 /target
-
-# SQLite
-syndicode.db
-syndicode.db-shm
-syndicode.db-sal
-syndicode.db-wal
 
 # dotenv
 .env

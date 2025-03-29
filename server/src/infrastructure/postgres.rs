@@ -21,6 +21,8 @@ pub struct PostgresDatabase {
 
 impl PostgresDatabase {
     pub async fn init(admin_password: String) -> anyhow::Result<Self> {
+        tracing::info!("Initializing postgres database connection");
+
         let postgres_user =
             env::var("POSTGRES_USER").expect("Environment variable 'POSTGRES_USER' must be set");
         let postgres_password = env::var("POSTGRES_PASSWORD")
@@ -34,13 +36,19 @@ impl PostgresDatabase {
 
         let conn_string = format!(
             "postgres://{}:{}@{}:{}/{}",
-            postgres_user, postgres_password, postgres_host, postgres_port, postgres_db
+            urlencoding::encode(postgres_user.as_str()),
+            urlencoding::encode(postgres_password.as_str()),
+            postgres_host,
+            postgres_port,
+            postgres_db
         );
 
         let pool: Pool<Postgres> = PoolOptions::new()
             .max_connections(5)
             .connect(&conn_string)
             .await?;
+
+        sqlx::migrate!().run(&pool).await?;
 
         let postgres_db = Self { pool };
 
@@ -68,7 +76,9 @@ impl PostgresDatabase {
 
         if let Err(err) = postgres_db.create_user(user).await {
             match err {
-                ControlDatabaseError::UniqueConstraint => {}
+                ControlDatabaseError::UniqueConstraint => {
+                    tracing::info!("Default admin user has already been created");
+                }
                 _ => return Err(err.into()),
             }
         }

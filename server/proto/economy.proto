@@ -16,7 +16,3 @@ message CorporationInfo {
   string name = 4;
   int64 balance = 5;
 }
-
-service Economy {
-  rpc GetCorporation (GetCorporationRequest) returns (GetCorporationResponse);
-}
