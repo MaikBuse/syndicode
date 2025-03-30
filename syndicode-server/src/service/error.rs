@@ -7,6 +7,9 @@ pub enum ServiceError {
     #[error("The requesting user is not authorized to perform this action")]
     Unauthorized,
 
+    #[error("User authentication is missing")]
+    MissingAuthentication,
+
     #[error("The provided credentials are wrong")]
     WrongUserCredentials,
 

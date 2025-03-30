@@ -50,21 +50,11 @@ impl Control for ControlPresenter {
         &self,
         request: Request<RegistrationRequest>,
     ) -> Result<Response<RegistrationResponse>, Status> {
-        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
-            Ok(uuid) => uuid,
-            Err(status) => return Err(status),
-        };
-
         let request = request.into_inner();
 
         match self
             .control_service
-            .create_user(
-                req_user_uuid,
-                request.username,
-                request.password,
-                UserRole::User,
-            )
+            .create_user(None, request.username, request.password, UserRole::User)
             .await
         {
             Ok(user) => Ok(Response::new(RegistrationResponse {
@@ -206,7 +196,7 @@ async fn create_user(
 
     match control_service
         .create_user(
-            req_user_uuid,
+            Some(req_user_uuid),
             request.username,
             request.password,
             user_role.clone(),
@@ -242,7 +232,9 @@ async fn delete_user(
 
 fn control_error_into_status(err: ServiceError) -> Status {
     match err {
-        ServiceError::WrongUserCredentials => Status::unauthenticated(err.to_string()),
+        ServiceError::WrongUserCredentials | ServiceError::MissingAuthentication => {
+            Status::unauthenticated(err.to_string())
+        }
         ServiceError::Unauthorized => Status::permission_denied(err.to_string()),
         ServiceError::ControlDatabase(_)
         | ServiceError::EconomyDatabase(_)

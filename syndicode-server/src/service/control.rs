@@ -84,12 +84,16 @@ impl ControlService {
 
     pub async fn create_user(
         &self,
-        req_user_uuid: Uuid,
+        maybe_req_user_uuid: Option<Uuid>,
         username: String,
         password: String,
         user_role: UserRole,
     ) -> ServiceResult<UserModel> {
         if user_role == UserRole::Admin {
+            let Some(req_user_uuid) = maybe_req_user_uuid else {
+                return Err(ServiceError::MissingAuthentication);
+            };
+
             let req_user = self.control_db.get_user(req_user_uuid).await?;
 
             if req_user.role != UserRole::Admin {
