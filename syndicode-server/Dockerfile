@@ -1,5 +1,5 @@
 # -------- Builder Stage --------
-FROM rust:1.85.1 as builder
+FROM rust:1.85.1 AS builder
 
 # Install protoc and pkg-config dependencies
 RUN apt-get update && apt-get install -y protobuf-compiler pkg-config libssl-dev
@@ -24,9 +24,9 @@ RUN adduser --disabled-password --gecos "" appuser
 # Copy the built binary
 COPY --from=builder /workspace/target/release/syndicode-server /usr/local/bin/server
 
-RUN chown appuser:appuser /usr/local/bin/syndicode-server
+RUN chown appuser:appuser /usr/local/bin/server
 
 USER appuser
 EXPOSE 50051
-CMD ["syndicode-server"]
+CMD ["server"]
 
