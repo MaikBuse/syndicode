@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/MaikBuse/syndicode/compare/v0.3.0...v0.3.1) (2025-03-30)
+
+
+### Bug Fixes
+
+* application name according to new directory ([bc0c6f9](https://github.com/MaikBuse/syndicode/commit/bc0c6f956f101754cc54b05dce7b7eb75000794e))
+
 ## [0.3.0](https://github.com/MaikBuse/syndicode/compare/v0.2.0...v0.3.0) (2025-03-30)
 
 
