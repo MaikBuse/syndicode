@@ -13,9 +13,10 @@ pub const AUTHORIZATION_KEY: &str = "authorization";
 
 const HEALTH_CHECK_PATH: &str = "/grpc.health.v1.Health/Check";
 
-const AUTH_EXCEPTED_PATHS: [&str; 3] = [
+const AUTH_EXCEPTED_PATHS: [&str; 4] = [
     "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
     HEALTH_CHECK_PATH,
+    "/control.Control/Register",
     "/control.Control/Login",
 ];
 
