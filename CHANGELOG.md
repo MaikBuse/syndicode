@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/MaikBuse/syndicode/compare/v0.4.0...v0.4.1) (2025-03-30)
+
+
+### Bug Fixes
+
+* exclude registration from authentication middleware ([59e0951](https://github.com/MaikBuse/syndicode/commit/59e09512b73848f2c5944f58f16be588e93e880e))
+
 ## [0.4.0](https://github.com/MaikBuse/syndicode/compare/v0.3.2...v0.4.0) (2025-03-30)
 
 
