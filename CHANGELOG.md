@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/MaikBuse/syndicode/compare/v0.4.1...v0.4.2) (2025-03-30)
+
+
+### Bug Fixes
+
+* stop asking for authentication on registration ([81ceeda](https://github.com/MaikBuse/syndicode/commit/81ceedae8272cca94711550369baf4388f4b873e))
+* wrong comparison on skip logging check ([dbf54df](https://github.com/MaikBuse/syndicode/commit/dbf54df618fc937c9a107bca914f4e11822a0f77))
+
 ## [0.4.1](https://github.com/MaikBuse/syndicode/compare/v0.4.0...v0.4.1) (2025-03-30)
 
 
