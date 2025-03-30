@@ -89,6 +89,14 @@ impl ControlService {
         password: String,
         user_role: UserRole,
     ) -> ServiceResult<UserModel> {
+        if username.is_empty() {
+            return Err(ServiceError::UsernameInvalid);
+        }
+
+        if password.len() < 8 {
+            return Err(ServiceError::PasswordTooShort);
+        }
+
         if user_role == UserRole::Admin {
             let Some(req_user_uuid) = maybe_req_user_uuid else {
                 return Err(ServiceError::MissingAuthentication);

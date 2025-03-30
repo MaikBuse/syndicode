@@ -232,6 +232,9 @@ async fn delete_user(
 
 fn control_error_into_status(err: ServiceError) -> Status {
     match err {
+        ServiceError::PasswordTooShort | ServiceError::UsernameInvalid => {
+            Status::invalid_argument(err.to_string())
+        }
         ServiceError::WrongUserCredentials | ServiceError::MissingAuthentication => {
             Status::unauthenticated(err.to_string())
         }

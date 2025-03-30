@@ -4,6 +4,12 @@ use crate::domain::repository::{
 
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
+    #[error("The provided password needs to have at least 8 characters")]
+    PasswordTooShort,
+
+    #[error("The provided username '' is invalid")]
+    UsernameInvalid,
+
     #[error("The requesting user is not authorized to perform this action")]
     Unauthorized,
 
