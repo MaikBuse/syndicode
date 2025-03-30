@@ -77,7 +77,7 @@ where
 
         Box::pin(async move {
             let skip_auth = AUTH_EXCEPTED_PATHS.contains(&path.as_str());
-            let skip_logging = path.as_str() != HEALTH_CHECK_PATH;
+            let skip_logging = path.as_str() == HEALTH_CHECK_PATH;
 
             if !skip_logging {
                 tracing::info!(%path, %skip_auth, "Incoming request");
