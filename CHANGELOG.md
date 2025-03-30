@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/MaikBuse/syndicode/compare/v0.2.0...v0.3.0) (2025-03-30)
+
+
+### Features
+
+* enable automated builds after releases ([5ae81a2](https://github.com/MaikBuse/syndicode/commit/5ae81a2197ce5a48e1aec8007d0cf2421d6696b6))
+* remove sessions in favor of on global game world ([dbc95d2](https://github.com/MaikBuse/syndicode/commit/dbc95d2c63633a38fd37885077f56f6df68c136a))
+
 ## [0.2.0](https://github.com/MaikBuse/syndicode/compare/0.1.4...v0.2.0) (2025-03-29)
 
 
