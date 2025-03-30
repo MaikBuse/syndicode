@@ -10,7 +10,7 @@ WORKDIR /workspace
 COPY . .
 
 # Build only the server crate
-RUN cargo build --release -p server
+RUN cargo build --release -p syndicode-server
 
 # -------- Runtime Stage --------
 FROM debian:bookworm-slim
@@ -22,11 +22,11 @@ RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/
 RUN adduser --disabled-password --gecos "" appuser
 
 # Copy the built binary
-COPY --from=builder /workspace/target/release/server /usr/local/bin/server
+COPY --from=builder /workspace/target/release/syndicode-server /usr/local/bin/server
 
-RUN chown appuser:appuser /usr/local/bin/server
+RUN chown appuser:appuser /usr/local/bin/syndicode-server
 
 USER appuser
 EXPOSE 50051
-CMD ["server"]
+CMD ["syndicode-server"]
 
