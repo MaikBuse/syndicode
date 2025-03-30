@@ -29,7 +29,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: server/Dockerfile
+          file: syndicode-server/Dockerfile
           push: true
           tags: mbuse0/syndicode-server:${{ env.RELEASE_TAG }}
 
