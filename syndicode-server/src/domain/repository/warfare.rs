@@ -14,9 +14,5 @@ pub type WarfareDatabaseResult<T> = std::result::Result<T, WarfareDatabaseError>
 pub trait WarfareDatabaseRepository: std::fmt::Debug + Send + Sync {
     async fn create_unit(&self, unit: UnitModel) -> WarfareDatabaseResult<UnitModel>;
 
-    async fn list_user_units(
-        &self,
-        session_uuid: Uuid,
-        user_uuid: Uuid,
-    ) -> WarfareDatabaseResult<Vec<UnitModel>>;
+    async fn list_user_units(&self, user_uuid: Uuid) -> WarfareDatabaseResult<Vec<UnitModel>>;
 }

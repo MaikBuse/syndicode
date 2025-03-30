@@ -6,24 +6,24 @@ start:
 # Add a new database migration
 [group('migration')]
 add name:
-  sqlx migrate add -r --source ./server/migrations {{name}}
+  sqlx migrate add -r --source ./syndicode-server/migrations {{name}}
 
 # Run database migrations
 [group('migration')]
 migrate:
-  sqlx migrate run --source ./server/migrations --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+  sqlx migrate run --source ./syndicode-server/migrations --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
 
 # Create the database and run migrations
 [group('sqlx')]
 setup:
   sqlx db create --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
-  sqlx migrate run --source ./server/migrations --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+  sqlx migrate run --source ./syndicode-server/migrations --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
   cargo sqlx prepare --workspace
 
 # Revert database migrations
 [group('migration')]
 revert:
-  sqlx migrate revert --source ./server/migrations --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+  sqlx migrate revert --source ./syndicode-server/migrations --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
 
 # Create query data in order to use SQLx offline
 [group('sqlx')]

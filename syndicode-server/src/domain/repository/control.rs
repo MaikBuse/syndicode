@@ -1,4 +1,4 @@
-use crate::domain::model::control::{SessionModel, SessionUser, UserModel};
+use crate::domain::model::control::UserModel;
 use tonic::async_trait;
 use uuid::Uuid;
 
@@ -22,18 +22,4 @@ pub trait ControlDatabaseRepository: std::fmt::Debug + Send + Sync {
     async fn get_user(&self, user_uuid: Uuid) -> ControlDatabaseResult<UserModel>;
     async fn get_user_by_name(&self, username: String) -> ControlDatabaseResult<UserModel>;
     async fn delete_user(&self, user_uuid: Uuid) -> ControlDatabaseResult<()>;
-    async fn create_session(&self, session_uuid: Uuid) -> ControlDatabaseResult<SessionModel>;
-    async fn get_session(&self, session_uuid: Uuid) -> ControlDatabaseResult<SessionModel>;
-    async fn list_sessions(&self) -> ControlDatabaseResult<Vec<SessionModel>>;
-    async fn update_session(&self, session: SessionModel) -> ControlDatabaseResult<SessionModel>;
-    async fn delete_session(&self, session_uuid: Uuid) -> ControlDatabaseResult<()>;
-    async fn create_session_user(
-        &self,
-        session_user: SessionUser,
-    ) -> ControlDatabaseResult<SessionUser>;
-    async fn get_session_user(
-        &self,
-        session_uuid: Uuid,
-        user_uuid: Uuid,
-    ) -> ControlDatabaseResult<SessionUser>;
 }

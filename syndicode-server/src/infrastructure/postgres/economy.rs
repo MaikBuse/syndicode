@@ -18,18 +18,16 @@ impl EconomyDatabaseRepository for PostgresDatabase {
             r#"
             INSERT INTO corporations (
             uuid,
-            session_uuid,
             user_uuid,
             name,
             balance
         )
         VALUES (
-            $1, $2, $3, $4, $5
+            $1, $2, $3, $4
         )
-        RETURNING uuid, session_uuid, user_uuid, name, balance
+        RETURNING uuid, user_uuid, name, balance
         "#,
             corporation.uuid,
-            corporation.session_uuid,
             corporation.user_uuid,
             corporation.name,
             corporation.balance
@@ -42,7 +40,6 @@ impl EconomyDatabaseRepository for PostgresDatabase {
 
     async fn get_user_corporation(
         &self,
-        session_uuid: Uuid,
         user_uuid: Uuid,
     ) -> EconomyDatabaseResult<CorporationModel> {
         let corporation = sqlx::query_as!(
@@ -50,16 +47,13 @@ impl EconomyDatabaseRepository for PostgresDatabase {
             r#"
             SELECT
                 uuid,
-                session_uuid,
                 user_uuid,
                 name,
                 balance
             FROM corporations
             WHERE
-                session_uuid = $1
-                AND user_uuid = $2
+                user_uuid = $1
             "#,
-            session_uuid,
             user_uuid
         )
         .fetch_one(&self.pool)
@@ -78,15 +72,13 @@ impl EconomyDatabaseRepository for PostgresDatabase {
             UPDATE corporations
             SET
                 uuid = $1,
-                session_uuid = $2,
-                user_uuid = $3,
-                name = $4,
-                balance = $5
+                user_uuid = $2,
+                name = $3,
+                balance = $4
             WHERE uuid = $1
-            RETURNING uuid, session_uuid, user_uuid, name, balance
+            RETURNING uuid, user_uuid, name, balance
             "#,
             corporation.uuid,
-            corporation.session_uuid,
             corporation.user_uuid,
             corporation.name,
             corporation.balance

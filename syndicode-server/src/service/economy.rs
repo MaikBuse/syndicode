@@ -15,14 +15,7 @@ impl EconomyService {
         Self { economy_db }
     }
 
-    pub async fn get_corporation(
-        &self,
-        session_uuid: Uuid,
-        user_uuid: Uuid,
-    ) -> ServiceResult<CorporationModel> {
-        Ok(self
-            .economy_db
-            .get_user_corporation(session_uuid, user_uuid)
-            .await?)
+    pub async fn get_corporation(&self, user_uuid: Uuid) -> ServiceResult<CorporationModel> {
+        Ok(self.economy_db.get_user_corporation(user_uuid).await?)
     }
 }

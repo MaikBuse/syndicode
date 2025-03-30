@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE corporations\n            SET\n                uuid = $1,\n                session_uuid = $2,\n                user_uuid = $3,\n                name = $4,\n                balance = $5\n            WHERE uuid = $1\n            RETURNING uuid, session_uuid, user_uuid, name, balance\n            ",
+  "query": "\n            INSERT INTO corporations (\n            uuid,\n            user_uuid,\n            name,\n            balance\n        )\n        VALUES (\n            $1, $2, $3, $4\n        )\n        RETURNING uuid, user_uuid, name, balance\n        ",
   "describe": {
     "columns": [
       {
@@ -10,28 +10,22 @@
       },
       {
         "ordinal": 1,
-        "name": "session_uuid",
-        "type_info": "Uuid"
-      },
-      {
-        "ordinal": 2,
         "name": "user_uuid",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 3,
+        "ordinal": 2,
         "name": "name",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "balance",
         "type_info": "Int8"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Uuid",
         "Uuid",
         "Text",
@@ -42,9 +36,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "0de7bcea0028df519b20b62571a08d37090d4fc8bfa142af4e68724f46c7b7b9"
+  "hash": "ee9125f873f37c4129f78fff1d8b0c838bb17882a1f3912f6f3d584d802f68cd"
 }

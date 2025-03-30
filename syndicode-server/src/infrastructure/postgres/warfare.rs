@@ -14,14 +14,12 @@ impl WarfareDatabaseRepository for PostgresDatabase {
             r#"
             INSERT INTO units (
                 uuid,
-                session_uuid,
                 user_uuid
             )
-            VALUES ( $1, $2, $3 )
-            RETURNING uuid, session_uuid, user_uuid
+            VALUES ( $1, $2 )
+            RETURNING uuid, user_uuid
             "#,
             unit.uuid,
-            unit.session_uuid,
             unit.user_uuid
         )
         .fetch_one(&self.pool)
@@ -30,24 +28,17 @@ impl WarfareDatabaseRepository for PostgresDatabase {
         Ok(unit)
     }
 
-    async fn list_user_units(
-        &self,
-        session_uuid: Uuid,
-        user_uuid: Uuid,
-    ) -> WarfareDatabaseResult<Vec<UnitModel>> {
+    async fn list_user_units(&self, user_uuid: Uuid) -> WarfareDatabaseResult<Vec<UnitModel>> {
         let units = sqlx::query_as!(
             UnitModel,
             r#"
             SELECT
                 uuid,
-                session_uuid,
                 user_uuid
             FROM units
             WHERE
-                session_uuid = $1
-                AND user_uuid = $2
+                user_uuid = $1
             "#,
-            session_uuid,
             user_uuid
         )
         .fetch_all(&self.pool)

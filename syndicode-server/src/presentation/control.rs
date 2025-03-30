@@ -2,7 +2,6 @@ use super::common::parse_uuid;
 use super::economy::get_corporation;
 use super::middleware::USER_UUID_KEY;
 use super::warfare::{list_units, spawn_unit};
-use crate::domain::model::control::SessionState;
 use crate::domain::model::control::UserRole;
 use crate::engine::Job;
 use crate::service::control::ControlService;
@@ -18,18 +17,13 @@ use syndicode_proto::control::control_server::Control;
 use syndicode_proto::control::game_update::ResponseEnum;
 use syndicode_proto::control::user_request::RequestEnum;
 use syndicode_proto::control::{
-    CreateUserRequest, DeleteUserRequest, DeleteUserResponse, GameUpdate, UserRequest,
+    CreateUserRequest, DeleteUserRequest, DeleteUserResponse, GameUpdate, RegistrationRequest,
+    RegistrationResponse, UserRequest,
 };
 use syndicode_proto::control::{CreateUserResponse, UserRole as ProtoUserRole};
 use syndicode_proto::control::{LoginRequest, LoginResponse};
-use syndicode_proto::{
-    control::{
-        EndGameRequest, EndGameResponse, InitGameRequest, InitGameResponse, JoinGameRequest,
-        JoinGameResponse, SessionInfo, StartGameRequest, StartGameResponse,
-    },
-    economy::CorporationInfo,
-};
 use tokio::sync::mpsc::{self, Sender};
+use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
 use tokio_stream::{wrappers::ReceiverStream, Stream};
 use tonic::async_trait;
@@ -41,7 +35,7 @@ use uuid::Uuid;
 type PlayerTx = mpsc::Sender<Result<GameUpdate, Status>>;
 
 pub struct ControlPresenter {
-    pub jobs: Arc<DashMap<Uuid, VecDeque<Job>>>,
+    pub jobs: Arc<Mutex<VecDeque<Job>>>,
     pub user_channels: Arc<DashMap<Uuid, PlayerTx>>,
     pub control_service: Arc<ControlService>,
     pub economy_service: Arc<EconomyService>,
@@ -51,6 +45,24 @@ pub struct ControlPresenter {
 #[async_trait]
 impl Control for ControlPresenter {
     type GameStreamRpcStream = Pin<Box<dyn Stream<Item = Result<GameUpdate, Status>> + Send>>;
+
+    async fn register(
+        &self,
+        request: Request<RegistrationRequest>,
+    ) -> std::result::Result<Response<RegistrationResponse>, Status> {
+        let request = request.into_inner();
+
+        match self
+            .control_service
+            .create_user(request.username, request.password, UserRole::User)
+            .await
+        {
+            Ok(user) => Ok(Response::new(RegistrationResponse {
+                uuid: user.uuid.to_string(),
+            })),
+            Err(err) => Err(control_error_into_status(err)),
+        }
+    }
 
     async fn login(
         &self,
@@ -110,25 +122,6 @@ impl Control for ControlPresenter {
                         RequestEnum::DeleteUser(req) => {
                             handle_request(|| delete_user(req, Arc::clone(&control_service)), &tx)
                                 .await;
-                        }
-                        RequestEnum::InitGame(req) => {
-                            handle_request(|| init_game(req, Arc::clone(&control_service)), &tx)
-                                .await;
-                        }
-                        RequestEnum::StartGame(req) => {
-                            handle_request(|| start_game(req, Arc::clone(&control_service)), &tx)
-                                .await;
-                        }
-                        RequestEnum::EndGame(req) => {
-                            handle_request(|| end_game(req, Arc::clone(&control_service)), &tx)
-                                .await;
-                        }
-                        RequestEnum::JoinGame(req) => {
-                            handle_request(
-                                || join_game(req, Arc::clone(&control_service), user_uuid),
-                                &tx,
-                            )
-                            .await;
                         }
                         RequestEnum::GetCorporation(req) => {
                             handle_request(
@@ -222,97 +215,9 @@ async fn delete_user(
     }
 }
 
-async fn init_game(
-    _request: InitGameRequest,
-    control_service: Arc<ControlService>,
-) -> Result<GameUpdate, Status> {
-    match control_service.create_session().await {
-        Ok(session) => Ok(GameUpdate {
-            response_enum: Some(ResponseEnum::InitGame(InitGameResponse {
-                session: Some(SessionInfo {
-                    uuid: session.uuid.to_string(),
-                    interval: session.interval,
-                    state: session.state.into(),
-                }),
-            })),
-        }),
-        Err(err) => Err(control_error_into_status(err)),
-    }
-}
-
-async fn start_game(
-    request: StartGameRequest,
-    control_service: Arc<ControlService>,
-) -> Result<GameUpdate, Status> {
-    let Ok(session_uuid) = Uuid::parse_str(request.session_uuid.as_str()) else {
-        return Err(Status::invalid_argument(format!(
-            "Failed to parse provided uuid: {}",
-            request.session_uuid,
-        )));
-    };
-
-    if let Err(err) = control_service
-        .update_session_state(session_uuid, SessionState::Running)
-        .await
-    {
-        return Err(control_error_into_status(err));
-    }
-
-    Ok(GameUpdate {
-        response_enum: Some(ResponseEnum::StartGame(StartGameResponse {})),
-    })
-}
-
-async fn end_game(
-    request: EndGameRequest,
-    control_service: Arc<ControlService>,
-) -> Result<GameUpdate, Status> {
-    let session_uuid = parse_uuid(&request.session_uuid)?;
-
-    if let Err(err) = control_service.delete_session(session_uuid).await {
-        return Err(control_error_into_status(err));
-    }
-
-    Ok(GameUpdate {
-        response_enum: Some(ResponseEnum::EndGame(EndGameResponse {})),
-    })
-}
-
-async fn join_game(
-    request: JoinGameRequest,
-    control_service: Arc<ControlService>,
-    user_uuid: Uuid,
-) -> Result<GameUpdate, Status> {
-    let session_uuid = parse_uuid(&request.session_uuid)?;
-
-    let corporation = match control_service
-        .join_game(session_uuid, user_uuid, request.corporation_name)
-        .await
-    {
-        Ok(corporation) => corporation,
-        Err(err) => return Err(control_error_into_status(err)),
-    };
-
-    Ok(GameUpdate {
-        response_enum: Some(ResponseEnum::JoinGame(JoinGameResponse {
-            corporation: Some(CorporationInfo {
-                uuid: corporation.uuid.to_string(),
-                session_uuid: corporation.session_uuid.to_string(),
-                user_uuid: corporation.user_uuid.to_string(),
-                name: corporation.name,
-                balance: corporation.balance,
-            }),
-        })),
-    })
-}
-
 fn control_error_into_status(err: ServiceError) -> Status {
     match err {
         ServiceError::WrongUserCredentials => Status::unauthenticated(err.to_string()),
-        ServiceError::SessionAlreadyRunning
-        | ServiceError::SessionNotRunning
-        | ServiceError::SessionAlreadyInitialized => Status::invalid_argument(err.to_string()),
-        ServiceError::UuidFromSlice => Status::internal(err.to_string()),
         ServiceError::ControlDatabase(_)
         | ServiceError::EconomyDatabase(_)
         | ServiceError::WarfareDatabase(_)

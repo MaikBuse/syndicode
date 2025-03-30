@@ -12,6 +12,7 @@ use presentation::middleware::JwtAuthLayer;
 use service::control::ControlService;
 use service::economy::EconomyService;
 use service::warfare::WarfareService;
+use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 use syndicode_proto::control::control_server::ControlServer;
@@ -65,7 +66,7 @@ pub async fn main() -> anyhow::Result<()> {
     let warfare_service = Arc::new(WarfareService::new(db_warfare_clone_1));
 
     // Setup tick-engine
-    let jobs = Arc::new(DashMap::new());
+    let jobs = Arc::new(Mutex::new(VecDeque::new()));
     let user_channels = Arc::new(DashMap::new());
     let engine = Arc::new(Mutex::new(Engine::init(
         Arc::clone(&jobs),

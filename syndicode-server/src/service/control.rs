@@ -1,9 +1,6 @@
 use super::error::{ServiceError, ServiceResult};
 use crate::domain::{
-    model::{
-        control::{Claims, SessionModel, SessionState, SessionUser, UserModel, UserRole},
-        economy::CorporationModel,
-    },
+    model::control::{Claims, UserModel, UserRole},
     repository::{control::ControlDatabaseRepository, economy::EconomyDatabaseRepository},
 };
 use argon2::{
@@ -83,94 +80,6 @@ impl ControlService {
         };
 
         Ok(jwt)
-    }
-
-    pub async fn create_session(&self) -> ServiceResult<SessionModel> {
-        let session = self.control_db.create_session(Uuid::now_v7()).await?;
-
-        Ok(session)
-    }
-
-    pub async fn get_session(&self, session_uuid: Uuid) -> ServiceResult<SessionModel> {
-        let session = self.control_db.get_session(session_uuid).await?;
-
-        Ok(session)
-    }
-
-    pub async fn list_sessions(&self) -> ServiceResult<Vec<SessionModel>> {
-        let session = self.control_db.list_sessions().await?;
-
-        Ok(session)
-    }
-
-    pub async fn update_session_state(
-        &self,
-        session_uuid: Uuid,
-        req_session_state: SessionState,
-    ) -> ServiceResult<()> {
-        let curr_session = self.control_db.get_session(session_uuid).await?;
-
-        match req_session_state {
-            SessionState::Initializing => {
-                if curr_session.state == SessionState::Initializing {
-                    return Err(ServiceError::SessionAlreadyInitialized);
-                }
-            }
-            SessionState::Running => {
-                if curr_session.state == SessionState::Running {
-                    return Err(ServiceError::SessionAlreadyRunning);
-                }
-            }
-        }
-
-        self.control_db
-            .update_session(SessionModel {
-                uuid: curr_session.uuid,
-                interval: curr_session.interval,
-                state: req_session_state,
-            })
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn advance_session_interval(&self, session_uuid: Uuid) -> ServiceResult<()> {
-        let mut session = self.control_db.get_session(session_uuid).await?;
-
-        session.interval += 1;
-
-        self.control_db.update_session(session).await?;
-
-        Ok(())
-    }
-
-    pub async fn delete_session(&self, session_uuid: Uuid) -> ServiceResult<()> {
-        Ok(self.control_db.delete_session(session_uuid).await?)
-    }
-
-    pub async fn join_game(
-        &self,
-        session_uuid: Uuid,
-        user_uuid: Uuid,
-        corporation_name: String,
-    ) -> ServiceResult<CorporationModel> {
-        let session_user = SessionUser {
-            uuid: Uuid::now_v7(),
-            session_uuid,
-            user_uuid: session_uuid,
-        };
-
-        self.control_db.create_session_user(session_user).await?;
-
-        let corporation = CorporationModel {
-            uuid: Uuid::now_v7(),
-            session_uuid,
-            user_uuid,
-            name: corporation_name,
-            balance: DEFAULT_BALANCE,
-        };
-
-        Ok(self.economy_db.create_corporation(corporation).await?)
     }
 
     pub async fn create_user(

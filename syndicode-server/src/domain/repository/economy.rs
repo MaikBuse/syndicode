@@ -19,7 +19,6 @@ pub trait EconomyDatabaseRepository: std::fmt::Debug + Send + Sync {
 
     async fn get_user_corporation(
         &self,
-        session_uuid: Uuid,
         user_uuid: Uuid,
     ) -> EconomyDatabaseResult<CorporationModel>;
 

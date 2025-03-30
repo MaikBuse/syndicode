@@ -3,7 +3,7 @@
 pub struct UserRequest {
     #[prost(
         oneof = "user_request::RequestEnum",
-        tags = "10000, 10001, 10002, 10003, 10004, 10005, 20000, 30000, 30001"
+        tags = "10000, 10001, 20000, 30000, 30001"
     )]
     pub request_enum: ::core::option::Option<user_request::RequestEnum>,
 }
@@ -15,14 +15,6 @@ pub mod user_request {
         CreateUser(super::CreateUserRequest),
         #[prost(message, tag = "10001")]
         DeleteUser(super::DeleteUserRequest),
-        #[prost(message, tag = "10002")]
-        InitGame(super::InitGameRequest),
-        #[prost(message, tag = "10003")]
-        StartGame(super::StartGameRequest),
-        #[prost(message, tag = "10004")]
-        EndGame(super::EndGameRequest),
-        #[prost(message, tag = "10005")]
-        JoinGame(super::JoinGameRequest),
         #[prost(message, tag = "20000")]
         GetCorporation(super::super::economy::GetCorporationRequest),
         #[prost(message, tag = "30000")]
@@ -35,7 +27,7 @@ pub mod user_request {
 pub struct GameUpdate {
     #[prost(
         oneof = "game_update::ResponseEnum",
-        tags = "15000, 15001, 15002, 15003, 15004, 15005, 25000, 35000, 35001"
+        tags = "15000, 15001, 25000, 35000, 35001"
     )]
     pub response_enum: ::core::option::Option<game_update::ResponseEnum>,
 }
@@ -47,14 +39,6 @@ pub mod game_update {
         CreateUser(super::CreateUserResponse),
         #[prost(message, tag = "15001")]
         DeleteUser(super::DeleteUserResponse),
-        #[prost(message, tag = "15002")]
-        InitGame(super::InitGameResponse),
-        #[prost(message, tag = "15003")]
-        StartGame(super::StartGameResponse),
-        #[prost(message, tag = "15004")]
-        EndGame(super::EndGameResponse),
-        #[prost(message, tag = "15005")]
-        JoinGame(super::JoinGameResponse),
         #[prost(message, tag = "25000")]
         GetCorporation(super::super::economy::GetCorporationResponse),
         #[prost(message, tag = "35000")]
@@ -62,6 +46,18 @@ pub mod game_update {
         #[prost(message, tag = "35001")]
         ListUnits(super::super::warfare::ListUnitsResponse),
     }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RegistrationRequest {
+    #[prost(string, tag = "1")]
+    pub username: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub password: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RegistrationResponse {
+    #[prost(string, tag = "1")]
+    pub uuid: ::prost::alloc::string::String,
 }
 /// Message for a request to login with a username and password
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -105,66 +101,6 @@ pub struct DeleteUserRequest {
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct DeleteUserResponse {}
-/// Message for the request to initialize a new game
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct InitGameRequest {}
-/// Message for the response after initializing a new game, containing session info
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct InitGameResponse {
-    /// Session details of the initialized game
-    #[prost(message, optional, tag = "1")]
-    pub session: ::core::option::Option<SessionInfo>,
-}
-/// Message for starting a game, requires the session UUID
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StartGameRequest {
-    /// Unique identifier for the game session
-    #[prost(string, tag = "1")]
-    pub session_uuid: ::prost::alloc::string::String,
-}
-/// Empty response indicating the game has started
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct StartGameResponse {}
-/// Message for ending a game, requires the session UUID
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EndGameRequest {
-    /// Unique identifier for the game session
-    #[prost(string, tag = "1")]
-    pub session_uuid: ::prost::alloc::string::String,
-}
-/// Empty response indicating the game has ended
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct EndGameResponse {}
-/// Message for joining an existing game, requires session UUID and corporation name
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct JoinGameRequest {
-    /// Unique identifier for the game session
-    #[prost(string, tag = "1")]
-    pub session_uuid: ::prost::alloc::string::String,
-    /// Name of the corporation the player wants to join
-    #[prost(string, tag = "2")]
-    pub corporation_name: ::prost::alloc::string::String,
-}
-/// Message for the response after a player joins a game, containing corporation details
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct JoinGameResponse {
-    /// Information about the corporation the player joined
-    #[prost(message, optional, tag = "1")]
-    pub corporation: ::core::option::Option<super::economy::CorporationInfo>,
-}
-/// Message for storing session-related information
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SessionInfo {
-    /// Unique identifier for the session
-    #[prost(string, tag = "1")]
-    pub uuid: ::prost::alloc::string::String,
-    /// Time interval (e.g., for updates) for the session
-    #[prost(int64, tag = "2")]
-    pub interval: i64,
-    /// Current state of the session (e.g., INITIATING, RUNNING)
-    #[prost(enumeration = "SessionState", tag = "3")]
-    pub state: i32,
-}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum UserRole {
@@ -190,38 +126,6 @@ impl UserRole {
             "ROLE_UNSPECIFIED" => Some(Self::RoleUnspecified),
             "ADMIN" => Some(Self::Admin),
             "USER" => Some(Self::User),
-            _ => None,
-        }
-    }
-}
-/// Enum to define the possible states of a game session
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum SessionState {
-    Unspecified = 0,
-    /// The game is being initialized
-    Initiating = 1,
-    /// The game is currently running
-    Running = 2,
-}
-impl SessionState {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            Self::Unspecified => "SESSION_STATE_UNSPECIFIED",
-            Self::Initiating => "INITIATING",
-            Self::Running => "RUNNING",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "SESSION_STATE_UNSPECIFIED" => Some(Self::Unspecified),
-            "INITIATING" => Some(Self::Initiating),
-            "RUNNING" => Some(Self::Running),
             _ => None,
         }
     }
@@ -317,6 +221,27 @@ pub mod control_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
+        pub async fn register(
+            &mut self,
+            request: impl tonic::IntoRequest<super::RegistrationRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RegistrationResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/control.Control/Register");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new("control.Control", "Register"));
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn login(
             &mut self,
             request: impl tonic::IntoRequest<super::LoginRequest>,
@@ -374,6 +299,13 @@ pub mod control_server {
     /// Generated trait containing gRPC methods that should be implemented for use with ControlServer.
     #[async_trait]
     pub trait Control: std::marker::Send + std::marker::Sync + 'static {
+        async fn register(
+            &self,
+            request: tonic::Request<super::RegistrationRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RegistrationResponse>,
+            tonic::Status,
+        >;
         async fn login(
             &self,
             request: tonic::Request<super::LoginRequest>,
@@ -468,6 +400,51 @@ pub mod control_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
+                "/control.Control/Register" => {
+                    #[allow(non_camel_case_types)]
+                    struct RegisterSvc<T: Control>(pub Arc<T>);
+                    impl<
+                        T: Control,
+                    > tonic::server::UnaryService<super::RegistrationRequest>
+                    for RegisterSvc<T> {
+                        type Response = super::RegistrationResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::RegistrationRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Control>::register(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = RegisterSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/control.Control/Login" => {
                     #[allow(non_camel_case_types)]
                     struct LoginSvc<T: Control>(pub Arc<T>);
