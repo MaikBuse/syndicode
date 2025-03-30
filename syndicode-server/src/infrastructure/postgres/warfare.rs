@@ -1,8 +1,10 @@
-use crate::domain::{model::warfare::UnitModel, repository::warfare::WarfareDatabaseResult};
+use crate::domain::model::warfare::UnitModel;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-pub async fn create_unit<'e, E>(executor: E, unit: UnitModel) -> WarfareDatabaseResult<UnitModel>
+use super::DatabaseResult;
+
+pub async fn create_unit<'e, E>(executor: E, unit: UnitModel) -> DatabaseResult<UnitModel>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {
@@ -25,10 +27,7 @@ where
     Ok(unit)
 }
 
-pub async fn list_user_units<'e, E>(
-    executor: E,
-    user_uuid: Uuid,
-) -> WarfareDatabaseResult<Vec<UnitModel>>
+pub async fn list_user_units<'e, E>(executor: E, user_uuid: Uuid) -> DatabaseResult<Vec<UnitModel>>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {

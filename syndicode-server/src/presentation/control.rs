@@ -251,11 +251,9 @@ fn control_error_into_status(err: ServiceError) -> Status {
             Status::unauthenticated(err.to_string())
         }
         ServiceError::Unauthorized => Status::permission_denied(err.to_string()),
-        ServiceError::ControlDatabase(_)
-        | ServiceError::EconomyDatabase(_)
-        | ServiceError::WarfareDatabase(_)
-        | ServiceError::Sqlx(_)
-        | ServiceError::Other(_) => Status::internal(err.to_string()),
+        ServiceError::Database(_) | ServiceError::Sqlx(_) | ServiceError::Other(_) => {
+            Status::internal(err.to_string())
+        }
     }
 }
 

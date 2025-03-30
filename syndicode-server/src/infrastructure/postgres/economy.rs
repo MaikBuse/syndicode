@@ -1,11 +1,12 @@
-use crate::domain::{model::economy::CorporationModel, repository::economy::EconomyDatabaseResult};
+use super::DatabaseResult;
+use crate::domain::model::economy::CorporationModel;
 use sqlx::Postgres;
 use uuid::Uuid;
 
 pub async fn create_corporation<'e, E>(
     executor: E,
     corporation: CorporationModel,
-) -> EconomyDatabaseResult<CorporationModel>
+) -> DatabaseResult<CorporationModel>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {
@@ -37,7 +38,7 @@ where
 pub async fn get_user_corporation<'e, E>(
     executor: E,
     user_uuid: Uuid,
-) -> EconomyDatabaseResult<CorporationModel>
+) -> DatabaseResult<CorporationModel>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {
@@ -64,7 +65,7 @@ where
 pub async fn update_corporation<'e, E>(
     executor: E,
     corporation: CorporationModel,
-) -> EconomyDatabaseResult<CorporationModel>
+) -> DatabaseResult<CorporationModel>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {

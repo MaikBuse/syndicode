@@ -1,6 +1,4 @@
-use crate::domain::repository::{
-    control::ControlDatabaseError, economy::EconomyDatabaseError, warfare::WarfareDatabaseError,
-};
+use crate::infrastructure::postgres::DatabaseError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
@@ -20,13 +18,7 @@ pub enum ServiceError {
     WrongUserCredentials,
 
     #[error(transparent)]
-    ControlDatabase(#[from] ControlDatabaseError),
-
-    #[error(transparent)]
-    EconomyDatabase(#[from] EconomyDatabaseError),
-
-    #[error(transparent)]
-    WarfareDatabase(#[from] WarfareDatabaseError),
+    Database(#[from] DatabaseError),
 
     #[error(transparent)]
     Sqlx(#[from] sqlx::Error),

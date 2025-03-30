@@ -1,11 +1,9 @@
-use crate::domain::{
-    model::control::UserModel,
-    repository::control::{ControlDatabaseError, ControlDatabaseResult},
-};
+use super::{DatabaseError, DatabaseResult};
+use crate::domain::model::control::UserModel;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-pub async fn create_user<'e, E>(executor: E, user: UserModel) -> ControlDatabaseResult<UserModel>
+pub async fn create_user<'e, E>(executor: E, user: UserModel) -> DatabaseResult<UserModel>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {
@@ -38,7 +36,7 @@ where
         Ok(user) => Ok(user),
         Err(err) => match err {
             sqlx::Error::Database(database_error) => match database_error.is_unique_violation() {
-                true => Err(ControlDatabaseError::UniqueConstraint),
+                true => Err(DatabaseError::UniqueConstraint),
                 false => Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
             },
             _ => Err(err.into()),
@@ -46,7 +44,7 @@ where
     }
 }
 
-pub async fn get_user<'e, E>(executor: E, user_uuid: Uuid) -> ControlDatabaseResult<UserModel>
+pub async fn get_user<'e, E>(executor: E, user_uuid: Uuid) -> DatabaseResult<UserModel>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {
@@ -70,10 +68,7 @@ where
     Ok(user)
 }
 
-pub async fn get_user_by_name<'e, E>(
-    executor: E,
-    username: String,
-) -> ControlDatabaseResult<UserModel>
+pub async fn get_user_by_name<'e, E>(executor: E, username: String) -> DatabaseResult<UserModel>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {
@@ -97,7 +92,7 @@ where
     Ok(user)
 }
 
-pub async fn delete_user<'e, E>(executor: E, user_uuid: Uuid) -> ControlDatabaseResult<()>
+pub async fn delete_user<'e, E>(executor: E, user_uuid: Uuid) -> DatabaseResult<()>
 where
     E: sqlx::Executor<'e, Database = Postgres> + Send,
 {

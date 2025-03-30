@@ -2,10 +2,7 @@ pub mod control;
 pub mod economy;
 pub mod warfare;
 
-use crate::domain::{
-    model::control::{UserModel, UserRole},
-    repository::control::{ControlDatabaseError, ControlDatabaseResult},
-};
+use crate::domain::model::control::{UserModel, UserRole};
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHasher};
 use sqlx::{pool::PoolOptions, PgPool, Pool, Postgres};
@@ -13,6 +10,20 @@ use std::env;
 use uuid::Uuid;
 
 pub const ADMIN_USERNAME: &str = "admin";
+
+#[derive(Debug, thiserror::Error)]
+pub enum DatabaseError {
+    #[error(transparent)]
+    Sqlx(#[from] sqlx::error::Error),
+
+    #[error("The database returned with a violation of a unique/primary key constraint")]
+    UniqueConstraint,
+
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+pub type DatabaseResult<T> = std::result::Result<T, DatabaseError>;
 
 #[derive(Debug)]
 pub struct PostgresDatabase {
@@ -76,7 +87,7 @@ impl PostgresDatabase {
 
         if let Err(err) = postgres_db.reate_user(&postgres_db.pool, user).await {
             match err {
-                ControlDatabaseError::UniqueConstraint => {
+                DatabaseError::UniqueConstraint => {
                     tracing::info!("Default admin user has already been created");
                 }
                 _ => return Err(err.into()),
@@ -86,11 +97,7 @@ impl PostgresDatabase {
         Ok(postgres_db)
     }
 
-    pub async fn reate_user<'e, E>(
-        &self,
-        executor: E,
-        user: UserModel,
-    ) -> ControlDatabaseResult<UserModel>
+    pub async fn reate_user<'e, E>(&self, executor: E, user: UserModel) -> DatabaseResult<UserModel>
     where
         E: sqlx::Executor<'e, Database = Postgres> + Send,
     {
@@ -124,7 +131,7 @@ impl PostgresDatabase {
             Err(err) => match err {
                 sqlx::Error::Database(database_error) => {
                     match database_error.is_unique_violation() {
-                        true => Err(ControlDatabaseError::UniqueConstraint),
+                        true => Err(DatabaseError::UniqueConstraint),
                         false => Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
                     }
                 }
