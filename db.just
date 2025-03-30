@@ -1,7 +1,11 @@
 # Start the database
 [group('docker')]
 start:
-  docker compose up -d
+  if command -v docker-compose > /dev/null; then \
+    docker-compose up -d; \
+  else \
+    docker compose up -d; \
+  fi
 
 # Add a new database migration
 [group('migration')]
@@ -33,7 +37,11 @@ prepare:
 # Stop the database
 [group('docker')]
 stop:
-  docker-compose down
+  if command -v docker-compose > /dev/null; then \
+    docker-compose down; \
+  else \
+    docker compose down; \
+  fi
 
 # Restart the database
 [group('docker')]
@@ -44,7 +52,11 @@ restart:
 # Show logs
 [group('utils')]
 logs:
-  docker-compose logs -f
+  if command -v docker-compose > /dev/null; then \
+    docker-compose logs -f; \
+  else \
+    docker compose logs -f; \
+  fi
 
 # PSQL Shell
 [group('utils')]
