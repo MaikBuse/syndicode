@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/MaikBuse/syndicode/compare/v0.3.2...v0.4.0) (2025-03-30)
+
+
+### Features
+
+* check authorization on user creation ([8d2e42f](https://github.com/MaikBuse/syndicode/commit/8d2e42f7f7463bbc0d65ffc7c1dd23a2bad8f3f5))
+
+
+### Bug Fixes
+
+* directory issue ([2075cfb](https://github.com/MaikBuse/syndicode/commit/2075cfbd9e97c37a5935861db26755b66b98a7e3))
+
 ## [0.3.2](https://github.com/MaikBuse/syndicode/compare/v0.3.1...v0.3.2) (2025-03-30)
 
 
