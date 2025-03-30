@@ -123,8 +123,11 @@ impl Control for ControlPresenter {
                             .await;
                         }
                         RequestEnum::DeleteUser(req) => {
-                            handle_request(|| delete_user(req, Arc::clone(&control_service)), &tx)
-                                .await;
+                            handle_request(
+                                || delete_user(req, Arc::clone(&control_service), req_user_uuid),
+                                &tx,
+                            )
+                            .await;
                         }
                         RequestEnum::GetCorporation(req) => {
                             handle_request(
@@ -217,12 +220,13 @@ async fn create_user(
 async fn delete_user(
     request: DeleteUserRequest,
     control_service: Arc<ControlService>,
+    req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {
     let Ok(user_uuid) = Uuid::parse_str(&request.uuid) else {
         return Err(Status::invalid_argument("Failed to parse user uuid"));
     };
 
-    match control_service.delete_user(user_uuid).await {
+    match control_service.delete_user(req_user_uuid, user_uuid).await {
         Ok(_) => Ok(GameUpdate {
             response_enum: Some(ResponseEnum::DeleteUser(DeleteUserResponse {})),
         }),

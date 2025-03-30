@@ -128,11 +128,27 @@ impl ControlService {
         Ok(self.control_db.create_user(user).await?)
     }
 
-    pub async fn delete_user(&self, user_uuid: Uuid) -> ServiceResult<()> {
+    pub async fn delete_user(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ServiceResult<()> {
+        if req_user_uuid != user_uuid {
+            let req_user = self.control_db.get_user(req_user_uuid).await?;
+
+            if req_user.role != UserRole::Admin {
+                return Err(ServiceError::Unauthorized);
+            }
+        }
+
         Ok(self.control_db.delete_user(user_uuid).await?)
     }
 
-    pub async fn get_user(&self, user_uuid: Uuid) -> ServiceResult<UserModel> {
+    pub async fn get_user(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ServiceResult<UserModel> {
+        if req_user_uuid != user_uuid {
+            let req_user = self.control_db.get_user(req_user_uuid).await?;
+
+            if req_user.role != UserRole::Admin {
+                return Err(ServiceError::Unauthorized);
+            }
+        }
+
         Ok(self.control_db.get_user(user_uuid).await?)
     }
 }
