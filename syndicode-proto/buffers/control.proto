@@ -32,8 +32,9 @@ message GameUpdate {
 }
 
 message RegistrationRequest {
-    string username = 1;
+    string user_name = 1;
     string password = 2;
+    string corporation_name = 3;
 }
 
 message RegistrationResponse {
@@ -42,7 +43,7 @@ message RegistrationResponse {
 
 // Message for a request to login with a username and password
 message LoginRequest {
-    string username = 1;  // Username of the player attempting to login
+    string user_name = 1;  // Username of the player attempting to login
     string password = 2;  // Password of the player attempting to login
 }
 
@@ -58,9 +59,10 @@ enum UserRole {
 }
 
 message CreateUserRequest {
-  string username = 1;
+  string user_name = 1;
   string password = 2;
   UserRole role = 3;
+  string corporation_name = 4;
 }
 
 message CreateUserResponse {

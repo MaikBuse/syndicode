@@ -50,9 +50,11 @@ pub mod game_update {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RegistrationRequest {
     #[prost(string, tag = "1")]
-    pub username: ::prost::alloc::string::String,
+    pub user_name: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub password: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub corporation_name: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RegistrationResponse {
@@ -64,7 +66,7 @@ pub struct RegistrationResponse {
 pub struct LoginRequest {
     /// Username of the player attempting to login
     #[prost(string, tag = "1")]
-    pub username: ::prost::alloc::string::String,
+    pub user_name: ::prost::alloc::string::String,
     /// Password of the player attempting to login
     #[prost(string, tag = "2")]
     pub password: ::prost::alloc::string::String,
@@ -79,11 +81,13 @@ pub struct LoginResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CreateUserRequest {
     #[prost(string, tag = "1")]
-    pub username: ::prost::alloc::string::String,
+    pub user_name: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub password: ::prost::alloc::string::String,
     #[prost(enumeration = "UserRole", tag = "3")]
     pub role: i32,
+    #[prost(string, tag = "4")]
+    pub corporation_name: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CreateUserResponse {

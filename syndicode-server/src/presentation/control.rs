@@ -54,7 +54,13 @@ impl Control for ControlPresenter {
 
         match self
             .control_service
-            .create_user(None, request.username, request.password, UserRole::User)
+            .create_user(
+                None,
+                request.user_name,
+                request.password,
+                UserRole::User,
+                request.corporation_name,
+            )
             .await
         {
             Ok(user) => Ok(Response::new(RegistrationResponse {
@@ -72,7 +78,7 @@ impl Control for ControlPresenter {
 
         let jwt = match self
             .control_service
-            .login(request.username, request.password)
+            .login(request.user_name, request.password)
             .await
         {
             Ok(user) => user,
@@ -201,9 +207,10 @@ async fn create_user(
     match control_service
         .create_user(
             Some(req_user_uuid),
-            request.username,
+            request.user_name,
             request.password,
             user_role.clone(),
+            request.corporation_name,
         )
         .await
     {

@@ -1,7 +1,10 @@
 use super::error::{ServiceError, ServiceResult};
 use crate::{
-    domain::model::control::{Claims, UserModel, UserRole},
-    infrastructure::postgres::{control, PostgresDatabase},
+    domain::model::{
+        control::{Claims, UserModel, UserRole},
+        economy::CorporationModel,
+    },
+    infrastructure::postgres::{control, economy, PostgresDatabase},
 };
 use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
@@ -31,8 +34,8 @@ impl ControlService {
         }
     }
 
-    pub async fn login(&self, username: String, password: String) -> ServiceResult<String> {
-        let Ok(user) = control::get_user_by_name(&self.postgres_db.pool, username).await else {
+    pub async fn login(&self, user_name: String, password: String) -> ServiceResult<String> {
+        let Ok(user) = control::get_user_by_name(&self.postgres_db.pool, user_name).await else {
             return Err(ServiceError::WrongUserCredentials);
         };
 
@@ -79,11 +82,12 @@ impl ControlService {
     pub async fn create_user(
         &self,
         maybe_req_user_uuid: Option<Uuid>,
-        username: String,
+        user_name: String,
         password: String,
         user_role: UserRole,
+        corporation_name: String,
     ) -> ServiceResult<UserModel> {
-        if username.is_empty() {
+        if user_name.is_empty() {
             return Err(ServiceError::UsernameInvalid);
         }
 
@@ -112,14 +116,28 @@ impl ControlService {
             }
         };
 
+        // Start database transaction
+        let mut tx = self.postgres_db.pool.begin().await?;
+
         let user = UserModel {
             uuid: Uuid::now_v7(),
-            name: username,
+            name: user_name,
             password_hash: password_hash.to_string(),
             role: user_role,
         };
 
-        let user = control::create_user(&self.postgres_db.pool, user).await?;
+        let user = control::create_user(&mut *tx, user).await?;
+
+        let corporation = CorporationModel {
+            uuid: Uuid::now_v7(),
+            user_uuid: user.uuid,
+            name: corporation_name,
+            balance: DEFAULT_BALANCE,
+        };
+
+        economy::create_corporation(&mut *tx, corporation).await?;
+
+        tx.commit().await?;
 
         Ok(user)
     }
@@ -133,7 +151,10 @@ impl ControlService {
             }
         }
 
-        Ok(control::delete_user(&self.postgres_db.pool, user_uuid).await?)
+        // The corporation automatically gets deleted with the user
+        control::delete_user(&self.postgres_db.pool, user_uuid).await?;
+
+        Ok(())
     }
 
     pub async fn get_user(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ServiceResult<UserModel> {

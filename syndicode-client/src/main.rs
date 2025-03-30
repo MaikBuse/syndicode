@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Login
     let login_req = Request::new(LoginRequest {
-        username: "admin".to_string(),
+        user_name: "admin".to_string(),
         password: "my-great-password".to_string(),
     });
 
@@ -44,9 +44,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let create_user_request = UserRequest {
         request_enum: Some(RequestEnum::CreateUser(CreateUserRequest {
-            username: target_username.to_string(),
+            user_name: target_username.to_string(),
             password: "new-user-pw".to_string(),
             role: 2,
+            corporation_name: "Great-Corp".to_string(),
         })),
     };
 
