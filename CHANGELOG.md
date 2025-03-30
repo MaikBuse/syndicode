@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/MaikBuse/syndicode/compare/v0.4.2...v0.5.0) (2025-03-30)
+
+
+### Features
+
+* add authentication checks to delete- and get user ([cd5942d](https://github.com/MaikBuse/syndicode/commit/cd5942dffcd567351f9921e493faf875307ead7c))
+* add checks for username and password ([a4caf97](https://github.com/MaikBuse/syndicode/commit/a4caf973d2ebfe4e9e0d80dac8cc18e7a199be85))
+* create a corporation with every new user ([5b89d7d](https://github.com/MaikBuse/syndicode/commit/5b89d7dec541202dbb66929d6055c0f49d59f0f6))
+
+
+### Bug Fixes
+
+* remove unneeded request attributes ([f9431c9](https://github.com/MaikBuse/syndicode/commit/f9431c90e1780918708ecae698fa6f80816443ac))
+
 ## [0.4.2](https://github.com/MaikBuse/syndicode/compare/v0.4.1...v0.4.2) (2025-03-30)
 
 
