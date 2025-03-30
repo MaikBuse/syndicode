@@ -51,19 +51,14 @@ pub async fn main() -> anyhow::Result<()> {
 
     // Setup database
     let database = Arc::new(PostgresDatabase::init(admin_password).await?);
-    let db_control_clone_1 = Arc::clone(&database);
-    let db_control_clone_2 = Arc::clone(&database);
-    let db_economy_clone_1 = Arc::clone(&database);
-    let db_warfare_clone_1 = Arc::clone(&database);
+    let db_control_clone = Arc::clone(&database);
+    let db_economy_clone = Arc::clone(&database);
+    let db_warfare_clone = Arc::clone(&database);
 
     // Setup services
-    let control_service = Arc::new(ControlService::new(
-        db_control_clone_1,
-        db_control_clone_2,
-        jwt_secret.clone(),
-    ));
-    let economy_service = Arc::new(EconomyService::new(db_economy_clone_1));
-    let warfare_service = Arc::new(WarfareService::new(db_warfare_clone_1));
+    let control_service = Arc::new(ControlService::new(db_control_clone, jwt_secret.clone()));
+    let economy_service = Arc::new(EconomyService::new(db_economy_clone));
+    let warfare_service = Arc::new(WarfareService::new(db_warfare_clone));
 
     // Setup tick-engine
     let jobs = Arc::new(Mutex::new(VecDeque::new()));

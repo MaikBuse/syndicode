@@ -1,21 +1,22 @@
 use super::error::ServiceResult;
-use crate::domain::{
-    model::economy::CorporationModel, repository::economy::EconomyDatabaseRepository,
+use crate::{
+    domain::model::economy::CorporationModel,
+    infrastructure::postgres::{economy, PostgresDatabase},
 };
 use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct EconomyService {
-    economy_db: Arc<dyn EconomyDatabaseRepository>,
+    postgres_db: Arc<PostgresDatabase>,
 }
 
 impl EconomyService {
-    pub fn new(economy_db: Arc<dyn EconomyDatabaseRepository>) -> Self {
-        Self { economy_db }
+    pub fn new(postgres_db: Arc<PostgresDatabase>) -> Self {
+        Self { postgres_db }
     }
 
     pub async fn get_corporation(&self, user_uuid: Uuid) -> ServiceResult<CorporationModel> {
-        Ok(self.economy_db.get_user_corporation(user_uuid).await?)
+        Ok(economy::get_user_corporation(&self.postgres_db.pool, user_uuid).await?)
     }
 }

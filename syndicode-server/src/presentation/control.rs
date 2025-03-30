@@ -32,11 +32,11 @@ use tonic::Streaming;
 use tonic::{Code, Request, Response, Status};
 use uuid::Uuid;
 
-type PlayerTx = mpsc::Sender<Result<GameUpdate, Status>>;
+type UserTx = mpsc::Sender<Result<GameUpdate, Status>>;
 
 pub struct ControlPresenter {
     pub jobs: Arc<Mutex<VecDeque<Job>>>,
-    pub user_channels: Arc<DashMap<Uuid, PlayerTx>>,
+    pub user_channels: Arc<DashMap<Uuid, UserTx>>,
     pub control_service: Arc<ControlService>,
     pub economy_service: Arc<EconomyService>,
     pub warfare_service: Arc<WarfareService>,
@@ -247,6 +247,7 @@ fn control_error_into_status(err: ServiceError) -> Status {
         ServiceError::ControlDatabase(_)
         | ServiceError::EconomyDatabase(_)
         | ServiceError::WarfareDatabase(_)
+        | ServiceError::Sqlx(_)
         | ServiceError::Other(_) => Status::internal(err.to_string()),
     }
 }

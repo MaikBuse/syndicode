@@ -1,17 +1,14 @@
-use super::PostgresDatabase;
-use crate::domain::{
-    model::warfare::UnitModel,
-    repository::warfare::{WarfareDatabaseRepository, WarfareDatabaseResult},
-};
-use tonic::async_trait;
+use crate::domain::{model::warfare::UnitModel, repository::warfare::WarfareDatabaseResult};
+use sqlx::Postgres;
 use uuid::Uuid;
 
-#[async_trait]
-impl WarfareDatabaseRepository for PostgresDatabase {
-    async fn create_unit(&self, unit: UnitModel) -> WarfareDatabaseResult<UnitModel> {
-        let unit = sqlx::query_as!(
-            UnitModel,
-            r#"
+pub async fn create_unit<'e, E>(executor: E, unit: UnitModel) -> WarfareDatabaseResult<UnitModel>
+where
+    E: sqlx::Executor<'e, Database = Postgres> + Send,
+{
+    let unit = sqlx::query_as!(
+        UnitModel,
+        r#"
             INSERT INTO units (
                 uuid,
                 user_uuid
@@ -19,19 +16,25 @@ impl WarfareDatabaseRepository for PostgresDatabase {
             VALUES ( $1, $2 )
             RETURNING uuid, user_uuid
             "#,
-            unit.uuid,
-            unit.user_uuid
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        unit.uuid,
+        unit.user_uuid
+    )
+    .fetch_one(executor)
+    .await?;
 
-        Ok(unit)
-    }
+    Ok(unit)
+}
 
-    async fn list_user_units(&self, user_uuid: Uuid) -> WarfareDatabaseResult<Vec<UnitModel>> {
-        let units = sqlx::query_as!(
-            UnitModel,
-            r#"
+pub async fn list_user_units<'e, E>(
+    executor: E,
+    user_uuid: Uuid,
+) -> WarfareDatabaseResult<Vec<UnitModel>>
+where
+    E: sqlx::Executor<'e, Database = Postgres> + Send,
+{
+    let units = sqlx::query_as!(
+        UnitModel,
+        r#"
             SELECT
                 uuid,
                 user_uuid
@@ -39,11 +42,10 @@ impl WarfareDatabaseRepository for PostgresDatabase {
             WHERE
                 user_uuid = $1
             "#,
-            user_uuid
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        user_uuid
+    )
+    .fetch_all(executor)
+    .await?;
 
-        Ok(units)
-    }
+    Ok(units)
 }

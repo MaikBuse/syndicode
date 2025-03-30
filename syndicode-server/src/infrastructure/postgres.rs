@@ -4,7 +4,7 @@ pub mod warfare;
 
 use crate::domain::{
     model::control::{UserModel, UserRole},
-    repository::control::{ControlDatabaseError, ControlDatabaseRepository},
+    repository::control::{ControlDatabaseError, ControlDatabaseResult},
 };
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHasher};
@@ -16,7 +16,7 @@ pub const ADMIN_USERNAME: &str = "admin";
 
 #[derive(Debug)]
 pub struct PostgresDatabase {
-    pool: PgPool,
+    pub pool: PgPool,
 }
 
 impl PostgresDatabase {
@@ -74,7 +74,7 @@ impl PostgresDatabase {
             role: UserRole::Admin,
         };
 
-        if let Err(err) = postgres_db.create_user(user).await {
+        if let Err(err) = postgres_db.reate_user(&postgres_db.pool, user).await {
             match err {
                 ControlDatabaseError::UniqueConstraint => {
                     tracing::info!("Default admin user has already been created");
@@ -84,5 +84,52 @@ impl PostgresDatabase {
         }
 
         Ok(postgres_db)
+    }
+
+    pub async fn reate_user<'e, E>(
+        &self,
+        executor: E,
+        user: UserModel,
+    ) -> ControlDatabaseResult<UserModel>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        let user_role: i16 = user.role.into();
+
+        match sqlx::query_as!(
+            UserModel,
+            r#"
+            INSERT INTO users (
+                uuid,
+                name,
+                password_hash,
+                role
+            )
+            VALUES ( $1, $2, $3, $4 )
+            RETURNING
+                uuid,
+                name,
+                password_hash,
+                role
+            "#,
+            user.uuid,
+            user.name,
+            user.password_hash,
+            user_role
+        )
+        .fetch_one(executor)
+        .await
+        {
+            Ok(user) => Ok(user),
+            Err(err) => match err {
+                sqlx::Error::Database(database_error) => {
+                    match database_error.is_unique_violation() {
+                        true => Err(ControlDatabaseError::UniqueConstraint),
+                        false => Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
+                    }
+                }
+                _ => Err(err.into()),
+            },
+        }
     }
 }

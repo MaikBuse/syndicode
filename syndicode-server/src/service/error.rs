@@ -29,6 +29,9 @@ pub enum ServiceError {
     WarfareDatabase(#[from] WarfareDatabaseError),
 
     #[error(transparent)]
+    Sqlx(#[from] sqlx::Error),
+
+    #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
 
