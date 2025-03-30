@@ -10,7 +10,7 @@ pub struct Claims {
     pub role: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[repr(i16)]
 pub enum UserRole {
     Admin,

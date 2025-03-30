@@ -4,6 +4,9 @@ use crate::domain::repository::{
 
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
+    #[error("The requesting user is not authorized to perform this action")]
+    Unauthorized,
+
     #[error("The provided credentials are wrong")]
     WrongUserCredentials,
 

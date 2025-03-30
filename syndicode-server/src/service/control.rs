@@ -84,10 +84,19 @@ impl ControlService {
 
     pub async fn create_user(
         &self,
+        req_user_uuid: Uuid,
         username: String,
         password: String,
         user_role: UserRole,
     ) -> ServiceResult<UserModel> {
+        if user_role == UserRole::Admin {
+            let req_user = self.control_db.get_user(req_user_uuid).await?;
+
+            if req_user.role != UserRole::Admin {
+                return Err(ServiceError::Unauthorized);
+            }
+        }
+
         let salt = SaltString::generate(&mut OsRng);
 
         let password_hash = match self.argon.hash_password(password.as_bytes(), &salt) {

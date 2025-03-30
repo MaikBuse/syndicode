@@ -27,9 +27,9 @@ pub async fn spawn_unit(
 pub async fn list_units(
     _: ListUnitsRequest,
     warfare_service: Arc<WarfareService>,
-    user_uuid: Uuid,
+    req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {
-    let units = match warfare_service.list_units(user_uuid).await {
+    let units = match warfare_service.list_units(req_user_uuid).await {
         Ok(units) => units,
         Err(err) => return Err(Status::new(Code::Internal, err.to_string())),
     };

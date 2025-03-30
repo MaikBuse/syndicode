@@ -49,12 +49,22 @@ impl Control for ControlPresenter {
     async fn register(
         &self,
         request: Request<RegistrationRequest>,
-    ) -> std::result::Result<Response<RegistrationResponse>, Status> {
+    ) -> Result<Response<RegistrationResponse>, Status> {
+        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
+            Ok(uuid) => uuid,
+            Err(status) => return Err(status),
+        };
+
         let request = request.into_inner();
 
         match self
             .control_service
-            .create_user(request.username, request.password, UserRole::User)
+            .create_user(
+                req_user_uuid,
+                request.username,
+                request.password,
+                UserRole::User,
+            )
             .await
         {
             Ok(user) => Ok(Response::new(RegistrationResponse {
@@ -88,7 +98,7 @@ impl Control for ControlPresenter {
         &self,
         request: Request<Streaming<UserRequest>>,
     ) -> Result<Response<Self::GameStreamRpcStream>, tonic::Status> {
-        let user_uuid = match uuid_from_metadata(request.metadata()) {
+        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
             Ok(uuid) => uuid,
             Err(status) => return Err(status),
         };
@@ -99,7 +109,7 @@ impl Control for ControlPresenter {
         let (tx, rx) = mpsc::channel(16);
         let player_rx = ReceiverStream::new(rx);
 
-        self.user_channels.insert(user_uuid, tx.clone());
+        self.user_channels.insert(req_user_uuid, tx.clone());
 
         // Use Arc for shared ownership
         let tx_arc = Arc::new(tx);
@@ -116,8 +126,11 @@ impl Control for ControlPresenter {
                 if let Some(request_enum) = action.request_enum {
                     match request_enum {
                         RequestEnum::CreateUser(req) => {
-                            handle_request(|| create_user(req, Arc::clone(&control_service)), &tx)
-                                .await;
+                            handle_request(
+                                || create_user(req, Arc::clone(&control_service), req_user_uuid),
+                                &tx,
+                            )
+                            .await;
                         }
                         RequestEnum::DeleteUser(req) => {
                             handle_request(|| delete_user(req, Arc::clone(&control_service)), &tx)
@@ -125,7 +138,13 @@ impl Control for ControlPresenter {
                         }
                         RequestEnum::GetCorporation(req) => {
                             handle_request(
-                                || get_corporation(req, Arc::clone(&economy_service), user_uuid),
+                                || {
+                                    get_corporation(
+                                        req,
+                                        Arc::clone(&economy_service),
+                                        req_user_uuid,
+                                    )
+                                },
                                 &tx,
                             )
                             .await;
@@ -135,7 +154,7 @@ impl Control for ControlPresenter {
                         }
                         RequestEnum::ListUnit(req) => {
                             handle_request(
-                                || list_units(req, Arc::clone(&warfare_service), user_uuid),
+                                || list_units(req, Arc::clone(&warfare_service), req_user_uuid),
                                 &tx,
                             )
                             .await;
@@ -173,6 +192,7 @@ where
 async fn create_user(
     request: CreateUserRequest,
     control_service: Arc<ControlService>,
+    req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {
     let user_role = match request.role() {
         ProtoUserRole::RoleUnspecified => {
@@ -185,7 +205,12 @@ async fn create_user(
     };
 
     match control_service
-        .create_user(request.username, request.password, user_role.clone())
+        .create_user(
+            req_user_uuid,
+            request.username,
+            request.password,
+            user_role.clone(),
+        )
         .await
     {
         Ok(user) => Ok(GameUpdate {
@@ -218,6 +243,7 @@ async fn delete_user(
 fn control_error_into_status(err: ServiceError) -> Status {
     match err {
         ServiceError::WrongUserCredentials => Status::unauthenticated(err.to_string()),
+        ServiceError::Unauthorized => Status::permission_denied(err.to_string()),
         ServiceError::ControlDatabase(_)
         | ServiceError::EconomyDatabase(_)
         | ServiceError::WarfareDatabase(_)
