@@ -142,12 +142,13 @@ impl Control for ControlPresenter {
                             )
                             .await;
                         }
-                        RequestEnum::SpawnUnit(req) => {
-                            handle_request(|| spawn_unit(req, Arc::clone(&jobs)), &tx).await;
+                        RequestEnum::SpawnUnit(_) => {
+                            handle_request(|| spawn_unit(Arc::clone(&jobs), req_user_uuid), &tx)
+                                .await;
                         }
-                        RequestEnum::ListUnit(req) => {
+                        RequestEnum::ListUnit(_) => {
                             handle_request(
-                                || list_units(req, Arc::clone(&warfare_service), req_user_uuid),
+                                || list_units(Arc::clone(&warfare_service), req_user_uuid),
                                 &tx,
                             )
                             .await;

@@ -1,23 +1,22 @@
-use super::common::parse_uuid;
 use crate::{engine::Job, service::warfare::WarfareService};
 use std::{collections::VecDeque, sync::Arc};
 use syndicode_proto::{
     control::{game_update::ResponseEnum, GameUpdate},
-    warfare::{ListUnitsRequest, ListUnitsResponse, SpawnUnitRequest, SpawnUnitResponse, UnitInfo},
+    warfare::{ListUnitsResponse, SpawnUnitResponse, UnitInfo},
 };
 use tokio::sync::Mutex;
 use tonic::{Code, Result, Status};
 use uuid::Uuid;
 
 pub async fn spawn_unit(
-    request: SpawnUnitRequest,
     jobs: Arc<Mutex<VecDeque<Job>>>,
+    req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {
-    let user_uuid = parse_uuid(&request.user_uuid)?;
-
     let mut jobs = jobs.lock().await;
 
-    jobs.push_front(Job::UnitSpawn { user_uuid });
+    jobs.push_front(Job::UnitSpawn {
+        user_uuid: req_user_uuid,
+    });
 
     Ok(GameUpdate {
         response_enum: Some(ResponseEnum::SpawnUnit(SpawnUnitResponse {})),
@@ -25,7 +24,6 @@ pub async fn spawn_unit(
 }
 
 pub async fn list_units(
-    _: ListUnitsRequest,
     warfare_service: Arc<WarfareService>,
     req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {

@@ -13,17 +13,17 @@ impl WarfareService {
         Self { warfare_db }
     }
 
-    pub async fn create_unit(&self, user_uuid: Uuid) -> ServiceResult<UnitModel> {
+    pub async fn create_unit(&self, req_user_uuid: Uuid) -> ServiceResult<UnitModel> {
         let unit = UnitModel {
             uuid: Uuid::now_v7(),
-            user_uuid,
+            user_uuid: req_user_uuid,
         };
 
         Ok(self.warfare_db.create_unit(unit).await?)
     }
 
-    pub async fn list_units(&self, user_uuid: Uuid) -> ServiceResult<Vec<UnitModel>> {
-        let units = self.warfare_db.list_user_units(user_uuid).await?;
+    pub async fn list_units(&self, req_user_uuid: Uuid) -> ServiceResult<Vec<UnitModel>> {
+        let units = self.warfare_db.list_user_units(req_user_uuid).await?;
 
         Ok(units)
     }
