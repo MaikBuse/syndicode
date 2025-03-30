@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/MaikBuse/syndicode/compare/v0.3.1...v0.3.2) (2025-03-30)
+
+
+### Bug Fixes
+
+* directory of syndicode server ([c21d4d6](https://github.com/MaikBuse/syndicode/commit/c21d4d60226e05c19bf989b7c83038a669f54336))
+
 ## [0.3.1](https://github.com/MaikBuse/syndicode/compare/v0.3.0...v0.3.1) (2025-03-30)
 
 
