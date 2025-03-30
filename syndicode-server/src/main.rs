@@ -6,13 +6,15 @@ mod service;
 
 use dashmap::DashMap;
 use engine::Engine;
+use governor::{Quota, RateLimiter};
 use infrastructure::postgres::PostgresDatabase;
 use presentation::control::ControlPresenter;
-use presentation::middleware::JwtAuthLayer;
+use presentation::middleware::MiddlewareLayer;
 use service::control::ControlService;
 use service::economy::EconomyService;
 use service::warfare::WarfareService;
 use std::collections::VecDeque;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
 use syndicode_proto::control::control_server::ControlServer;
@@ -25,6 +27,7 @@ use tracing_subscriber::{fmt, EnvFilter};
 pub const SOCKET_ADDR: &str = "[::]:50051";
 
 const JOB_INTERVAL: Duration = Duration::from_secs(1);
+const REQUESTS_PER_SECOND: u32 = 5;
 
 const JWT_SECRET_ENV: &str = "JWT_SECRET";
 pub const ADMIN_PASSWORD_ENV: &str = "ADMIN_PASSWORD";
@@ -54,6 +57,10 @@ pub async fn main() -> anyhow::Result<()> {
     let db_control_clone = Arc::clone(&database);
     let db_economy_clone = Arc::clone(&database);
     let db_warfare_clone = Arc::clone(&database);
+
+    // Init rate limiter
+    let quota = Quota::per_second(NonZeroU32::new(REQUESTS_PER_SECOND).unwrap());
+    let user_limiter = Arc::new(RateLimiter::keyed(quota));
 
     // Setup services
     let control_service = Arc::new(ControlService::new(db_control_clone, jwt_secret.clone()));
@@ -100,6 +107,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     let control_presenter = ControlPresenter {
         jobs: Arc::clone(&jobs),
+        user_limiter: Arc::clone(&user_limiter),
         user_channels: Arc::clone(&user_channels),
         control_service: Arc::clone(&control_service),
         economy_service: Arc::clone(&economy_service),
@@ -109,7 +117,7 @@ pub async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting server...");
 
     Server::builder()
-        .layer(JwtAuthLayer::new(jwt_secret))
+        .layer(MiddlewareLayer::new(jwt_secret, user_limiter))
         .add_service(health_service)
         .add_service(reflection_service)
         .add_service(ControlServer::new(control_presenter))

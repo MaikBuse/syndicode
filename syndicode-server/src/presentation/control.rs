@@ -1,6 +1,6 @@
 use super::common::parse_uuid;
 use super::economy::get_corporation;
-use super::middleware::USER_UUID_KEY;
+use super::middleware::{UserLimiter, USER_UUID_KEY};
 use super::warfare::{list_units, spawn_unit};
 use crate::domain::model::control::UserRole;
 use crate::engine::Job;
@@ -36,6 +36,7 @@ type UserTx = mpsc::Sender<Result<GameUpdate, Status>>;
 
 pub struct ControlPresenter {
     pub jobs: Arc<Mutex<VecDeque<Job>>>,
+    pub user_limiter: Arc<UserLimiter>,
     pub user_channels: Arc<DashMap<Uuid, UserTx>>,
     pub control_service: Arc<ControlService>,
     pub economy_service: Arc<EconomyService>,
@@ -113,12 +114,23 @@ impl Control for ControlPresenter {
         let control_service = Arc::clone(&self.control_service);
         let economy_service = Arc::clone(&self.economy_service);
         let warfare_service = Arc::clone(&self.warfare_service);
+        let user_limiter = Arc::clone(&self.user_limiter);
 
         // Spawn receiver of user actions
         tokio::spawn(async move {
             let tx = tx_arc.clone(); // Clone Arc to move into async block
 
             while let Some(Ok(action)) = stream.next().await {
+                // Check in stream rate limit
+                if user_limiter.check_key(&req_user_uuid).is_err() {
+                    tracing::warn!(%req_user_uuid, "Rate limit exceeded");
+
+                    let _ = tx
+                        .send(Err(Status::resource_exhausted("Rate limit exceeded")))
+                        .await;
+                    continue;
+                }
+
                 if let Some(request_enum) = action.request_enum {
                     match request_enum {
                         RequestEnum::CreateUser(req) => {

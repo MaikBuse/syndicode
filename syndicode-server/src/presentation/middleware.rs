@@ -1,4 +1,5 @@
 use crate::domain::model::control::Claims;
+use governor::{clock::DefaultClock, state::keyed::DefaultKeyedStateStore, RateLimiter};
 use http::HeaderValue;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use std::pin::Pin;
@@ -7,6 +8,9 @@ use std::task::{Context, Poll};
 use std::time::Instant;
 use tonic::Status;
 use tower::{BoxError, Layer, Service};
+use uuid::Uuid;
+
+pub type UserLimiter = RateLimiter<Uuid, DefaultKeyedStateStore<Uuid>, DefaultClock>;
 
 pub const USER_UUID_KEY: &str = "user_uuid";
 pub const AUTHORIZATION_KEY: &str = "authorization";
@@ -20,39 +24,43 @@ const AUTH_EXCEPTED_PATHS: [&str; 4] = [
     "/control.Control/Login",
 ];
 
-#[derive(Debug, Clone, Default)]
-pub struct JwtAuthLayer {
-    secret: String,
+#[derive(Debug, Clone)]
+pub struct MiddlewareLayer {
+    jwt_secret: String,
+    user_limiter: Arc<UserLimiter>,
 }
 
-impl JwtAuthLayer {
-    pub fn new(secret: impl Into<String>) -> Self {
+impl MiddlewareLayer {
+    pub fn new(jwt_secret: String, user_limiter: Arc<UserLimiter>) -> Self {
         Self {
-            secret: secret.into(),
+            jwt_secret,
+            user_limiter,
         }
     }
 }
 
-impl<S> Layer<S> for JwtAuthLayer {
-    type Service = JwtAuthMiddleware<S>;
+impl<S> Layer<S> for MiddlewareLayer {
+    type Service = Middleware<S>;
 
     fn layer(&self, service: S) -> Self::Service {
-        JwtAuthMiddleware {
+        Middleware {
             inner: service,
-            secret: Arc::new(self.secret.clone()),
+            jwt_secret: Arc::new(self.jwt_secret.clone()),
+            user_limiter: Arc::clone(&self.user_limiter),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct JwtAuthMiddleware<S> {
+pub struct Middleware<S> {
     inner: S,
-    secret: Arc<String>,
+    jwt_secret: Arc<String>,
+    user_limiter: Arc<UserLimiter>,
 }
 
 type BoxFuture<'a, T> = Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
 
-impl<S, ReqBody, ResBody> Service<http::Request<ReqBody>> for JwtAuthMiddleware<S>
+impl<S, ReqBody, ResBody> Service<http::Request<ReqBody>> for Middleware<S>
 where
     S: Service<http::Request<ReqBody>, Response = http::Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
@@ -70,7 +78,8 @@ where
     fn call(&mut self, mut req: http::Request<ReqBody>) -> Self::Future {
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
-        let secret = Arc::clone(&self.secret);
+        let jwt_secret = Arc::clone(&self.jwt_secret);
+        let user_limiter = Arc::clone(&self.user_limiter);
 
         let path = req.uri().path().to_string(); // clone for move
         let start_time = Instant::now();
@@ -105,14 +114,29 @@ where
             // Decode JWT
             let token_data = decode::<Claims>(
                 token,
-                &DecodingKey::from_secret(secret.as_bytes()),
+                &DecodingKey::from_secret(jwt_secret.as_bytes()),
                 &Validation::new(Algorithm::HS256),
             )
             .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
 
             // Inject UUID
-            let user_uuid = &token_data.claims.sub;
-            if let Ok(uuid_header) = HeaderValue::from_str(user_uuid) {
+            let user_uuid_str = &token_data.claims.sub;
+
+            // Check rate limit
+            match Uuid::parse_str(user_uuid_str) {
+                Ok(user_uuid) => {
+                    if user_limiter.check_key(&user_uuid).is_err() {
+                        tracing::warn!(%user_uuid, "Rate limit exceeded");
+
+                        return Err(Status::resource_exhausted("Rate limit exceeded").into());
+                    }
+                }
+                Err(_) => {
+                    return Err(Status::unauthenticated("Invalid sub in token claims").into());
+                }
+            }
+
+            if let Ok(uuid_header) = HeaderValue::from_str(user_uuid_str) {
                 req.headers_mut().insert(USER_UUID_KEY, uuid_header);
             }
 
@@ -122,7 +146,7 @@ where
                     if !skip_logging {
                         tracing::info!(
                             %path,
-                            %user_uuid,
+                            %user_uuid_str,
                             elapsed_ms = start_time.elapsed().as_millis(),
                             "Request succeeded"
                         );
@@ -132,7 +156,7 @@ where
                 Err(err) => {
                     tracing::error!(
                         %path,
-                        %user_uuid,
+                        %user_uuid_str,
                         elapsed_ms = start_time.elapsed().as_millis(),
                         error = ?err,
                         "Request failed"
