@@ -1,9 +1,8 @@
-use tonic::{metadata::MetadataMap, Code, Status};
-use uuid::Uuid;
-
-use crate::service::error::ServiceError;
+use crate::application::error::ApplicationError;
 
 use super::middleware::USER_UUID_KEY;
+use tonic::{metadata::MetadataMap, Code, Status};
+use uuid::Uuid;
 
 pub(crate) fn parse_uuid(uuid_str: &str) -> Result<Uuid, Status> {
     match Uuid::parse_str(uuid_str) {
@@ -15,16 +14,16 @@ pub(crate) fn parse_uuid(uuid_str: &str) -> Result<Uuid, Status> {
     }
 }
 
-pub(super) fn service_error_into_status(err: ServiceError) -> Status {
+pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
     match err {
-        ServiceError::PasswordTooShort | ServiceError::UsernameInvalid => {
+        ApplicationError::PasswordTooShort | ApplicationError::UsernameInvalid => {
             Status::invalid_argument(err.to_string())
         }
-        ServiceError::WrongUserCredentials | ServiceError::MissingAuthentication => {
+        ApplicationError::WrongUserCredentials | ApplicationError::MissingAuthentication => {
             Status::unauthenticated(err.to_string())
         }
-        ServiceError::Unauthorized => Status::permission_denied(err.to_string()),
-        ServiceError::Database(_) | ServiceError::Sqlx(_) | ServiceError::Other(_) => {
+        ApplicationError::Unauthorized => Status::permission_denied(err.to_string()),
+        ApplicationError::Database(_) | ApplicationError::Sqlx(_) | ApplicationError::Other(_) => {
             Status::internal(err.to_string())
         }
     }

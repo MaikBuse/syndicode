@@ -2,12 +2,14 @@ pub mod economy;
 pub mod interface;
 pub mod warfare;
 
-use crate::domain::model::interface::{UserModel, UserRole};
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHasher};
 use sqlx::{pool::PoolOptions, PgPool, Pool, Postgres};
 use std::env;
 use uuid::Uuid;
+
+use crate::domain::user::role::UserRole;
+use crate::domain::user::User;
 
 pub const ADMIN_USERNAME: &str = "admin";
 
@@ -78,7 +80,7 @@ impl PostgresDatabase {
             }
         };
 
-        let user = UserModel {
+        let user = User {
             uuid: user_uuid,
             name: ADMIN_USERNAME.to_string(),
             password_hash: password_hash.to_string(),
@@ -97,14 +99,14 @@ impl PostgresDatabase {
         Ok(postgres_db)
     }
 
-    pub async fn reate_user<'e, E>(&self, executor: E, user: UserModel) -> DatabaseResult<UserModel>
+    pub async fn reate_user<'e, E>(&self, executor: E, user: User) -> DatabaseResult<User>
     where
         E: sqlx::Executor<'e, Database = Postgres> + Send,
     {
         let user_role: i16 = user.role.into();
 
         match sqlx::query_as!(
-            UserModel,
+            User,
             r#"
             INSERT INTO users (
                 uuid,

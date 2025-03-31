@@ -1,19 +1,23 @@
+mod application;
 mod domain;
 mod engine;
 mod infrastructure;
 mod presentation;
-mod service;
 
+use application::admin::create_user::CreateUserUseCase;
+use application::admin::delete_user::DeleteUserUseCase;
+use application::auth::login::LoginUseCase;
+use application::economy::get_corporation::GetCorporationUseCase;
+use application::warfare::list_units::ListUnitsUseCase;
+use application::warfare::spawn_unit::SpawnUnitUseCase;
 use dashmap::DashMap;
 use engine::Engine;
+use infrastructure::crypto::CryptoService;
 use infrastructure::postgres::PostgresDatabase;
 use presentation::admin::AdminPresenter;
 use presentation::auth::AuthPresenter;
 use presentation::game::GamePresenter;
 use presentation::middleware::MiddlewareLayer;
-use service::economy::EconomyService;
-use service::interface::InterfaceService;
-use service::warfare::WarfareService;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
@@ -54,23 +58,31 @@ pub async fn main() -> anyhow::Result<()> {
         .await;
 
     // Setup database
-    let database = Arc::new(PostgresDatabase::init(admin_password).await?);
-    let db_control_clone = Arc::clone(&database);
-    let db_economy_clone = Arc::clone(&database);
-    let db_warfare_clone = Arc::clone(&database);
+    let db = Arc::new(PostgresDatabase::init(admin_password).await?);
 
-    // Setup services
-    let interface_service = Arc::new(InterfaceService::new(db_control_clone, jwt_secret.clone()));
-    let economy_service = Arc::new(EconomyService::new(db_economy_clone));
-    let warfare_service = Arc::new(WarfareService::new(db_warfare_clone));
+    // Setup crypto service
+    let crypto = Arc::new(CryptoService::new(jwt_secret));
+
+    // Auth use cases
+    let login_uc = Arc::new(LoginUseCase::new(Arc::clone(&db), Arc::clone(&crypto)));
+
+    // Admin use cases
+    let create_user_uc = Arc::new(CreateUserUseCase::new(Arc::clone(&db), Arc::clone(&crypto)));
+    let delete_user_uc = Arc::new(DeleteUserUseCase::new(Arc::clone(&db)));
+
+    // Warfare use cases
+    let spawn_unit_uc = Arc::new(SpawnUnitUseCase::new(Arc::clone(&db)));
+    let list_units_uc = Arc::new(ListUnitsUseCase::new(Arc::clone(&db)));
+
+    // Economy use cases
+    let get_corporation_uc = Arc::new(GetCorporationUseCase::new(Arc::clone(&db)));
 
     // Setup tick-engine
     let jobs = Arc::new(Mutex::new(VecDeque::new()));
     let user_channels = Arc::new(DashMap::new());
     let engine = Arc::new(Mutex::new(Engine::init(
         Arc::clone(&jobs),
-        Arc::clone(&interface_service),
-        Arc::clone(&warfare_service),
+        Arc::clone(&spawn_unit_uc),
     )));
 
     // Spawn the background job
@@ -105,22 +117,24 @@ pub async fn main() -> anyhow::Result<()> {
     let game_presenter = GamePresenter {
         jobs: Arc::clone(&jobs),
         user_channels: Arc::clone(&user_channels),
-        economy_service: Arc::clone(&economy_service),
-        warfare_service: Arc::clone(&warfare_service),
+        list_units_uc: Arc::clone(&list_units_uc),
+        get_corporation_uc: Arc::clone(&get_corporation_uc),
     };
 
     let admin_presenter = AdminPresenter {
-        interface_service: Arc::clone(&interface_service),
+        create_user_uc: Arc::clone(&create_user_uc),
+        delete_user_uc: Arc::clone(&delete_user_uc),
     };
 
     let auth_presenter = AuthPresenter {
-        interface_service: Arc::clone(&interface_service),
+        create_user_uc: Arc::clone(&create_user_uc),
+        login_uc: Arc::clone(&login_uc),
     };
 
     tracing::info!("Starting server...");
 
     Server::builder()
-        .layer(MiddlewareLayer::new(jwt_secret))
+        .layer(MiddlewareLayer::new(Arc::clone(&crypto)))
         .add_service(health_service)
         .add_service(reflection_service)
         .add_service(GameServiceServer::new(game_presenter))

@@ -1,4 +1,4 @@
-use crate::{engine::Job, service::warfare::WarfareService};
+use crate::{application::warfare::list_units::ListUnitsUseCase, engine::Job};
 use std::{collections::VecDeque, sync::Arc};
 use syndicode_proto::{
     syndicode_interface_v1::{game_update::Update, GameUpdate},
@@ -24,10 +24,10 @@ pub async fn spawn_unit(
 }
 
 pub async fn list_units(
-    warfare_service: Arc<WarfareService>,
+    list_units_uc: Arc<ListUnitsUseCase>,
     req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status> {
-    let units = match warfare_service.list_units(req_user_uuid).await {
+    let units = match list_units_uc.execute(req_user_uuid).await {
         Ok(units) => units,
         Err(err) => return Err(Status::new(Code::Internal, err.to_string())),
     };

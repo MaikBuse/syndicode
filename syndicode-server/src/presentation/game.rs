@@ -2,8 +2,10 @@ mod economy;
 mod warfare;
 
 use crate::{
+    application::{
+        economy::get_corporation::GetCorporationUseCase, warfare::list_units::ListUnitsUseCase,
+    },
     engine::Job,
-    service::{economy::EconomyService, warfare::WarfareService},
 };
 use dashmap::DashMap;
 use economy::get_corporation;
@@ -26,8 +28,8 @@ use super::common::uuid_from_metadata;
 pub struct GamePresenter {
     pub jobs: Arc<Mutex<VecDeque<Job>>>,
     pub user_channels: Arc<DashMap<Uuid, UserTx>>,
-    pub economy_service: Arc<EconomyService>,
-    pub warfare_service: Arc<WarfareService>,
+    pub get_corporation_uc: Arc<GetCorporationUseCase>,
+    pub list_units_uc: Arc<ListUnitsUseCase>,
 }
 
 #[tonic::async_trait]
@@ -54,8 +56,8 @@ impl GameService for GamePresenter {
         // Use Arc for shared ownership
         let tx_arc = Arc::new(tx);
         let jobs = Arc::clone(&self.jobs);
-        let economy_service = Arc::clone(&self.economy_service);
-        let warfare_service = Arc::clone(&self.warfare_service);
+        let get_corporation_uc = Arc::clone(&self.get_corporation_uc);
+        let list_units_uc = Arc::clone(&self.list_units_uc);
 
         // Spawn receiver of user actions
         tokio::spawn(async move {
@@ -69,7 +71,7 @@ impl GameService for GamePresenter {
                                 || {
                                     get_corporation(
                                         req,
-                                        Arc::clone(&economy_service),
+                                        Arc::clone(&get_corporation_uc),
                                         req_user_uuid,
                                     )
                                 },
@@ -83,7 +85,7 @@ impl GameService for GamePresenter {
                         }
                         Action::ListUnit(_) => {
                             handle_request(
-                                || list_units(Arc::clone(&warfare_service), req_user_uuid),
+                                || list_units(Arc::clone(&list_units_uc), req_user_uuid),
                                 &tx,
                             )
                             .await;
