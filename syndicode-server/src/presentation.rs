@@ -1,5 +1,5 @@
+pub mod admin;
+pub mod auth;
 pub mod common;
-pub mod control;
-pub mod economy;
+pub mod game;
 pub mod middleware;
-pub mod warfare;

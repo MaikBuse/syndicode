@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package syndicode_economy_v1;
+
+/// Request to get the player's corporation details.
+message GetCorporationRequest {}
+
+/// Response containing corporation details.
+message GetCorporationResponse {
+  /// Corporation owned by the player.
+  Corporation corporation = 1;
+}
+
+/// Represents a player's corporation in the game.
+message Corporation {
+  /// UUID of the corporation.
+  string uuid = 1;
+
+  /// UUID of the user who owns the corporation.
+  string user_uuid = 2;
+
+  /// Name of the corporation.
+  string name = 3;
+
+  /// Current balance or funds available.
+  int64 balance = 4;
+}

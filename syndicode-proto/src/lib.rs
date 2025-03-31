@@ -3,9 +3,9 @@ use tonic_reflection::server::{
     Error,
 };
 
-pub mod control;
-pub mod economy;
-pub mod warfare;
+pub mod syndicode_economy_v1;
+pub mod syndicode_interface_v1;
+pub mod syndicode_warfare_v1;
 
 mod reflection {
     pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package syndicode_warfare_v1;
+
+/// Request to spawn a new combat unit.
+message SpawnUnitRequest {}
+
+/// Response after attempting to spawn a unit.
+message SpawnUnitResponse {}
+
+/// Request to list all units owned by a player.
+message ListUnitsRequest {}
+
+/// Response containing a list of the player's units.
+message ListUnitsResponse {
+  /// List of units owned by the player.
+  repeated Unit units = 1;
+}
+
+/// Represents a single unit in the game.
+message Unit {
+  /// UUID of the unit.
+  string uuid = 1;
+
+  /// UUID of the user who owns the unit.
+  string user_uuid = 2;
+}

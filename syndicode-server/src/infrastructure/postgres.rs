@@ -1,8 +1,8 @@
-pub mod control;
 pub mod economy;
+pub mod interface;
 pub mod warfare;
 
-use crate::domain::model::control::{UserModel, UserRole};
+use crate::domain::model::interface::{UserModel, UserRole};
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHasher};
 use sqlx::{pool::PoolOptions, PgPool, Pool, Postgres};
