@@ -1,4 +1,4 @@
-use crate::service::{control::ControlService, warfare::WarfareService};
+use crate::service::{interface::InterfaceService, warfare::WarfareService};
 use std::{collections::VecDeque, sync::Arc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -10,14 +10,14 @@ pub enum Job {
 
 pub struct Engine {
     jobs: Arc<Mutex<VecDeque<Job>>>,
-    control_service: Arc<ControlService>,
+    control_service: Arc<InterfaceService>,
     warfare_service: Arc<WarfareService>,
 }
 
 impl Engine {
     pub fn init(
         jobs: Arc<Mutex<VecDeque<Job>>>,
-        control_service: Arc<ControlService>,
+        control_service: Arc<InterfaceService>,
         warfare_service: Arc<WarfareService>,
     ) -> Self {
         Self {

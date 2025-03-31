@@ -1,6 +1,9 @@
-use syndicode_proto::control::{
-    control_client::ControlClient, game_update::ResponseEnum, user_request::RequestEnum,
-    CreateUserRequest, DeleteUserRequest, LoginRequest, UserRequest,
+use syndicode_proto::{
+    syndicode_interface_v1::{
+        auth_service_client::AuthServiceClient, game_service_client::GameServiceClient,
+        game_update::Update, player_action::Action, LoginRequest, PlayerAction,
+    },
+    syndicode_warfare_v1::{ListUnitsRequest, SpawnUnitRequest},
 };
 use tokio::sync::mpsc;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
@@ -10,20 +13,21 @@ pub const SOCKET_ADDR: &str = "[::]:50051";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut control_client = ControlClient::connect(format!("http://{}", SOCKET_ADDR)).await?;
+    let mut game_client = GameServiceClient::connect(format!("http://{}", SOCKET_ADDR)).await?;
+    let mut auth_client = AuthServiceClient::connect(format!("http://{}", SOCKET_ADDR)).await?;
 
     // Login
     let login_req = Request::new(LoginRequest {
         user_name: "admin".to_string(),
-        password: "my-great-password".to_string(),
+        user_password: "my-great-password".to_string(),
     });
 
-    let login_resp = control_client.login(login_req).await?;
+    let login_resp = auth_client.login(login_req).await?;
     let jwt = &login_resp.get_ref().jwt;
     println!("JWT: {jwt}");
 
     // Create mpsc channel for sending UserRequests
-    let (tx, rx) = mpsc::channel(32);
+    let (tx, rx) = mpsc::channel(16);
     let input_stream = ReceiverStream::new(rx);
 
     let mut stream_request = Request::new(input_stream);
@@ -34,21 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .insert("authorization", meta_val);
 
     // Start the streaming RPC
-    let mut stream = control_client
-        .game_stream_rpc(stream_request)
-        .await?
-        .into_inner();
+    let mut stream = game_client.play_stream(stream_request).await?.into_inner();
 
-    // Username we want to create & delete
-    let target_username = "user";
-
-    let create_user_request = UserRequest {
-        request_enum: Some(RequestEnum::CreateUser(CreateUserRequest {
-            user_name: target_username.to_string(),
-            password: "new-user-pw".to_string(),
-            role: 2,
-            corporation_name: "Great-Corp".to_string(),
-        })),
+    let create_user_request = PlayerAction {
+        action: Some(Action::SpawnUnit(SpawnUnitRequest {})),
     };
 
     // Send initial CreateUser request
@@ -58,34 +51,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tx_clone = tx.clone();
 
     // Read from the server
-    while let Some(update) = stream.next().await {
-        match update {
-            Ok(response) => {
-                if let Some(response_enum) = response.response_enum {
-                    match response_enum {
-                        ResponseEnum::CreateUser(create_user_response) => {
-                            println!("User created: {:?}", create_user_response);
+    while let Some(game_update) = stream.next().await {
+        match game_update {
+            Ok(game_update) => {
+                if let Some(update) = game_update.update {
+                    match update {
+                        Update::SpawnUnit(spawn_response) => {
+                            println!("Unit spawned: {:?}", spawn_response);
                             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
                             // Now delete the user
                             let _ = tx_clone
-                                .send(UserRequest {
-                                    request_enum: Some(RequestEnum::DeleteUser(
-                                        DeleteUserRequest {
-                                            uuid: create_user_response.uuid,
-                                        },
-                                    )),
+                                .send(PlayerAction {
+                                    action: Some(Action::ListUnit(ListUnitsRequest {})),
                                 })
                                 .await;
                         }
-                        ResponseEnum::DeleteUser(delete_user_response) => {
-                            println!("User deleted: {:?}", delete_user_response);
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-
-                            let _ = tx_clone.send(create_user_request.clone()).await;
+                        Update::ListUnits(list_unit_response) => {
+                            println!("List unit reponse: {:?}", list_unit_response);
                         }
                         _ => {
-                            println!("Game update: {:?}", response_enum);
+                            println!("Game update: {:?}", update);
                         }
                     }
                 }

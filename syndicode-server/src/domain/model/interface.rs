@@ -14,14 +14,14 @@ pub struct Claims {
 #[repr(i16)]
 pub enum UserRole {
     Admin,
-    User,
+    Player,
 }
 
 impl From<i16> for UserRole {
     fn from(value: i16) -> Self {
         match value {
             1 => Self::Admin,
-            _ => Self::User,
+            _ => Self::Player,
         }
     }
 }
@@ -30,7 +30,7 @@ impl From<UserRole> for i16 {
     fn from(val: UserRole) -> Self {
         match val {
             UserRole::Admin => 1,
-            UserRole::User => 2,
+            UserRole::Player => 2,
         }
     }
 }
@@ -41,7 +41,7 @@ impl TryFrom<String> for UserRole {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.as_str() {
             "Admin" => Ok(Self::Admin),
-            "User" => Ok(Self::User),
+            "User" => Ok(Self::Player),
             _ => Err(anyhow::anyhow!(
                 "Failed to parse user role '{}' from string",
                 value
@@ -54,7 +54,7 @@ impl From<UserRole> for i32 {
     fn from(val: UserRole) -> Self {
         match val {
             UserRole::Admin => 1,
-            UserRole::User => 2,
+            UserRole::Player => 2,
         }
     }
 }
@@ -63,7 +63,7 @@ impl Display for UserRole {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             UserRole::Admin => write!(f, "Admin"),
-            UserRole::User => write!(f, "User"),
+            UserRole::Player => write!(f, "User"),
         }
     }
 }

@@ -1,8 +1,8 @@
 use crate::service::economy::EconomyService;
 use std::sync::Arc;
 use syndicode_proto::{
-    control::{game_update::ResponseEnum, GameUpdate},
-    economy::{CorporationInfo, GetCorporationRequest, GetCorporationResponse},
+    syndicode_economy_v1::{Corporation, GetCorporationRequest, GetCorporationResponse},
+    syndicode_interface_v1::{game_update::Update, GameUpdate},
 };
 use tonic::{Code, Status};
 use uuid::Uuid;
@@ -14,8 +14,8 @@ pub async fn get_corporation(
 ) -> Result<GameUpdate, Status> {
     match economy_service.get_corporation(user_uuid).await {
         Ok(corporation) => Ok(GameUpdate {
-            response_enum: Some(ResponseEnum::GetCorporation(GetCorporationResponse {
-                corporation: Some(CorporationInfo {
+            update: Some(Update::GetCorporation(GetCorporationResponse {
+                corporation: Some(Corporation {
                     uuid: corporation.uuid.to_string(),
                     user_uuid: corporation.user_uuid.to_string(),
                     name: corporation.name,

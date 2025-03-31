@@ -1,8 +1,8 @@
 use crate::{engine::Job, service::warfare::WarfareService};
 use std::{collections::VecDeque, sync::Arc};
 use syndicode_proto::{
-    control::{game_update::ResponseEnum, GameUpdate},
-    warfare::{ListUnitsResponse, SpawnUnitResponse, UnitInfo},
+    syndicode_interface_v1::{game_update::Update, GameUpdate},
+    syndicode_warfare_v1::{ListUnitsResponse, SpawnUnitResponse, Unit},
 };
 use tokio::sync::Mutex;
 use tonic::{Code, Result, Status};
@@ -19,7 +19,7 @@ pub async fn spawn_unit(
     });
 
     Ok(GameUpdate {
-        response_enum: Some(ResponseEnum::SpawnUnit(SpawnUnitResponse {})),
+        update: Some(Update::SpawnUnit(SpawnUnitResponse {})),
     })
 }
 
@@ -32,17 +32,15 @@ pub async fn list_units(
         Err(err) => return Err(Status::new(Code::Internal, err.to_string())),
     };
 
-    let mut unit_infos = Vec::<UnitInfo>::with_capacity(units.len());
+    let mut unit_infos = Vec::<Unit>::with_capacity(units.len());
     for u in units {
-        unit_infos.push(UnitInfo {
+        unit_infos.push(Unit {
             uuid: u.uuid.to_string(),
             user_uuid: u.user_uuid.to_string(),
         });
     }
 
     Ok(GameUpdate {
-        response_enum: Some(ResponseEnum::ListUnits(ListUnitsResponse {
-            units: unit_infos,
-        })),
+        update: Some(Update::ListUnits(ListUnitsResponse { units: unit_infos })),
     })
 }

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package syndicode_interface_v1;
+
+import "interface/v1/shared.proto";
+
+//Provides administrative operations
+service AdminService {
+  //Creates a new user account.
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+
+  //Deletes an existing user by UUID.
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+}
+
+//Request to create a user account with a specific role and corporation.
+message CreateUserRequest {
+  //Username of the new user.
+  string user_name = 1;
+
+  //Password for the new user.
+  string user_password = 2;
+
+  //Role to assign to the new user.
+  syndicode_interface_v1.UserRole user_role = 3;
+
+  //Name of the user's corporation.
+  string corporation_name = 4;
+}
+
+//Response after a user account is created.
+message CreateUserResponse {
+  //UUID of the created user.
+  string user_uuid = 1;
+
+  //Username of the created user.
+  string user_name = 2;
+
+  //Role assigned to the user.
+  syndicode_interface_v1.UserRole user_role = 3;
+}
+
+//Request to delete a user by UUID.
+message DeleteUserRequest {
+  //UUID of the user to delete.
+  string user_uuid = 1;
+}
+
+//Response after a user has been deleted.
+message DeleteUserResponse {}
+

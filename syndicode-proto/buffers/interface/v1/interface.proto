@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package syndicode_interface_v1;
+
+import "interface/v1/auth.proto";
+import "interface/v1/admin.proto";
+import "interface/v1/game.proto";
+import "interface/v1/shared.proto";

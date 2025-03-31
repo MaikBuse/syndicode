@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package syndicode_interface_v1;
+
+import "economy/v1/economy.proto";
+import "warfare/v1/warfare.proto";
+
+/// Main entry point for player actions and game updates.
+service GameService {
+  /// Bidirectional stream where players send actions and receive updates.
+  rpc PlayStream(stream PlayerAction) returns (stream GameUpdate);
+}
+
+/// Represents an action sent by a player.
+message PlayerAction {
+  oneof action {
+    /// Request to fetch corporation data.
+    syndicode_economy_v1.GetCorporationRequest get_corporation = 1;
+
+    /// Request to spawn a new unit.
+    syndicode_warfare_v1.SpawnUnitRequest spawn_unit = 2;
+
+    /// Request to list currently active units.
+    syndicode_warfare_v1.ListUnitsRequest list_unit = 3;
+  }
+}
+
+/// Represents an update sent to the client in response to a player action.
+message GameUpdate {
+  oneof update {
+    /// Response containing corporation data.
+    syndicode_economy_v1.GetCorporationResponse get_corporation = 1;
+
+    /// Response to a unit spawn request.
+    syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 2;
+
+    /// Response listing all units.
+    syndicode_warfare_v1.ListUnitsResponse list_units = 3;
+  }
+}

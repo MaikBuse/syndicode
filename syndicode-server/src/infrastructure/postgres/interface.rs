@@ -1,5 +1,5 @@
 use super::{DatabaseError, DatabaseResult};
-use crate::domain::model::control::UserModel;
+use crate::domain::model::interface::UserModel;
 use sqlx::Postgres;
 use uuid::Uuid;
 

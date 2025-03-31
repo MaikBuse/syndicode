@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package syndicode_interface_v1;
+
+/// The role assigned to a user account.
+enum UserRole {
+  /// Default unspecified role.
+  UNSPECIFIED = 0;
+
+  /// Admin role.
+  ADMIN = 1;
+
+  /// Standard player role.
+  PLAYER = 2;
+}
+

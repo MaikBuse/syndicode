@@ -1,10 +1,10 @@
 use super::error::{ServiceError, ServiceResult};
 use crate::{
     domain::model::{
-        control::{Claims, UserModel, UserRole},
         economy::CorporationModel,
+        interface::{Claims, UserModel, UserRole},
     },
-    infrastructure::postgres::{control, economy, PostgresDatabase},
+    infrastructure::postgres::{economy, interface, PostgresDatabase},
 };
 use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
@@ -19,13 +19,13 @@ use uuid::Uuid;
 const DEFAULT_BALANCE: i64 = 1000000;
 
 #[derive(Debug)]
-pub struct ControlService {
+pub struct InterfaceService {
     postgres_db: Arc<PostgresDatabase>,
     argon: Argon2<'static>,
     jwt_secret: String,
 }
 
-impl ControlService {
+impl InterfaceService {
     pub fn new(postgres_db: Arc<PostgresDatabase>, jwt_secret: String) -> Self {
         Self {
             postgres_db,
@@ -35,7 +35,7 @@ impl ControlService {
     }
 
     pub async fn login(&self, user_name: String, password: String) -> ServiceResult<String> {
-        let Ok(user) = control::get_user_by_name(&self.postgres_db.pool, user_name).await else {
+        let Ok(user) = interface::get_user_by_name(&self.postgres_db.pool, user_name).await else {
             return Err(ServiceError::WrongUserCredentials);
         };
 
@@ -100,7 +100,7 @@ impl ControlService {
                 return Err(ServiceError::MissingAuthentication);
             };
 
-            let req_user = control::get_user(&self.postgres_db.pool, req_user_uuid).await?;
+            let req_user = interface::get_user(&self.postgres_db.pool, req_user_uuid).await?;
 
             if req_user.role != UserRole::Admin {
                 return Err(ServiceError::Unauthorized);
@@ -126,7 +126,7 @@ impl ControlService {
             role: user_role,
         };
 
-        let user = control::create_user(&mut *tx, user).await?;
+        let user = interface::create_user(&mut *tx, user).await?;
 
         let corporation = CorporationModel {
             uuid: Uuid::now_v7(),
@@ -144,7 +144,7 @@ impl ControlService {
 
     pub async fn delete_user(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ServiceResult<()> {
         if req_user_uuid != user_uuid {
-            let req_user = control::get_user(&self.postgres_db.pool, req_user_uuid).await?;
+            let req_user = interface::get_user(&self.postgres_db.pool, req_user_uuid).await?;
 
             if req_user.role != UserRole::Admin {
                 return Err(ServiceError::Unauthorized);
@@ -152,20 +152,20 @@ impl ControlService {
         }
 
         // The corporation automatically gets deleted with the user
-        control::delete_user(&self.postgres_db.pool, user_uuid).await?;
+        interface::delete_user(&self.postgres_db.pool, user_uuid).await?;
 
         Ok(())
     }
 
     pub async fn get_user(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ServiceResult<UserModel> {
         if req_user_uuid != user_uuid {
-            let req_user = control::get_user(&self.postgres_db.pool, req_user_uuid).await?;
+            let req_user = interface::get_user(&self.postgres_db.pool, req_user_uuid).await?;
 
             if req_user.role != UserRole::Admin {
                 return Err(ServiceError::Unauthorized);
             }
         }
 
-        Ok(control::get_user(&self.postgres_db.pool, user_uuid).await?)
+        Ok(interface::get_user(&self.postgres_db.pool, user_uuid).await?)
     }
 }

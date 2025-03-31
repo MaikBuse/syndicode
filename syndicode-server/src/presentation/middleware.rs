@@ -1,5 +1,4 @@
-use crate::domain::model::control::Claims;
-use governor::{clock::DefaultClock, state::keyed::DefaultKeyedStateStore, RateLimiter};
+use crate::domain::model::interface::Claims;
 use http::HeaderValue;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use std::pin::Pin;
@@ -8,9 +7,6 @@ use std::task::{Context, Poll};
 use std::time::Instant;
 use tonic::Status;
 use tower::{BoxError, Layer, Service};
-use uuid::Uuid;
-
-pub type UserLimiter = RateLimiter<Uuid, DefaultKeyedStateStore<Uuid>, DefaultClock>;
 
 pub const USER_UUID_KEY: &str = "user_uuid";
 pub const AUTHORIZATION_KEY: &str = "authorization";
@@ -27,15 +23,11 @@ const AUTH_EXCEPTED_PATHS: [&str; 4] = [
 #[derive(Debug, Clone)]
 pub struct MiddlewareLayer {
     jwt_secret: String,
-    user_limiter: Arc<UserLimiter>,
 }
 
 impl MiddlewareLayer {
-    pub fn new(jwt_secret: String, user_limiter: Arc<UserLimiter>) -> Self {
-        Self {
-            jwt_secret,
-            user_limiter,
-        }
+    pub fn new(jwt_secret: String) -> Self {
+        Self { jwt_secret }
     }
 }
 
@@ -46,7 +38,6 @@ impl<S> Layer<S> for MiddlewareLayer {
         Middleware {
             inner: service,
             jwt_secret: Arc::new(self.jwt_secret.clone()),
-            user_limiter: Arc::clone(&self.user_limiter),
         }
     }
 }
@@ -55,7 +46,6 @@ impl<S> Layer<S> for MiddlewareLayer {
 pub struct Middleware<S> {
     inner: S,
     jwt_secret: Arc<String>,
-    user_limiter: Arc<UserLimiter>,
 }
 
 type BoxFuture<'a, T> = Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
@@ -79,7 +69,6 @@ where
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
         let jwt_secret = Arc::clone(&self.jwt_secret);
-        let user_limiter = Arc::clone(&self.user_limiter);
 
         let path = req.uri().path().to_string(); // clone for move
         let start_time = Instant::now();
@@ -121,20 +110,6 @@ where
 
             // Inject UUID
             let user_uuid_str = &token_data.claims.sub;
-
-            // Check rate limit
-            match Uuid::parse_str(user_uuid_str) {
-                Ok(user_uuid) => {
-                    if user_limiter.check_key(&user_uuid).is_err() {
-                        tracing::warn!(%user_uuid, "Rate limit exceeded");
-
-                        return Err(Status::resource_exhausted("Rate limit exceeded").into());
-                    }
-                }
-                Err(_) => {
-                    return Err(Status::unauthenticated("Invalid sub in token claims").into());
-                }
-            }
 
             if let Ok(uuid_header) = HeaderValue::from_str(user_uuid_str) {
                 req.headers_mut().insert(USER_UUID_KEY, uuid_header);
