@@ -1,7 +1,7 @@
 use crate::infrastructure::postgres::DatabaseError;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ServiceError {
+pub enum ApplicationError {
     #[error("The provided password needs to have at least 8 characters")]
     PasswordTooShort,
 
@@ -27,4 +27,4 @@ pub enum ServiceError {
     Other(#[from] anyhow::Error),
 }
 
-pub type ServiceResult<T> = std::result::Result<T, ServiceError>;
+pub type ApplicationResult<T> = std::result::Result<T, ApplicationError>;

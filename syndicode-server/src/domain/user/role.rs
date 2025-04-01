@@ -1,14 +1,4 @@
-use serde::{Deserialize, Serialize};
-use sqlx::prelude::FromRow;
 use std::fmt::Display;
-use uuid::Uuid;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: String,
-    pub exp: usize,
-    pub role: String,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 #[repr(i16)]
@@ -66,12 +56,4 @@ impl Display for UserRole {
             UserRole::Player => write!(f, "User"),
         }
     }
-}
-
-#[derive(Debug, FromRow)]
-pub struct UserModel {
-    pub uuid: Uuid,
-    pub name: String,
-    pub password_hash: String,
-    pub role: UserRole,
 }

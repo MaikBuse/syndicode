@@ -1,12 +1,12 @@
-use crate::domain::model::interface::Claims;
 use http::HeaderValue;
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Instant;
 use tonic::Status;
 use tower::{BoxError, Layer, Service};
+
+use crate::infrastructure::crypto::CryptoService;
 
 pub const USER_UUID_KEY: &str = "user_uuid";
 pub const AUTHORIZATION_KEY: &str = "authorization";
@@ -20,14 +20,16 @@ const AUTH_EXCEPTED_PATHS: [&str; 4] = [
     "/control.Control/Login",
 ];
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct MiddlewareLayer {
-    jwt_secret: String,
+    crypto: Arc<CryptoService>,
 }
 
 impl MiddlewareLayer {
-    pub fn new(jwt_secret: String) -> Self {
-        Self { jwt_secret }
+    pub fn new(auth_service: Arc<CryptoService>) -> Self {
+        Self {
+            crypto: auth_service,
+        }
     }
 }
 
@@ -37,15 +39,15 @@ impl<S> Layer<S> for MiddlewareLayer {
     fn layer(&self, service: S) -> Self::Service {
         Middleware {
             inner: service,
-            jwt_secret: Arc::new(self.jwt_secret.clone()),
+            auth_service: Arc::clone(&self.crypto),
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Middleware<S> {
     inner: S,
-    jwt_secret: Arc<String>,
+    auth_service: Arc<CryptoService>,
 }
 
 type BoxFuture<'a, T> = Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
@@ -68,10 +70,11 @@ where
     fn call(&mut self, mut req: http::Request<ReqBody>) -> Self::Future {
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
-        let jwt_secret = Arc::clone(&self.jwt_secret);
 
         let path = req.uri().path().to_string(); // clone for move
         let start_time = Instant::now();
+
+        let auth_service = Arc::clone(&self.auth_service);
 
         Box::pin(async move {
             let skip_auth = AUTH_EXCEPTED_PATHS.contains(&path.as_str());
@@ -101,12 +104,7 @@ where
                 .ok_or_else(|| Status::unauthenticated("Missing or malformed Bearer token"))?;
 
             // Decode JWT
-            let token_data = decode::<Claims>(
-                token,
-                &DecodingKey::from_secret(jwt_secret.as_bytes()),
-                &Validation::new(Algorithm::HS256),
-            )
-            .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
+            let token_data = auth_service.decode_jwt(token)?;
 
             // Inject UUID
             let user_uuid_str = &token_data.claims.sub;

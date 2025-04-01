@@ -1,18 +1,19 @@
-use super::DatabaseResult;
-use crate::domain::model::economy::CorporationModel;
+use super::{DatabaseResult, PostgresDatabase};
+use crate::domain::corporation::Corporation;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-pub async fn create_corporation<'e, E>(
-    executor: E,
-    corporation: CorporationModel,
-) -> DatabaseResult<CorporationModel>
-where
-    E: sqlx::Executor<'e, Database = Postgres> + Send,
-{
-    let corporation = sqlx::query_as!(
-        CorporationModel,
-        r#"
+impl PostgresDatabase {
+    pub async fn create_corporation<'e, E>(
+        executor: E,
+        corporation: Corporation,
+    ) -> DatabaseResult<Corporation>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        let corporation = sqlx::query_as!(
+            Corporation,
+            r#"
             INSERT INTO corporations (
             uuid,
             user_uuid,
@@ -24,27 +25,27 @@ where
         )
         RETURNING uuid, user_uuid, name, balance
         "#,
-        corporation.uuid,
-        corporation.user_uuid,
-        corporation.name,
-        corporation.balance
-    )
-    .fetch_one(executor)
-    .await?;
+            corporation.uuid,
+            corporation.user_uuid,
+            corporation.name,
+            corporation.balance
+        )
+        .fetch_one(executor)
+        .await?;
 
-    Ok(corporation)
-}
+        Ok(corporation)
+    }
 
-pub async fn get_user_corporation<'e, E>(
-    executor: E,
-    user_uuid: Uuid,
-) -> DatabaseResult<CorporationModel>
-where
-    E: sqlx::Executor<'e, Database = Postgres> + Send,
-{
-    let corporation = sqlx::query_as!(
-        CorporationModel,
-        r#"
+    pub async fn get_user_corporation<'e, E>(
+        executor: E,
+        user_uuid: Uuid,
+    ) -> DatabaseResult<Corporation>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        let corporation = sqlx::query_as!(
+            Corporation,
+            r#"
             SELECT
                 uuid,
                 user_uuid,
@@ -54,24 +55,24 @@ where
             WHERE
                 user_uuid = $1
             "#,
-        user_uuid
-    )
-    .fetch_one(executor)
-    .await?;
+            user_uuid
+        )
+        .fetch_one(executor)
+        .await?;
 
-    Ok(corporation)
-}
+        Ok(corporation)
+    }
 
-pub async fn update_corporation<'e, E>(
-    executor: E,
-    corporation: CorporationModel,
-) -> DatabaseResult<CorporationModel>
-where
-    E: sqlx::Executor<'e, Database = Postgres> + Send,
-{
-    let corporation = sqlx::query_as!(
-        CorporationModel,
-        r#"
+    pub async fn update_corporation<'e, E>(
+        executor: E,
+        corporation: Corporation,
+    ) -> DatabaseResult<Corporation>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        let corporation = sqlx::query_as!(
+            Corporation,
+            r#"
             UPDATE corporations
             SET
                 uuid = $1,
@@ -81,13 +82,14 @@ where
             WHERE uuid = $1
             RETURNING uuid, user_uuid, name, balance
             "#,
-        corporation.uuid,
-        corporation.user_uuid,
-        corporation.name,
-        corporation.balance
-    )
-    .fetch_one(executor)
-    .await?;
+            corporation.uuid,
+            corporation.user_uuid,
+            corporation.name,
+            corporation.balance
+        )
+        .fetch_one(executor)
+        .await?;
 
-    Ok(corporation)
+        Ok(corporation)
+    }
 }

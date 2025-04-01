@@ -1,5 +1,8 @@
-use super::common::{service_error_into_status, uuid_from_metadata};
-use crate::{domain::model::interface::UserRole, service::interface::InterfaceService};
+use super::common::{application_error_into_status, uuid_from_metadata};
+use crate::{
+    application::admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
+    domain::user::role::UserRole,
+};
 use std::{result::Result, sync::Arc};
 use syndicode_proto::syndicode_interface_v1::{
     admin_service_server::AdminService, CreateUserRequest, CreateUserResponse, DeleteUserRequest,
@@ -9,7 +12,8 @@ use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
 pub struct AdminPresenter {
-    pub interface_service: Arc<InterfaceService>,
+    pub create_user_uc: Arc<CreateUserUseCase>,
+    pub delete_user_uc: Arc<DeleteUserUseCase>,
 }
 
 #[async_trait]
@@ -36,8 +40,8 @@ impl AdminService for AdminPresenter {
         };
 
         match self
-            .interface_service
-            .create_user(
+            .create_user_uc
+            .execute(
                 Some(req_user_uuid),
                 request.user_name,
                 request.user_password,
@@ -51,7 +55,7 @@ impl AdminService for AdminPresenter {
                 user_name: user.name,
                 user_role: user_role.into(),
             })),
-            Err(err) => Err(service_error_into_status(err)),
+            Err(err) => Err(application_error_into_status(err)),
         }
     }
 
@@ -68,13 +72,9 @@ impl AdminService for AdminPresenter {
             return Err(Status::invalid_argument("Failed to parse user uuid"));
         };
 
-        match self
-            .interface_service
-            .delete_user(req_user_uuid, user_uuid)
-            .await
-        {
+        match self.delete_user_uc.execute(req_user_uuid, user_uuid).await {
             Ok(_) => Ok(Response::new(DeleteUserResponse {})),
-            Err(err) => Err(service_error_into_status(err)),
+            Err(err) => Err(application_error_into_status(err)),
         }
     }
 }

@@ -1,17 +1,18 @@
-use super::{DatabaseError, DatabaseResult};
-use crate::domain::model::interface::UserModel;
+use super::{DatabaseError, DatabaseResult, PostgresDatabase};
+use crate::domain::user::User;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-pub async fn create_user<'e, E>(executor: E, user: UserModel) -> DatabaseResult<UserModel>
-where
-    E: sqlx::Executor<'e, Database = Postgres> + Send,
-{
-    let user_role: i16 = user.role.into();
+impl PostgresDatabase {
+    pub async fn create_user<'e, E>(executor: E, user: User) -> DatabaseResult<User>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        let user_role: i16 = user.role.into();
 
-    match sqlx::query_as!(
-        UserModel,
-        r#"
+        match sqlx::query_as!(
+            User,
+            r#"
             INSERT INTO users (
                 uuid,
                 name,
@@ -25,32 +26,33 @@ where
                 password_hash,
                 role
             "#,
-        user.uuid,
-        user.name,
-        user.password_hash,
-        user_role
-    )
-    .fetch_one(executor)
-    .await
-    {
-        Ok(user) => Ok(user),
-        Err(err) => match err {
-            sqlx::Error::Database(database_error) => match database_error.is_unique_violation() {
-                true => Err(DatabaseError::UniqueConstraint),
-                false => Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
+            user.uuid,
+            user.name,
+            user.password_hash,
+            user_role
+        )
+        .fetch_one(executor)
+        .await
+        {
+            Ok(user) => Ok(user),
+            Err(err) => match err {
+                sqlx::Error::Database(database_error) => match database_error.is_unique_violation()
+                {
+                    true => Err(DatabaseError::UniqueConstraint),
+                    false => Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
+                },
+                _ => Err(err.into()),
             },
-            _ => Err(err.into()),
-        },
+        }
     }
-}
 
-pub async fn get_user<'e, E>(executor: E, user_uuid: Uuid) -> DatabaseResult<UserModel>
-where
-    E: sqlx::Executor<'e, Database = Postgres> + Send,
-{
-    let user = sqlx::query_as!(
-        UserModel,
-        r#"
+    pub async fn get_user<'e, E>(executor: E, user_uuid: Uuid) -> DatabaseResult<User>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        let user = sqlx::query_as!(
+            User,
+            r#"
             SELECT
                 uuid,
                 name,
@@ -60,21 +62,21 @@ where
             WHERE
                 uuid = $1
             "#,
-        user_uuid
-    )
-    .fetch_one(executor)
-    .await?;
+            user_uuid
+        )
+        .fetch_one(executor)
+        .await?;
 
-    Ok(user)
-}
+        Ok(user)
+    }
 
-pub async fn get_user_by_name<'e, E>(executor: E, username: String) -> DatabaseResult<UserModel>
-where
-    E: sqlx::Executor<'e, Database = Postgres> + Send,
-{
-    let user = sqlx::query_as!(
-        UserModel,
-        r#"
+    pub async fn get_user_by_name<'e, E>(executor: E, username: String) -> DatabaseResult<User>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        let user = sqlx::query_as!(
+            User,
+            r#"
             SELECT
                 uuid,
                 name,
@@ -84,27 +86,28 @@ where
             WHERE
                 name = $1
             "#,
-        username
-    )
-    .fetch_one(executor)
-    .await?;
+            username
+        )
+        .fetch_one(executor)
+        .await?;
 
-    Ok(user)
-}
+        Ok(user)
+    }
 
-pub async fn delete_user<'e, E>(executor: E, user_uuid: Uuid) -> DatabaseResult<()>
-where
-    E: sqlx::Executor<'e, Database = Postgres> + Send,
-{
-    sqlx::query!(
-        r#"
+    pub async fn delete_user<'e, E>(executor: E, user_uuid: Uuid) -> DatabaseResult<()>
+    where
+        E: sqlx::Executor<'e, Database = Postgres> + Send,
+    {
+        sqlx::query!(
+            r#"
             DELETE FROM users
             WHERE uuid = $1
             "#,
-        user_uuid
-    )
-    .execute(executor)
-    .await?;
+            user_uuid
+        )
+        .execute(executor)
+        .await?;
 
-    Ok(())
+        Ok(())
+    }
 }
