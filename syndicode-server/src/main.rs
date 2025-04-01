@@ -11,8 +11,15 @@ use application::economy::get_corporation::GetCorporationUseCase;
 use application::warfare::list_units::ListUnitsUseCase;
 use application::warfare::spawn_unit::SpawnUnitUseCase;
 use dashmap::DashMap;
+use domain::repository::corporation::CorporationRepository;
+use domain::repository::unit::UnitRespository;
+use domain::repository::user::UserRepository;
 use engine::Engine;
 use infrastructure::crypto::CryptoService;
+use infrastructure::postgres::corporation::PgCorporationService;
+use infrastructure::postgres::unit::PgUnitService;
+use infrastructure::postgres::uow::PostgresUnitOfWork;
+use infrastructure::postgres::user::{PgUserRepository, PgUserService};
 use infrastructure::postgres::PostgresDatabase;
 use presentation::admin::AdminPresenter;
 use presentation::auth::AuthPresenter;
@@ -32,10 +39,7 @@ use tracing_subscriber::{fmt, EnvFilter};
 
 pub const SOCKET_ADDR: &str = "[::]:50051";
 
-const JOB_INTERVAL: Duration = Duration::from_secs(1);
-
-const JWT_SECRET_ENV: &str = "JWT_SECRET";
-pub const ADMIN_PASSWORD_ENV: &str = "ADMIN_PASSWORD";
+const JOB_INTERVAL: Duration = Duration::from_secs(3);
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
@@ -45,37 +49,48 @@ pub async fn main() -> anyhow::Result<()> {
         .with(fmt::layer().pretty()) // use .json() instead of .pretty() for JSON logs
         .init();
 
-    // Check environment variables
-    let jwt_secret =
-        std::env::var(JWT_SECRET_ENV).expect("Environment variable 'JWT_SECRET' must be set");
-    let admin_password = std::env::var(ADMIN_PASSWORD_ENV)
-        .expect("Environment variable 'ADMIN_PASSWORD' must be set");
-
     // Add health checks for servers
     let (health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter
-        .set_serving::<AdminServiceServer<AdminPresenter>>()
+        .set_serving::<AdminServiceServer<AdminPresenter<PostgresUnitOfWork>>>()
         .await;
 
-    // Setup database
-    let db = Arc::new(PostgresDatabase::init(admin_password).await?);
+    // Crypto service
+    let crypto = Arc::new(CryptoService::new());
 
-    // Setup crypto service
-    let crypto = Arc::new(CryptoService::new(jwt_secret));
+    // Database Pool
+    let pool = Arc::new(PostgresDatabase::init().await?);
+
+    // Unit of Work
+    let uow = Arc::new(PostgresUnitOfWork::new(Arc::clone(&pool)));
+
+    // Services
+    let user_service: Arc<dyn UserRepository> =
+        Arc::new(PgUserService::new(Arc::clone(&pool), PgUserRepository));
+    let unit_service: Arc<dyn UnitRespository> = Arc::new(PgUnitService::new(Arc::clone(&pool)));
+    let corporation_service: Arc<dyn CorporationRepository> =
+        Arc::new(PgCorporationService::new(Arc::clone(&pool)));
 
     // Auth use cases
-    let login_uc = Arc::new(LoginUseCase::new(Arc::clone(&db), Arc::clone(&crypto)));
+    let login_uc = Arc::new(LoginUseCase::new(
+        Arc::clone(&crypto),
+        Arc::clone(&user_service),
+    ));
 
     // Admin use cases
-    let create_user_uc = Arc::new(CreateUserUseCase::new(Arc::clone(&db), Arc::clone(&crypto)));
-    let delete_user_uc = Arc::new(DeleteUserUseCase::new(Arc::clone(&db)));
+    let create_user_uc = Arc::new(CreateUserUseCase::new(
+        Arc::clone(&crypto),
+        Arc::clone(&uow),
+        Arc::clone(&user_service),
+    ));
+    let delete_user_uc = Arc::new(DeleteUserUseCase::new(Arc::clone(&user_service)));
 
     // Warfare use cases
-    let spawn_unit_uc = Arc::new(SpawnUnitUseCase::new(Arc::clone(&db)));
-    let list_units_uc = Arc::new(ListUnitsUseCase::new(Arc::clone(&db)));
+    let spawn_unit_uc = Arc::new(SpawnUnitUseCase::new(Arc::clone(&unit_service)));
+    let list_units_uc = Arc::new(ListUnitsUseCase::new(Arc::clone(&unit_service)));
 
     // Economy use cases
-    let get_corporation_uc = Arc::new(GetCorporationUseCase::new(Arc::clone(&db)));
+    let get_corporation_uc = Arc::new(GetCorporationUseCase::new(Arc::clone(&corporation_service)));
 
     // Setup tick-engine
     let jobs = Arc::new(Mutex::new(VecDeque::new()));

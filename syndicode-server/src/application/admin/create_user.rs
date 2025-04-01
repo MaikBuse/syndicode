@@ -1,10 +1,14 @@
 use crate::{
-    application::error::{ApplicationError, ApplicationResult},
+    application::{
+        error::{ApplicationError, ApplicationResult},
+        uow::UnitOfWork,
+    },
     domain::{
         corporation::Corporation,
+        repository::{user::UserRepository, RepositoryError},
         user::{role::UserRole, User},
     },
-    infrastructure::{crypto::CryptoService, postgres::PostgresDatabase},
+    infrastructure::crypto::CryptoService,
 };
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use std::sync::Arc;
@@ -12,14 +16,23 @@ use uuid::Uuid;
 
 const DEFAULT_BALANCE: i64 = 1000000;
 
-pub struct CreateUserUseCase {
-    db: Arc<PostgresDatabase>,
+pub struct CreateUserUseCase<U: UnitOfWork> {
     crypto: Arc<CryptoService>,
+    uow: Arc<U>,
+    user_repo: Arc<dyn UserRepository>,
 }
 
-impl CreateUserUseCase {
-    pub fn new(db: Arc<PostgresDatabase>, crypto: Arc<CryptoService>) -> Self {
-        Self { db, crypto }
+impl<U: UnitOfWork> CreateUserUseCase<U> {
+    pub fn new(
+        crypto: Arc<CryptoService>,
+        uow: Arc<U>,
+        user_repo: Arc<dyn UserRepository>,
+    ) -> Self {
+        Self {
+            crypto,
+            uow,
+            user_repo,
+        }
     }
 
     pub async fn execute(
@@ -43,7 +56,7 @@ impl CreateUserUseCase {
                 return Err(ApplicationError::MissingAuthentication);
             };
 
-            let req_user = PostgresDatabase::get_user(&self.db.pool, req_user_uuid).await?;
+            let req_user = self.user_repo.get_user(req_user_uuid).await?;
 
             if req_user.role != UserRole::Admin {
                 return Err(ApplicationError::Unauthorized);
@@ -54,29 +67,42 @@ impl CreateUserUseCase {
 
         let password_hash = self.crypto.hash_password(password, &salt)?;
 
-        // Start database transaction
-        let mut tx = self.db.pool.begin().await?;
-
-        let user = User {
+        let user_to_create = User {
             uuid: Uuid::now_v7(),
             name: user_name,
             password_hash: password_hash.to_string(),
             role: user_role,
         };
 
-        let user = PostgresDatabase::create_user(&mut *tx, user).await?;
+        let user_created = match self
+            .uow
+            .execute(|ctx| {
+                Box::pin(async move {
+                    let user_created = ctx.create_user(user_to_create).await?;
 
-        let corporation = Corporation {
-            uuid: Uuid::now_v7(),
-            user_uuid: user.uuid,
-            name: corporation_name,
-            balance: DEFAULT_BALANCE,
+                    let corporation = Corporation {
+                        uuid: Uuid::now_v7(),
+                        user_uuid: user_created.uuid,
+                        name: corporation_name,
+                        balance: DEFAULT_BALANCE,
+                    };
+
+                    ctx.create_corporation(corporation).await?;
+
+                    Ok(user_created)
+                })
+            })
+            .await
+        {
+            Ok(user_created) => user_created,
+            Err(err) => match err {
+                RepositoryError::UniqueConstraint => {
+                    return Err(ApplicationError::UniqueConstraint)
+                }
+                _ => return Err(err.into()),
+            },
         };
 
-        PostgresDatabase::create_corporation(&mut *tx, corporation).await?;
-
-        tx.commit().await?;
-
-        Ok(user)
+        Ok(user_created)
     }
 }

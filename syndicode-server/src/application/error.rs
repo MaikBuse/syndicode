@@ -1,7 +1,12 @@
-use crate::infrastructure::postgres::DatabaseError;
+use crate::domain::repository::RepositoryError;
+
+pub type ApplicationResult<T> = std::result::Result<T, ApplicationError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationError {
+    #[error("The database returned with a violation of a unique/primary key constraint")]
+    UniqueConstraint,
+
     #[error("The provided password needs to have at least 8 characters")]
     PasswordTooShort,
 
@@ -18,13 +23,8 @@ pub enum ApplicationError {
     WrongUserCredentials,
 
     #[error(transparent)]
-    Database(#[from] DatabaseError),
-
-    #[error(transparent)]
-    Sqlx(#[from] sqlx::Error),
+    Database(#[from] RepositoryError),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
-
-pub type ApplicationResult<T> = std::result::Result<T, ApplicationError>;

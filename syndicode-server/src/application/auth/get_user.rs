@@ -1,29 +1,31 @@
 use crate::{
     application::error::{ApplicationError, ApplicationResult},
-    domain::user::{role::UserRole, User},
-    infrastructure::postgres::PostgresDatabase,
+    domain::{
+        repository::user::UserRepository,
+        user::{role::UserRole, User},
+    },
 };
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct GetUserUseCase {
-    db: Arc<PostgresDatabase>,
+    user_repo: Arc<dyn UserRepository>,
 }
 
 impl GetUserUseCase {
-    pub fn new(db: Arc<PostgresDatabase>) -> Self {
-        Self { db }
+    pub fn new(user_repo: Arc<dyn UserRepository>) -> Self {
+        Self { user_repo }
     }
 
     pub async fn execute(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ApplicationResult<User> {
         if req_user_uuid != user_uuid {
-            let req_user = PostgresDatabase::get_user(&self.db.pool, req_user_uuid).await?;
+            let req_user = self.user_repo.get_user(req_user_uuid).await?;
 
             if req_user.role != UserRole::Admin {
                 return Err(ApplicationError::Unauthorized);
             }
         }
 
-        Ok(PostgresDatabase::get_user(&self.db.pool, user_uuid).await?)
+        Ok(self.user_repo.get_user(user_uuid).await?)
     }
 }

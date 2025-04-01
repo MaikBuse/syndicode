@@ -12,10 +12,15 @@ pub struct CryptoService {
 }
 
 impl CryptoService {
-    pub fn new(jwt_secret: String) -> Self {
+    pub fn new() -> Self {
+        let jwt_secret =
+            std::env::var("JWT_SECRET").expect("Environment variable 'JWT_SECRET' must be set");
+
+        let jwt_secret_bytes = jwt_secret.as_bytes();
+
         Self {
-            jwt_decoding_key: DecodingKey::from_secret(jwt_secret.as_bytes()),
-            jwt_encoding_key: EncodingKey::from_secret(jwt_secret.as_bytes()),
+            jwt_decoding_key: DecodingKey::from_secret(jwt_secret_bytes),
+            jwt_encoding_key: EncodingKey::from_secret(jwt_secret_bytes),
             argon: Argon2::default(),
         }
     }

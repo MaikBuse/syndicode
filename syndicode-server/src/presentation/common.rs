@@ -16,14 +16,14 @@ pub(crate) fn parse_uuid(uuid_str: &str) -> Result<Uuid, Status> {
 
 pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
     match err {
-        ApplicationError::PasswordTooShort | ApplicationError::UsernameInvalid => {
-            Status::invalid_argument(err.to_string())
-        }
+        ApplicationError::PasswordTooShort
+        | ApplicationError::UsernameInvalid
+        | ApplicationError::UniqueConstraint => Status::invalid_argument(err.to_string()),
         ApplicationError::WrongUserCredentials | ApplicationError::MissingAuthentication => {
             Status::unauthenticated(err.to_string())
         }
         ApplicationError::Unauthorized => Status::permission_denied(err.to_string()),
-        ApplicationError::Database(_) | ApplicationError::Sqlx(_) | ApplicationError::Other(_) => {
+        ApplicationError::Database(_) | ApplicationError::Other(_) => {
             Status::internal(err.to_string())
         }
     }
