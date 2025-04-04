@@ -1,3 +1,6 @@
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 use crate::domain::{
     corporation::repository::CorporationTxRepository, repository::RepositoryResult,
     unit::repository::UnitTxRespository, user::repository::UserTxRepository,
@@ -15,7 +18,7 @@ pub trait TransactionalContext<'a>:
     // Add other repositories here as needed: + ProductRepository, etc.
 }
 
-// The Unit of Work trait
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait UnitOfWork: Send + Sync {
     /// Executes a closure within a database transaction.
@@ -28,7 +31,8 @@ pub trait UnitOfWork: Send + Sync {
                 &'a mut dyn TransactionalContext<'a>,
             )
                 -> Pin<Box<dyn Future<Output = RepositoryResult<R>> + Send + 'a>>
-            + Send,
+            + Send
+            + 'static,
         // R is the successful return type of the closure's Future.
-        R: Send;
+        R: Send + 'static;
 }

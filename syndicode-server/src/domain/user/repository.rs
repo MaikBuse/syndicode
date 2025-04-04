@@ -1,9 +1,13 @@
+#[cfg(test)]
+use mockall::{automock, mock, predicate::*};
+
 use tonic::async_trait;
 use uuid::Uuid;
 
 use super::model::User;
 use crate::domain::repository::RepositoryResult;
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn get_user(&self, user_uuid: Uuid) -> RepositoryResult<User>;

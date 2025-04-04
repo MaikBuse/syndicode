@@ -53,11 +53,18 @@ impl<U: UnitOfWork> AdminService for AdminPresenter<U> {
             )
             .await
         {
-            Ok(user) => Ok(Response::new(CreateUserResponse {
-                user_uuid: user.uuid.to_string(),
-                user_name: user.name,
-                user_role: user_role.into(),
-            })),
+            Ok(user) => {
+                let user_role: i32 = match user.role {
+                    UserRole::Admin => 1,
+                    UserRole::Player => 2,
+                };
+
+                Ok(Response::new(CreateUserResponse {
+                    user_uuid: user.uuid.to_string(),
+                    user_name: user.name,
+                    user_role,
+                }))
+            }
             Err(err) => Err(application_error_into_status(err)),
         }
     }

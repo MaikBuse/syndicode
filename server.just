@@ -8,6 +8,11 @@ build:
 run:
   cargo run -p syndicode-server
 
+# Test the server crate
+[group('cargo')]
+test:
+  cargo test -p syndicode-server
+
 # Build the image
 [group('docker')]
 image:

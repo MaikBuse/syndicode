@@ -5,7 +5,7 @@ use sqlx::prelude::FromRow;
 use uuid::Uuid;
 use validator::Validate;
 
-#[derive(Debug, Clone, Validate, FromRow)]
+#[derive(Debug, Clone, Validate, FromRow, PartialEq)]
 pub struct User {
     pub uuid: Uuid,
     #[validate(length(min = 1, max = 20))]
