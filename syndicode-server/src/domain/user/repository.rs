@@ -1,5 +1,5 @@
 #[cfg(test)]
-use mockall::{automock, mock, predicate::*};
+use mockall::{automock, predicate::*};
 
 use tonic::async_trait;
 use uuid::Uuid;

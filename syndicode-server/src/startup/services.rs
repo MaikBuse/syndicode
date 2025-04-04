@@ -1,6 +1,9 @@
 use crate::{
     application::{
-        admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
+        admin::{
+            bootstrap_admin::BootstrapAdminUseCase, create_user::CreateUserUseCase,
+            delete_user::DeleteUserUseCase,
+        },
         auth::login::LoginUseCase,
         economy::get_corporation::GetCorporationUseCase,
         warfare::{list_units::ListUnitsUseCase, spawn_unit::SpawnUnitUseCase},
@@ -18,6 +21,7 @@ use crate::{
             uow::PostgresUnitOfWork,
             user::{PgUserRepository, PgUserService},
         },
+        valkey::ValkeyStore,
     },
 };
 use dashmap::DashMap;
@@ -37,6 +41,7 @@ pub struct AppState {
     pub unit_service: Arc<dyn UnitRepository>,
     pub corporation_service: Arc<dyn CorporationRepository>,
     pub login_uc: Arc<LoginUseCase>,
+    pub bootstrap_admin_uc: Arc<BootstrapAdminUseCase<PostgresUnitOfWork, CryptoService>>,
     pub create_user_uc: Arc<CreateUserUseCase<PostgresUnitOfWork>>,
     pub delete_user_uc: Arc<DeleteUserUseCase>,
     pub spawn_unit_uc: Arc<SpawnUnitUseCase>,
@@ -44,22 +49,25 @@ pub struct AppState {
     pub get_corporation_uc: Arc<GetCorporationUseCase>,
 }
 
-pub async fn build_services(pool: Arc<PgPool>) -> AppState {
+pub async fn build_services(
+    pg_pool: Arc<PgPool>,
+    valkey: Arc<ValkeyStore>,
+) -> anyhow::Result<AppState> {
     let jobs = Arc::new(Mutex::new(VecDeque::new()));
     let user_channels = Arc::new(DashMap::new());
 
     // Crypto service
-    let crypto = Arc::new(CryptoService::new());
+    let crypto = Arc::new(CryptoService::new()?);
 
     // Unit of Work
-    let uow = Arc::new(PostgresUnitOfWork::new(Arc::clone(&pool)));
+    let uow = Arc::new(PostgresUnitOfWork::new(Arc::clone(&pg_pool)));
 
     // Database Services
     let user_service: Arc<dyn UserRepository> =
-        Arc::new(PgUserService::new(Arc::clone(&pool), PgUserRepository));
-    let unit_service: Arc<dyn UnitRepository> = Arc::new(PgUnitService::new(Arc::clone(&pool)));
+        Arc::new(PgUserService::new(Arc::clone(&pg_pool), PgUserRepository));
+    let unit_service: Arc<dyn UnitRepository> = Arc::new(PgUnitService::new(Arc::clone(&pg_pool)));
     let corporation_service: Arc<dyn CorporationRepository> =
-        Arc::new(PgCorporationService::new(Arc::clone(&pool)));
+        Arc::new(PgCorporationService::new(Arc::clone(&pg_pool)));
 
     // Auth use cases
     let login_uc = Arc::new(LoginUseCase::new(
@@ -69,6 +77,7 @@ pub async fn build_services(pool: Arc<PgPool>) -> AppState {
     ));
 
     // Admin use cases
+    let bootstrap_admin_uc = Arc::new(BootstrapAdminUseCase::new(crypto.clone(), Arc::clone(&uow)));
     let create_user_uc = Arc::new(CreateUserUseCase::new(
         crypto.clone(),
         Arc::clone(&uow),
@@ -89,7 +98,7 @@ pub async fn build_services(pool: Arc<PgPool>) -> AppState {
         Arc::clone(&spawn_unit_uc),
     )));
 
-    AppState {
+    Ok(AppState {
         engine,
         jobs,
         user_channels,
@@ -98,10 +107,11 @@ pub async fn build_services(pool: Arc<PgPool>) -> AppState {
         unit_service,
         corporation_service,
         login_uc,
+        bootstrap_admin_uc,
         create_user_uc,
         delete_user_uc,
         spawn_unit_uc,
         list_units_uc,
         get_corporation_uc,
-    }
+    })
 }

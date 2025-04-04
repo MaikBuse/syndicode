@@ -4,8 +4,8 @@ pub mod unit;
 pub mod uow;
 pub mod user;
 
+use crate::utils::read_env_var;
 use sqlx::{pool::PoolOptions, PgPool};
-use std::env;
 
 const MAX_CONNECTIONS: u32 = 5;
 
@@ -13,19 +13,14 @@ const MAX_CONNECTIONS: u32 = 5;
 pub struct PostgresDatabase;
 
 impl PostgresDatabase {
-    pub async fn init() -> sqlx::Result<PgPool> {
+    pub async fn init() -> anyhow::Result<PgPool> {
         tracing::info!("Initializing postgres database connection");
 
-        let postgres_user =
-            env::var("POSTGRES_USER").expect("Environment variable 'POSTGRES_USER' must be set");
-        let postgres_password = env::var("POSTGRES_PASSWORD")
-            .expect("Environment variable 'POSTGRES_PASSWORD' must be set");
-        let postgres_host =
-            env::var("POSTGRES_HOST").expect("Environment variable 'POSTGRES_HOST' must be set");
-        let postgres_port =
-            env::var("POSTGRES_PORT").expect("Environment variable 'POSTGRES_PORT' must be set");
-        let postgres_db =
-            env::var("POSTGRES_DB").expect("Environment variable 'POSTGRES_DB' must be set");
+        let postgres_user = read_env_var("POSTGRES_USER")?;
+        let postgres_password = read_env_var("POSTGRES_PASSWORD")?;
+        let postgres_host = read_env_var("POSTGRES_HOST")?;
+        let postgres_port = read_env_var("POSTGRES_PORT")?;
+        let postgres_db = read_env_var("POSTGRES_DB")?;
 
         let conn_string = format!(
             "postgres://{}:{}@{}:{}/{}",
@@ -40,5 +35,6 @@ impl PostgresDatabase {
             .max_connections(MAX_CONNECTIONS)
             .connect(&conn_string)
             .await
+            .map_err(|err| anyhow::format_err!(err))
     }
 }

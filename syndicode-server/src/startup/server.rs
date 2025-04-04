@@ -1,5 +1,7 @@
+use super::services::AppState;
 use crate::{
-    infrastructure::postgres::uow::PostgresUnitOfWork,
+    config::Config,
+    infrastructure::{postgres::uow::PostgresUnitOfWork, valkey::ValkeyStore},
     presentation::{
         admin::AdminPresenter, auth::AuthPresenter, game::GamePresenter,
         middleware::MiddlewareLayer,
@@ -12,11 +14,13 @@ use syndicode_proto::syndicode_interface_v1::{
 };
 use tonic::transport::Server;
 
-use super::services::AppState;
-
 const SOCKET_ADDR: &str = "[::]:50051";
 
-pub async fn start_grpc_services(app: AppState) -> anyhow::Result<()> {
+pub async fn start_grpc_services(
+    config: Arc<Config>,
+    app: AppState,
+    valkey: Arc<ValkeyStore>,
+) -> anyhow::Result<()> {
     let addr = SOCKET_ADDR.parse()?;
 
     // Add health checks for servers
@@ -29,6 +33,8 @@ pub async fn start_grpc_services(app: AppState) -> anyhow::Result<()> {
     let reflection_service = syndicode_proto::create_reflection_service()?;
 
     let game_presenter = GamePresenter {
+        config: Arc::clone(&config),
+        limit: valkey.clone(),
         jobs: Arc::clone(&app.jobs),
         user_channels: Arc::clone(&app.user_channels),
         list_units_uc: Arc::clone(&app.list_units_uc),
@@ -48,7 +54,11 @@ pub async fn start_grpc_services(app: AppState) -> anyhow::Result<()> {
     tracing::info!("Starting server...");
 
     Server::builder()
-        .layer(MiddlewareLayer::new(app.crypto.clone()))
+        .layer(MiddlewareLayer::new(
+            Arc::clone(&config),
+            Arc::clone(&app.crypto),
+            Arc::clone(&valkey),
+        ))
         .add_service(health_service)
         .add_service(reflection_service)
         .add_service(GameServiceServer::new(game_presenter))

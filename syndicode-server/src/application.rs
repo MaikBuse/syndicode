@@ -4,6 +4,7 @@ pub mod bootstrap;
 pub mod crypto;
 pub mod economy;
 pub mod error;
+pub mod limitation;
 pub mod migration;
 pub mod uow;
 pub mod warfare;

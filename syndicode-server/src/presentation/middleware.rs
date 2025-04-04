@@ -1,5 +1,8 @@
 use crate::application::crypto::JwtHandler;
+use crate::application::limitation::{LimitationError, RateLimitationEnforcer};
+use crate::config::Config;
 use http::HeaderValue;
+use std::collections::HashSet;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -7,57 +10,97 @@ use std::time::Instant;
 use tonic::Status;
 use tower::{BoxError, Layer, Service};
 
-pub const USER_UUID_KEY: &str = "user_uuid";
-pub const AUTHORIZATION_KEY: &str = "authorization";
+pub const USER_UUID_KEY: &str = "user-uuid";
+pub const AUTHORIZATION_HEADER: &str = "authorization";
 
 const HEALTH_CHECK_PATH: &str = "/grpc.health.v1.Health/Check";
 
-const AUTH_EXCEPTED_PATHS: [&str; 4] = [
-    "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
-    HEALTH_CHECK_PATH,
-    "/control.Control/Register",
-    "/control.Control/Login",
-];
-
-#[derive(Clone)]
-pub struct MiddlewareLayer {
-    jwt: Arc<dyn JwtHandler>,
+lazy_static::lazy_static! {
+    static ref AUTH_EXCEPTED_PATHS: HashSet<&'static str> = [
+        "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
+        HEALTH_CHECK_PATH,
+        "/control.Control/Register",
+        "/control.Control/Login",
+    ]
+    .iter()
+    .cloned()
+    .collect();
 }
 
-impl MiddlewareLayer {
-    pub fn new(jwt: Arc<dyn JwtHandler>) -> Self {
-        Self { jwt }
+#[derive(Clone)]
+pub struct MiddlewareLayer<J, R>
+where
+    J: JwtHandler + Clone,
+    R: RateLimitationEnforcer + Clone,
+{
+    ip_header_name: Arc<String>,
+    jwt: Arc<J>,
+    limit: Arc<R>,
+    auth_excepted_paths: Arc<HashSet<&'static str>>,
+}
+
+impl<J, R> MiddlewareLayer<J, R>
+where
+    J: JwtHandler + Clone,
+    R: RateLimitationEnforcer + Clone,
+{
+    pub fn new(config: Arc<Config>, jwt: Arc<J>, limit: Arc<R>) -> Self {
+        let ip_header_name = Arc::new(config.ip_address_header.clone());
+
+        let auth_excepted_paths = Arc::new(AUTH_EXCEPTED_PATHS.clone());
+        Self {
+            ip_header_name,
+            jwt,
+            limit,
+            auth_excepted_paths,
+        }
     }
 }
 
-impl<S> Layer<S> for MiddlewareLayer {
-    type Service = Middleware<S>;
+impl<S, J, R> Layer<S> for MiddlewareLayer<J, R>
+where
+    J: JwtHandler + Clone,
+    R: RateLimitationEnforcer + Clone,
+{
+    type Service = Middleware<S, J, R>;
 
     fn layer(&self, service: S) -> Self::Service {
         Middleware {
             inner: service,
+            ip_header_name: Arc::clone(&self.ip_header_name),
             jwt: Arc::clone(&self.jwt),
+            limit: Arc::clone(&self.limit),
+            auth_excepted_paths: Arc::clone(&self.auth_excepted_paths),
         }
     }
 }
 
 #[derive(Clone)]
-pub struct Middleware<S> {
+pub struct Middleware<S, J, R>
+where
+    J: JwtHandler + Clone,
+    R: RateLimitationEnforcer + Clone,
+{
     inner: S,
-    jwt: Arc<dyn JwtHandler>,
+    ip_header_name: Arc<String>,
+    jwt: Arc<J>,
+    limit: Arc<R>,
+    auth_excepted_paths: Arc<HashSet<&'static str>>,
 }
 
 type BoxFuture<'a, T> = Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
 
-impl<S, ReqBody, ResBody> Service<http::Request<ReqBody>> for Middleware<S>
+impl<S, J, R, ReqBody, ResBody> Service<http::Request<ReqBody>> for Middleware<S, J, R>
 where
     S: Service<http::Request<ReqBody>, Response = http::Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError> + Send + std::fmt::Debug + 'static,
+    S::Error: Into<BoxError> + Send + Sync + std::fmt::Debug + 'static,
     ReqBody: Send + 'static,
+    J: JwtHandler + Clone + 'static, // Add necessary bounds
+    R: RateLimitationEnforcer + Clone + 'static, // Add necessary bounds
 {
     type Response = S::Response;
-    type Error = BoxError;
+    type Error = BoxError; // BoxError is often convenient for middleware
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
@@ -65,75 +108,128 @@ where
     }
 
     fn call(&mut self, mut req: http::Request<ReqBody>) -> Self::Future {
+        // Use tower::ServiceExt::oneshot or clone manually like before.
+        // Cloning is often simpler to reason about.
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
 
-        let path = req.uri().path().to_string(); // clone for move
-        let start_time = Instant::now();
-
+        // Clone Arcs needed for the future
         let jwt = Arc::clone(&self.jwt);
+        let limit = Arc::clone(&self.limit);
+        let ip_header_name = Arc::clone(&self.ip_header_name);
+        let auth_excepted_paths = Arc::clone(&self.auth_excepted_paths);
 
         Box::pin(async move {
-            let skip_auth = AUTH_EXCEPTED_PATHS.contains(&path.as_str());
-            let skip_logging = path.as_str() == HEALTH_CHECK_PATH;
+            let start_time = Instant::now();
+            let path = req.uri().path().to_string(); // Clone path for logging etc.
+
+            // IP Address Extraction ---
+            let ip_address = req
+                .headers()
+                .get(ip_header_name.as_str())
+                .and_then(|h| h.to_str().ok())
+                .ok_or_else(|| {
+                    tracing::warn!(
+                        "Failed to retrieve client IP address from header '{}'",
+                        *ip_header_name
+                    );
+
+                    Status::invalid_argument("Missing required client identification")
+                })?;
+
+            // Rate Limiting
+            let check_result = limit.check(ip_address).await;
+            match check_result {
+                Ok(()) => {
+                    // Continue processing the request
+                }
+                Err(LimitationError::RateExhausted) => {
+                    return Err(Status::resource_exhausted("Rate limit exceeded").into());
+                }
+                Err(LimitationError::Internal(msg)) => {
+                    tracing::error!("Rate limiter internal error: {}", msg);
+
+                    return Err(Status::internal("An internal error occurred").into());
+                }
+            }
+
+            // Path Handling & Logging
+            let skip_auth = auth_excepted_paths.contains(path.as_str());
+            let skip_logging = path == HEALTH_CHECK_PATH; // Direct comparison is fine
 
             if !skip_logging {
-                tracing::info!(%path, %skip_auth, "Incoming request");
+                // Use structured logging
+                tracing::info!(
+                    method = %req.method(),
+                    uri = %req.uri(),
+                    version = ?req.version(),
+                    ip = %ip_address, // Log IP earlier
+                    action = "request_start",
+                    auth_skipped = skip_auth,
+                );
             }
 
-            // Skip auth for exceptional paths
-            if skip_auth {
-                let response = inner.call(req).await.map_err(Into::into)?;
+            // Authorization
+            let user_uuid_str_opt: Option<String> = if skip_auth {
+                None
+            } else {
+                // Extract Bearer token
+                let token = req
+                    .headers()
+                    .get(AUTHORIZATION_HEADER)
+                    .and_then(|val| val.to_str().ok())
+                    .and_then(|s| s.strip_prefix("Bearer "))
+                    .ok_or_else(|| Status::unauthenticated("Missing or malformed Bearer token"))?;
 
-                if !skip_logging {
-                    tracing::info!(%path, elapsed_ms = start_time.elapsed().as_millis(), "Request completed");
+                // Decode JWT
+                let token_data = jwt.decode_jwt(token).map_err(|e| {
+                    tracing::warn!(error = ?e, "JWT decoding failed");
+
+                    Status::unauthenticated("Invalid token")
+                })?;
+
+                // Inject UUID
+                let user_uuid = token_data.claims.sub; // Assuming this is already a String or easily convertible
+                if let Ok(uuid_header) = HeaderValue::from_str(&user_uuid) {
+                    req.headers_mut().insert(USER_UUID_KEY, uuid_header);
+                } else {
+                    // This case should ideally not happen if UUIDs are valid strings
+                    tracing::error!(user_uuid = %user_uuid, "Failed to create HeaderValue from user UUID");
+
+                    return Err(Status::internal("Internal processing error").into());
                 }
+                Some(user_uuid)
+            };
 
-                return Ok(response);
-            }
+            // Call Inner Service
+            let response_result = inner.call(req).await;
+            let elapsed_ms = start_time.elapsed().as_millis();
 
-            // Extract Bearer token
-            let token = req
-                .headers()
-                .get(AUTHORIZATION_KEY)
-                .and_then(|val| val.to_str().ok())
-                .and_then(|s| s.strip_prefix("Bearer "))
-                .ok_or_else(|| Status::unauthenticated("Missing or malformed Bearer token"))?;
-
-            // Decode JWT
-            let token_data = jwt.decode_jwt(token)?;
-
-            // Inject UUID
-            let user_uuid_str = &token_data.claims.sub;
-
-            if let Ok(uuid_header) = HeaderValue::from_str(user_uuid_str) {
-                req.headers_mut().insert(USER_UUID_KEY, uuid_header);
-            }
-
-            // Call inner service
-            match inner.call(req).await {
+            // Response Logging
+            match &response_result {
                 Ok(res) => {
                     if !skip_logging {
                         tracing::info!(
-                            %path,
-                            %user_uuid_str,
-                            elapsed_ms = start_time.elapsed().as_millis(),
-                            "Request succeeded"
+                            status = %res.status(), // Log HTTP status if available/relevant
+                            user_uuid = user_uuid_str_opt.as_deref().unwrap_or("anonymous"),
+                            elapsed_ms,
+                            action = "request_success",
+                            path = %path, // Log path again for context
                         );
                     }
-                    Ok(res)
                 }
                 Err(err) => {
                     tracing::error!(
-                        %path,
-                        %user_uuid_str,
-                        elapsed_ms = start_time.elapsed().as_millis(),
-                        error = ?err,
-                        "Request failed"
+                        user_uuid = user_uuid_str_opt.as_deref().unwrap_or("anonymous"),
+                        elapsed_ms,
+                        // error = %err,
+                        action = "request_failure",
+                        path = %path,
                     );
-                    Err(err.into())
                 }
             }
+
+            response_result.map_err(Into::into)
         })
     }
 }

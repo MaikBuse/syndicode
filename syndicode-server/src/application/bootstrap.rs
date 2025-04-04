@@ -1,44 +1,46 @@
 use super::{
-    admin::create_user::CreateUserUseCase,
+    admin::bootstrap_admin::BootstrapAdminUseCase,
+    crypto::PasswordHandler,
     error::{ApplicationError, ApplicationResult},
     migration::MigrationRunner,
     uow::UnitOfWork,
 };
-use crate::domain::user::model::role::UserRole;
+use crate::utils::read_env_var;
 use std::sync::Arc;
 
 const ADMIN_CORPORATION_NAME: &str = "Shinkai Heavyworks";
 const ADMIN_USERNAME: &str = "admin";
 
-pub struct Bootstrap<U: UnitOfWork> {
+pub struct Bootstrap<U: UnitOfWork, P: PasswordHandler> {
     pub migrator: Arc<dyn MigrationRunner>,
-    pub create_user_uc: Arc<CreateUserUseCase<U>>,
+    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<U, P>>,
 }
 
-impl<U: UnitOfWork> Bootstrap<U> {
+impl<U, P> Bootstrap<U, P>
+where
+    U: UnitOfWork,
+    P: PasswordHandler,
+{
     pub fn new(
         migrator: Arc<dyn MigrationRunner>,
-        create_user_uc: Arc<CreateUserUseCase<U>>,
+        bootstrap_admin_uc: Arc<BootstrapAdminUseCase<U, P>>,
     ) -> Self {
         Self {
             migrator,
-            create_user_uc,
+            bootstrap_admin_uc,
         }
     }
 
     pub async fn run(&self) -> ApplicationResult<()> {
-        let admin_password = std::env::var("ADMIN_PASSWORD")
-            .expect("Environment variable 'ADMIN_PASSWORD' must be set");
+        let admin_password = read_env_var("ADMIN_PASSWORD")?;
 
         self.migrator.run_migration().await?;
 
         if let Err(err) = self
-            .create_user_uc
+            .bootstrap_admin_uc
             .execute(
-                None,
                 ADMIN_USERNAME.to_string(),
                 admin_password.to_string(),
-                UserRole::Admin,
                 ADMIN_CORPORATION_NAME.to_string(),
             )
             .await

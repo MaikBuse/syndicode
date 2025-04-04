@@ -1,6 +1,6 @@
-use crate::application::error::ApplicationError;
-
 use super::middleware::USER_UUID_KEY;
+use crate::application::error::ApplicationError;
+use anyhow::Result;
 use tonic::{metadata::MetadataMap, Code, Status};
 use uuid::Uuid;
 
@@ -24,15 +24,15 @@ pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
             Status::unauthenticated(err.to_string())
         }
         ApplicationError::Unauthorized => Status::permission_denied(err.to_string()),
-        ApplicationError::Database(_) | ApplicationError::Other(_) => {
-            Status::internal(err.to_string())
-        }
+        ApplicationError::Limitation(_)
+        | ApplicationError::Database(_)
+        | ApplicationError::Other(_) => Status::internal(err.to_string()),
     }
 }
 
 pub(super) fn uuid_from_metadata(metadata: &MetadataMap) -> Result<Uuid, Status> {
     let Some(uuid_metadata) = metadata.get(USER_UUID_KEY) else {
-        return Err(Status::new(Code::NotFound, "Failed to retrieve user id"));
+        return Err(Status::unauthenticated("Failed to retrieve user id"));
     };
 
     let Ok(uuid_str) = uuid_metadata.to_str() else {

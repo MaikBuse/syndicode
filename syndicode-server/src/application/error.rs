@@ -1,3 +1,4 @@
+use super::limitation::LimitationError;
 use crate::domain::repository::RepositoryError;
 
 pub type ApplicationResult<T> = std::result::Result<T, ApplicationError>;
@@ -24,6 +25,9 @@ pub enum ApplicationError {
 
     #[error("The provided credentials are wrong")]
     WrongUserCredentials,
+
+    #[error(transparent)]
+    Limitation(#[from] LimitationError),
 
     #[error(transparent)]
     Database(#[from] RepositoryError),

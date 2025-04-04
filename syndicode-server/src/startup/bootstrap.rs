@@ -2,17 +2,24 @@ use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::{
-    application::{admin::create_user::CreateUserUseCase, bootstrap::Bootstrap, uow::UnitOfWork},
+    application::{
+        admin::bootstrap_admin::BootstrapAdminUseCase, bootstrap::Bootstrap,
+        crypto::PasswordHandler, uow::UnitOfWork,
+    },
     infrastructure::postgres::migration::PostgresMigrator,
 };
 
-pub async fn run<U: UnitOfWork>(
+pub async fn run<U, P>(
     pool: Arc<PgPool>,
-    create_user_uc: Arc<CreateUserUseCase<U>>,
-) -> anyhow::Result<()> {
+    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<U, P>>,
+) -> anyhow::Result<()>
+where
+    U: UnitOfWork,
+    P: PasswordHandler,
+{
     let migrator = Arc::new(PostgresMigrator::new(pool.clone()));
 
-    let bootstrapper = Bootstrap::new(migrator, create_user_uc.clone());
+    let bootstrapper = Bootstrap::new(migrator, bootstrap_admin_uc.clone());
 
     bootstrapper
         .run()
