@@ -16,6 +16,16 @@ pub struct Bootstrap<U: UnitOfWork> {
 }
 
 impl<U: UnitOfWork> Bootstrap<U> {
+    pub fn new(
+        migrator: Arc<dyn MigrationRunner>,
+        create_user_uc: Arc<CreateUserUseCase<U>>,
+    ) -> Self {
+        Self {
+            migrator,
+            create_user_uc,
+        }
+    }
+
     pub async fn run(&self) -> ApplicationResult<()> {
         let admin_password = std::env::var("ADMIN_PASSWORD")
             .expect("Environment variable 'ADMIN_PASSWORD' must be set");
