@@ -1,3 +1,4 @@
+use crate::application::crypto::JwtHandler;
 use http::HeaderValue;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -5,8 +6,6 @@ use std::task::{Context, Poll};
 use std::time::Instant;
 use tonic::Status;
 use tower::{BoxError, Layer, Service};
-
-use crate::infrastructure::crypto::CryptoService;
 
 pub const USER_UUID_KEY: &str = "user_uuid";
 pub const AUTHORIZATION_KEY: &str = "authorization";
@@ -22,14 +21,12 @@ const AUTH_EXCEPTED_PATHS: [&str; 4] = [
 
 #[derive(Clone)]
 pub struct MiddlewareLayer {
-    crypto: Arc<CryptoService>,
+    jwt: Arc<dyn JwtHandler>,
 }
 
 impl MiddlewareLayer {
-    pub fn new(auth_service: Arc<CryptoService>) -> Self {
-        Self {
-            crypto: auth_service,
-        }
+    pub fn new(jwt: Arc<dyn JwtHandler>) -> Self {
+        Self { jwt }
     }
 }
 
@@ -39,7 +36,7 @@ impl<S> Layer<S> for MiddlewareLayer {
     fn layer(&self, service: S) -> Self::Service {
         Middleware {
             inner: service,
-            auth_service: Arc::clone(&self.crypto),
+            jwt: Arc::clone(&self.jwt),
         }
     }
 }
@@ -47,7 +44,7 @@ impl<S> Layer<S> for MiddlewareLayer {
 #[derive(Clone)]
 pub struct Middleware<S> {
     inner: S,
-    auth_service: Arc<CryptoService>,
+    jwt: Arc<dyn JwtHandler>,
 }
 
 type BoxFuture<'a, T> = Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
@@ -74,7 +71,7 @@ where
         let path = req.uri().path().to_string(); // clone for move
         let start_time = Instant::now();
 
-        let auth_service = Arc::clone(&self.auth_service);
+        let jwt = Arc::clone(&self.jwt);
 
         Box::pin(async move {
             let skip_auth = AUTH_EXCEPTED_PATHS.contains(&path.as_str());
@@ -104,7 +101,7 @@ where
                 .ok_or_else(|| Status::unauthenticated("Missing or malformed Bearer token"))?;
 
             // Decode JWT
-            let token_data = auth_service.decode_jwt(token)?;
+            let token_data = jwt.decode_jwt(token)?;
 
             // Inject UUID
             let user_uuid_str = &token_data.claims.sub;

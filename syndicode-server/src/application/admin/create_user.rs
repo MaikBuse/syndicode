@@ -1,5 +1,6 @@
 use crate::{
     application::{
+        crypto::PasswordHandler,
         error::{ApplicationError, ApplicationResult},
         uow::UnitOfWork,
     },
@@ -11,29 +12,24 @@ use crate::{
             repository::UserRepository,
         },
     },
-    infrastructure::crypto::CryptoService,
 };
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct CreateUserUseCase<U: UnitOfWork> {
-    crypto: Arc<CryptoService>,
+    pw: Arc<dyn PasswordHandler>,
     uow: Arc<U>,
     user_repo: Arc<dyn UserRepository>,
 }
 
 impl<U: UnitOfWork> CreateUserUseCase<U> {
     pub fn new(
-        crypto: Arc<CryptoService>,
+        pw: Arc<dyn PasswordHandler>,
         uow: Arc<U>,
         user_repo: Arc<dyn UserRepository>,
     ) -> Self {
-        Self {
-            crypto,
-            uow,
-            user_repo,
-        }
+        Self { pw, uow, user_repo }
     }
 
     pub async fn execute(
@@ -66,7 +62,7 @@ impl<U: UnitOfWork> CreateUserUseCase<U> {
 
         let salt = SaltString::generate(&mut OsRng);
 
-        let password_hash = self.crypto.hash_password(password, &salt)?;
+        let password_hash = self.pw.hash_password(password, &salt)?;
 
         let user_to_create = User {
             uuid: Uuid::now_v7(),

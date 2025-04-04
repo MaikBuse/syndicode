@@ -63,13 +63,14 @@ pub async fn build_services(pool: Arc<PgPool>) -> AppState {
 
     // Auth use cases
     let login_uc = Arc::new(LoginUseCase::new(
-        Arc::clone(&crypto),
+        crypto.clone(),
+        crypto.clone(),
         Arc::clone(&user_service),
     ));
 
     // Admin use cases
     let create_user_uc = Arc::new(CreateUserUseCase::new(
-        Arc::clone(&crypto),
+        crypto.clone(),
         Arc::clone(&uow),
         Arc::clone(&user_service),
     ));

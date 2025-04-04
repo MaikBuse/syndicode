@@ -1,10 +1,12 @@
+use crate::application::crypto::PasswordHandler;
+
 use super::CryptoService;
 
 use argon2::{password_hash::SaltString, PasswordHash};
 use argon2::{PasswordHasher, PasswordVerifier};
 
-impl CryptoService {
-    pub fn hash_password<'a>(
+impl PasswordHandler for CryptoService {
+    fn hash_password<'a>(
         &self,
         password: String,
         salt: &'a SaltString,
@@ -18,7 +20,7 @@ impl CryptoService {
         }
     }
 
-    pub fn verfiy_password(
+    fn verfiy_password(
         &self,
         user_password_hash: &str,
         provided_password: String,

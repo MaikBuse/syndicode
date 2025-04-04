@@ -1,18 +1,25 @@
 use crate::{
-    application::error::{ApplicationError, ApplicationResult},
+    application::{
+        crypto::{JwtHandler, PasswordHandler},
+        error::{ApplicationError, ApplicationResult},
+    },
     domain::user::repository::UserRepository,
-    infrastructure::crypto::CryptoService,
 };
 use std::sync::Arc;
 
 pub struct LoginUseCase {
-    crypto: Arc<CryptoService>,
+    pw: Arc<dyn PasswordHandler>,
+    jwt: Arc<dyn JwtHandler>,
     user_repo: Arc<dyn UserRepository>,
 }
 
 impl LoginUseCase {
-    pub fn new(crypto: Arc<CryptoService>, user_repo: Arc<dyn UserRepository>) -> Self {
-        Self { crypto, user_repo }
+    pub fn new(
+        pw: Arc<dyn PasswordHandler>,
+        jwt: Arc<dyn JwtHandler>,
+        user_repo: Arc<dyn UserRepository>,
+    ) -> Self {
+        Self { pw, jwt, user_repo }
     }
 
     pub async fn execute(&self, user_name: String, password: String) -> ApplicationResult<String> {
@@ -21,13 +28,13 @@ impl LoginUseCase {
         };
 
         if self
-            .crypto
+            .pw
             .verfiy_password(&user.password_hash, password)
             .is_err()
         {
             return Err(ApplicationError::WrongUserCredentials);
         }
 
-        Ok(self.crypto.encode_jwt(user.uuid, user.role)?)
+        Ok(self.jwt.encode_jwt(user.uuid, user.role)?)
     }
 }
