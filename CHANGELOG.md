@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0](https://github.com/MaikBuse/syndicode/compare/v0.5.0...v0.6.0) (2025-04-04)
+
+
+### Features
+
+* add test for create user uc ([da60707](https://github.com/MaikBuse/syndicode/commit/da60707563a3e1711ad91dff39490441ca1e23a9))
+* improve password verification ([9b65a5e](https://github.com/MaikBuse/syndicode/commit/9b65a5e78550b3a797f365846b2105c18f9575e2))
+* introducing rate limiting for requests ([9f48d30](https://github.com/MaikBuse/syndicode/commit/9f48d30cb0e35285d6c72d14eb2afbbb6a536a83))
+* introducing valkey based rate limiting ([a78bc02](https://github.com/MaikBuse/syndicode/commit/a78bc0235464a6ba3d0426697c06ea2e39219257))
+
 ## [0.5.0](https://github.com/MaikBuse/syndicode/compare/v0.4.2...v0.5.0) (2025-03-30)
 
 
