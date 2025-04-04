@@ -7,6 +7,7 @@ mod proto
 mod server
 mod client
 mod db
+mod docker
 
 # Default: Show all available recipes from grouped justfiles
 help:
@@ -16,5 +17,7 @@ help:
   @just --list client --list-heading ""
   @echo "[server]"
   @just --list server --list-heading ""
+  @echo "[docker]"
+  @just --list docker --list-heading ""
   @echo "[db]"
   @just --list db --list-heading ""

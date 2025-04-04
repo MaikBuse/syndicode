@@ -4,7 +4,10 @@ use mockall::{automock, predicate::*};
 use jsonwebtoken::TokenData;
 use uuid::Uuid;
 
-use crate::{domain::user::model::role::UserRole, infrastructure::crypto::claims::Claims};
+use crate::{
+    domain::user::model::{password::UserPassword, role::UserRole},
+    infrastructure::crypto::claims::Claims,
+};
 
 #[cfg_attr(test, automock)]
 pub trait JwtHandler: Send + Sync {
@@ -14,7 +17,7 @@ pub trait JwtHandler: Send + Sync {
 
 #[cfg_attr(test, automock)]
 pub trait PasswordHandler: Send + Sync {
-    fn hash_password(&self, password: String) -> anyhow::Result<String>;
+    fn hash_user_password(&self, password: UserPassword) -> anyhow::Result<String>;
 
     fn verfiy_password(
         &self,

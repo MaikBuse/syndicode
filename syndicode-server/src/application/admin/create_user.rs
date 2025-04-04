@@ -8,7 +8,7 @@ use crate::{
         corporation::model::Corporation,
         repository::RepositoryError,
         user::{
-            model::{role::UserRole, User},
+            model::{password::UserPassword, role::UserRole, User},
             repository::UserRepository,
         },
     },
@@ -43,9 +43,7 @@ impl<U: UnitOfWork> CreateUserUseCase<U> {
             return Err(ApplicationError::UsernameInvalid);
         }
 
-        if password.len() < 8 {
-            return Err(ApplicationError::PasswordTooShort);
-        }
+        let user_password = UserPassword::new(password)?;
 
         if user_role == UserRole::Admin {
             let Some(req_user_uuid) = maybe_req_user_uuid else {
@@ -59,7 +57,7 @@ impl<U: UnitOfWork> CreateUserUseCase<U> {
             }
         }
 
-        let password_hash = self.pw.hash_password(password)?;
+        let password_hash = self.pw.hash_user_password(user_password)?;
 
         let user_to_create = User {
             uuid: Uuid::now_v7(),
@@ -127,10 +125,12 @@ mod tests {
             expected_hash: String,
             expected_user_output: User, // The user returned by UoW
         ) {
+            let input_user_password = UserPassword::new(input_password).unwrap();
+
             // Expect password hashing
             self.mock_pw
-                .expect_hash_password()
-                .with(eq(input_password.to_string())) // Match specific password
+                .expect_hash_user_password()
+                .with(eq(input_user_password)) // Match specific password
                 .times(1)
                 .return_once(move |_| Ok(expected_hash.to_string())); // Use return_once for clarity
 
@@ -164,7 +164,7 @@ mod tests {
                 .return_once(move |_| Ok(non_admin_requester.clone())); // Return the non-admin user
 
             // IMPORTANT: Do NOT expect hash_password or execute, as the code should fail before them
-            self.mock_pw.expect_hash_password().never(); // Explicitly expect NO call
+            self.mock_pw.expect_hash_user_password().never(); // Explicitly expect NO call
             self.mock_uow.expect_execute::<User>().never(); // Explicitly expect NO call
         }
 

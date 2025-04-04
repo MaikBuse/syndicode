@@ -7,8 +7,11 @@ pub enum ApplicationError {
     #[error("The database returned with a violation of a unique/primary key constraint")]
     UniqueConstraint,
 
-    #[error("The provided password needs to have at least 8 characters")]
-    PasswordTooShort,
+    #[error("The provided password can't be longer than {0} characters")]
+    PasswordTooLong(usize),
+
+    #[error("The provided password needs to have at least {0} characters")]
+    PasswordTooShort(usize),
 
     #[error("The provided username '' is invalid")]
     UsernameInvalid,

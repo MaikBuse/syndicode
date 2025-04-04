@@ -1,3 +1,4 @@
+pub mod password;
 pub mod role;
 
 use role::UserRole;

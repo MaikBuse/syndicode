@@ -1,13 +1,12 @@
-use crate::application::crypto::PasswordHandler;
-
 use super::CryptoService;
-
+use crate::application::crypto::PasswordHandler;
+use crate::domain::user::model::password::UserPassword;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{password_hash::SaltString, PasswordHash};
 use argon2::{PasswordHasher, PasswordVerifier};
 
 impl PasswordHandler for CryptoService {
-    fn hash_password(&self, password: String) -> anyhow::Result<String> {
+    fn hash_user_password(&self, password: UserPassword) -> anyhow::Result<String> {
         let salt = SaltString::generate(&mut OsRng);
 
         match self.argon.hash_password(password.as_bytes(), &salt) {

@@ -1,12 +1,3 @@
-# Start the database
-[group('docker')]
-start:
-  if command -v docker-compose > /dev/null; then \
-    docker-compose up -d; \
-  else \
-    docker compose up -d; \
-  fi
-
 # Add a new database migration
 [group('migration')]
 add name:
@@ -33,21 +24,6 @@ revert:
 [group('sqlx')]
 prepare:
   cargo sqlx prepare --workspace --database-url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
-
-# Stop the database
-[group('docker')]
-stop:
-  if command -v docker-compose > /dev/null; then \
-    docker-compose down; \
-  else \
-    docker compose down; \
-  fi
-
-# Restart the database
-[group('docker')]
-restart:
-  just stop
-  just start
 
 # Show logs
 [group('utils')]

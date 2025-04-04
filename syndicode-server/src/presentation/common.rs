@@ -16,7 +16,8 @@ pub(crate) fn parse_uuid(uuid_str: &str) -> Result<Uuid, Status> {
 
 pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
     match err {
-        ApplicationError::PasswordTooShort
+        ApplicationError::PasswordTooShort(_)
+        | ApplicationError::PasswordTooLong(_)
         | ApplicationError::UsernameInvalid
         | ApplicationError::UniqueConstraint => Status::invalid_argument(err.to_string()),
         ApplicationError::WrongUserCredentials | ApplicationError::MissingAuthentication => {
