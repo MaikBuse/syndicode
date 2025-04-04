@@ -1,7 +1,7 @@
 use super::uow::PgTransactionContext;
 use crate::domain::{
     repository::{
-        unit::{UnitRespository, UnitTxRespository},
+        unit::{UnitRepository, UnitTxRespository},
         RepositoryResult,
     },
     unit::Unit,
@@ -77,7 +77,7 @@ impl PgUnitService {
 }
 
 #[tonic::async_trait]
-impl UnitRespository for PgUnitService {
+impl UnitRepository for PgUnitService {
     async fn list_units(&self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>> {
         self.unit_repo.list_units(&*self.pool, user_uuid).await
     }
