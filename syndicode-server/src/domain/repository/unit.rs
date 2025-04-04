@@ -4,7 +4,7 @@ use tonic::async_trait;
 use uuid::Uuid;
 
 #[async_trait]
-pub trait UnitRespository: Send + Sync {
+pub trait UnitRepository: Send + Sync {
     async fn list_units(&self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>>;
     async fn create_unit(&self, unit: Unit) -> RepositoryResult<Unit>;
 }

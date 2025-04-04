@@ -1,16 +1,16 @@
 use crate::{
     application::error::ApplicationResult,
-    domain::{repository::unit::UnitRespository, unit::Unit},
+    domain::{repository::unit::UnitRepository, unit::Unit},
 };
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct SpawnUnitUseCase {
-    unit_repository: Arc<dyn UnitRespository>,
+    unit_repository: Arc<dyn UnitRepository>,
 }
 
 impl SpawnUnitUseCase {
-    pub fn new(unit_repository: Arc<dyn UnitRespository>) -> Self {
+    pub fn new(unit_repository: Arc<dyn UnitRepository>) -> Self {
         Self { unit_repository }
     }
 
