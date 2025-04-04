@@ -1,5 +1,7 @@
 use crate::{
-    application::{admin::create_user::CreateUserUseCase, auth::login::LoginUseCase},
+    application::{
+        admin::create_user::CreateUserUseCase, auth::login::LoginUseCase, uow::UnitOfWork,
+    },
     domain::user::role::UserRole,
 };
 use std::sync::Arc;
@@ -11,13 +13,13 @@ use tonic::{async_trait, Request, Response, Status};
 
 use super::common::application_error_into_status;
 
-pub struct AuthPresenter {
-    pub create_user_uc: Arc<CreateUserUseCase>,
+pub struct AuthPresenter<U: UnitOfWork + 'static> {
+    pub create_user_uc: Arc<CreateUserUseCase<U>>,
     pub login_uc: Arc<LoginUseCase>,
 }
 
 #[async_trait]
-impl AuthService for AuthPresenter {
+impl<U: UnitOfWork> AuthService for AuthPresenter<U> {
     async fn register(
         &self,
         request: Request<RegisterRequest>,

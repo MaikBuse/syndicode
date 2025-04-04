@@ -1,6 +1,9 @@
 use super::common::{application_error_into_status, uuid_from_metadata};
 use crate::{
-    application::admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
+    application::{
+        admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
+        uow::UnitOfWork,
+    },
     domain::user::role::UserRole,
 };
 use std::{result::Result, sync::Arc};
@@ -11,13 +14,13 @@ use syndicode_proto::syndicode_interface_v1::{
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
-pub struct AdminPresenter {
-    pub create_user_uc: Arc<CreateUserUseCase>,
+pub struct AdminPresenter<U: UnitOfWork + 'static> {
+    pub create_user_uc: Arc<CreateUserUseCase<U>>,
     pub delete_user_uc: Arc<DeleteUserUseCase>,
 }
 
 #[async_trait]
-impl AdminService for AdminPresenter {
+impl<U: UnitOfWork> AdminService for AdminPresenter<U> {
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,

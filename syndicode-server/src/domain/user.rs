@@ -3,10 +3,12 @@ pub mod role;
 use role::UserRole;
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
+use validator::Validate;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, Validate, FromRow)]
 pub struct User {
     pub uuid: Uuid,
+    #[validate(length(min = 1, max = 20))]
     pub name: String,
     pub password_hash: String,
     pub role: UserRole,

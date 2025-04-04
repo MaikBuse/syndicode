@@ -1,17 +1,17 @@
 use crate::{
-    application::error::ApplicationResult, domain::unit::Unit,
-    infrastructure::postgres::PostgresDatabase,
+    application::error::ApplicationResult,
+    domain::{repository::unit::UnitRespository, unit::Unit},
 };
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct SpawnUnitUseCase {
-    db: Arc<PostgresDatabase>,
+    unit_repository: Arc<dyn UnitRespository>,
 }
 
 impl SpawnUnitUseCase {
-    pub fn new(db: Arc<PostgresDatabase>) -> Self {
-        Self { db }
+    pub fn new(unit_repository: Arc<dyn UnitRespository>) -> Self {
+        Self { unit_repository }
     }
 
     pub async fn execute(&self, req_user_uuid: Uuid) -> ApplicationResult<Unit> {
@@ -20,6 +20,6 @@ impl SpawnUnitUseCase {
             user_uuid: req_user_uuid,
         };
 
-        Ok(PostgresDatabase::create_unit(&self.db.pool, unit).await?)
+        Ok(self.unit_repository.create_unit(unit).await?)
     }
 }

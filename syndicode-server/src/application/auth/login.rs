@@ -1,21 +1,22 @@
 use crate::{
     application::error::{ApplicationError, ApplicationResult},
-    infrastructure::{crypto::CryptoService, postgres::PostgresDatabase},
+    domain::repository::user::UserRepository,
+    infrastructure::crypto::CryptoService,
 };
 use std::sync::Arc;
 
 pub struct LoginUseCase {
-    db: Arc<PostgresDatabase>,
     crypto: Arc<CryptoService>,
+    user_repo: Arc<dyn UserRepository>,
 }
 
 impl LoginUseCase {
-    pub fn new(db: Arc<PostgresDatabase>, crypto: Arc<CryptoService>) -> Self {
-        Self { db, crypto }
+    pub fn new(crypto: Arc<CryptoService>, user_repo: Arc<dyn UserRepository>) -> Self {
+        Self { crypto, user_repo }
     }
 
     pub async fn execute(&self, user_name: String, password: String) -> ApplicationResult<String> {
-        let Ok(user) = PostgresDatabase::get_user_by_name(&self.db.pool, user_name).await else {
+        let Ok(user) = self.user_repo.get_user_by_name(user_name).await else {
             return Err(ApplicationError::WrongUserCredentials);
         };
 

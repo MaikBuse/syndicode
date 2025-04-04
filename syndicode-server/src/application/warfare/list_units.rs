@@ -1,21 +1,21 @@
 use crate::{
-    application::error::ApplicationResult, domain::unit::Unit,
-    infrastructure::postgres::PostgresDatabase,
+    application::error::ApplicationResult,
+    domain::{repository::unit::UnitRespository, unit::Unit},
 };
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct ListUnitsUseCase {
-    db: Arc<PostgresDatabase>,
+    unit_repository: Arc<dyn UnitRespository>,
 }
 
 impl ListUnitsUseCase {
-    pub fn new(db: Arc<PostgresDatabase>) -> Self {
-        Self { db }
+    pub fn new(unit_repository: Arc<dyn UnitRespository>) -> Self {
+        Self { unit_repository }
     }
 
     pub async fn execute(&self, req_user_uuid: Uuid) -> ApplicationResult<Vec<Unit>> {
-        let units = PostgresDatabase::list_user_units(&self.db.pool, req_user_uuid).await?;
+        let units = self.unit_repository.list_units(req_user_uuid).await?;
 
         Ok(units)
     }
