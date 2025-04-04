@@ -1,7 +1,3 @@
-pub mod corporation;
-pub mod unit;
-pub mod user;
-
 pub type RepositoryResult<T> = std::result::Result<T, RepositoryError>;
 
 #[derive(Debug, thiserror::Error)]

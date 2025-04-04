@@ -1,6 +1,6 @@
-use crate::domain::repository::{
-    corporation::CorporationTxRepository, unit::UnitTxRespository, user::UserTxRepository,
-    RepositoryResult,
+use crate::domain::{
+    corporation::repository::CorporationTxRepository, repository::RepositoryResult,
+    unit::repository::UnitTxRespository, user::repository::UserTxRepository,
 };
 use std::{future::Future, pin::Pin};
 use tonic::async_trait;

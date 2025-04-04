@@ -1,7 +1,8 @@
-use super::RepositoryResult;
-use crate::domain::unit::Unit;
 use tonic::async_trait;
 use uuid::Uuid;
+
+use super::model::Unit;
+use crate::domain::repository::RepositoryResult;
 
 #[async_trait]
 pub trait UnitRepository: Send + Sync {

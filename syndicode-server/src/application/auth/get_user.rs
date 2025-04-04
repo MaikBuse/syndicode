@@ -1,8 +1,8 @@
 use crate::{
     application::error::{ApplicationError, ApplicationResult},
     domain::{
-        repository::user::UserRepository,
-        user::{role::UserRole, User},
+        user::repository::UserRepository,
+        user::{model::role::UserRole, model::User},
     },
 };
 use std::sync::Arc;

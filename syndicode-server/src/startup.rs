@@ -13,6 +13,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     logging::init();
 
     let pool = Arc::new(PostgresDatabase::init().await?);
+
     let state = services::build_services(pool.clone()).await;
 
     bootstrap::run(pool, state.create_user_uc.clone()).await?;

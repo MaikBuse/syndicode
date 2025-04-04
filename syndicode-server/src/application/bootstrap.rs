@@ -4,7 +4,7 @@ use super::{
     migration::MigrationRunner,
     uow::UnitOfWork,
 };
-use crate::domain::user::role::UserRole;
+use crate::domain::user::model::role::UserRole;
 use std::sync::Arc;
 
 const ADMIN_CORPORATION_NAME: &str = "Shinkai Heavyworks";

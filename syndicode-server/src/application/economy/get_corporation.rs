@@ -1,6 +1,6 @@
 use crate::{
     application::error::ApplicationResult,
-    domain::{corporation::Corporation, repository::corporation::CorporationRepository},
+    domain::{corporation::model::Corporation, corporation::repository::CorporationRepository},
 };
 use std::sync::Arc;
 use uuid::Uuid;

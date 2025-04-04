@@ -1,6 +1,6 @@
 use crate::{
     application::error::{ApplicationError, ApplicationResult},
-    domain::repository::user::UserRepository,
+    domain::user::repository::UserRepository,
     infrastructure::crypto::CryptoService,
 };
 use std::sync::Arc;

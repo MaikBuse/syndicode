@@ -4,17 +4,18 @@ use crate::{
         uow::UnitOfWork,
     },
     domain::{
-        corporation::Corporation,
-        repository::{user::UserRepository, RepositoryError},
-        user::{role::UserRole, User},
+        corporation::model::Corporation,
+        repository::RepositoryError,
+        user::{
+            model::{role::UserRole, User},
+            repository::UserRepository,
+        },
     },
     infrastructure::crypto::CryptoService,
 };
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use std::sync::Arc;
 use uuid::Uuid;
-
-const DEFAULT_BALANCE: i64 = 1000000;
 
 pub struct CreateUserUseCase<U: UnitOfWork> {
     crypto: Arc<CryptoService>,
@@ -80,12 +81,7 @@ impl<U: UnitOfWork> CreateUserUseCase<U> {
                 Box::pin(async move {
                     let user_created = ctx.create_user(user_to_create).await?;
 
-                    let corporation = Corporation {
-                        uuid: Uuid::now_v7(),
-                        user_uuid: user_created.uuid,
-                        name: corporation_name,
-                        balance: DEFAULT_BALANCE,
-                    };
+                    let corporation = Corporation::new(user_created.uuid, corporation_name);
 
                     ctx.create_corporation(corporation).await?;
 

@@ -2,7 +2,7 @@ use crate::{
     application::{
         admin::create_user::CreateUserUseCase, auth::login::LoginUseCase, uow::UnitOfWork,
     },
-    domain::user::role::UserRole,
+    domain::user::model::role::UserRole,
 };
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::{

@@ -1,10 +1,10 @@
 use super::uow::PgTransactionContext;
 use crate::domain::{
-    repository::{
-        user::{UserRepository, UserTxRepository},
-        RepositoryError, RepositoryResult,
+    repository::{RepositoryError, RepositoryResult},
+    user::{
+        model::User,
+        repository::{UserRepository, UserTxRepository},
     },
-    user::User,
 };
 use sqlx::{PgPool, Postgres};
 use std::sync::Arc;

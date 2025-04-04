@@ -1,8 +1,8 @@
-use crate::domain::corporation::Corporation;
 use tonic::async_trait;
 use uuid::Uuid;
 
-use super::RepositoryResult;
+use super::model::Corporation;
+use crate::domain::repository::RepositoryResult;
 
 #[async_trait]
 pub trait CorporationRepository: Send + Sync {

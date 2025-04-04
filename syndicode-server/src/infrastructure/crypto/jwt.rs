@@ -1,7 +1,7 @@
 use jsonwebtoken::TokenData;
 
 use super::{claims::Claims, CryptoService};
-use crate::domain::user::role::UserRole;
+use crate::domain::user::model::role::UserRole;
 use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;

@@ -4,7 +4,7 @@ use crate::{
         admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
         uow::UnitOfWork,
     },
-    domain::user::role::UserRole,
+    domain::user::model::role::UserRole,
 };
 use std::{result::Result, sync::Arc};
 use syndicode_proto::syndicode_interface_v1::{

@@ -1,10 +1,3 @@
-use dashmap::DashMap;
-use sqlx::PgPool;
-use syndicode_proto::syndicode_interface_v1::GameUpdate;
-use tokio::sync::{mpsc::Sender, Mutex};
-use tonic::Status;
-use uuid::Uuid;
-
 use crate::{
     application::{
         admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
@@ -12,8 +5,9 @@ use crate::{
         economy::get_corporation::GetCorporationUseCase,
         warfare::{list_units::ListUnitsUseCase, spawn_unit::SpawnUnitUseCase},
     },
-    domain::repository::{
-        corporation::CorporationRepository, unit::UnitRepository, user::UserRepository,
+    domain::{
+        corporation::repository::CorporationRepository, unit::repository::UnitRepository,
+        user::repository::UserRepository,
     },
     engine::{Engine, Job},
     infrastructure::{
@@ -26,7 +20,13 @@ use crate::{
         },
     },
 };
+use dashmap::DashMap;
+use sqlx::PgPool;
 use std::{collections::VecDeque, sync::Arc};
+use syndicode_proto::syndicode_interface_v1::GameUpdate;
+use tokio::sync::{mpsc::Sender, Mutex};
+use tonic::Status;
+use uuid::Uuid;
 
 pub struct AppState {
     pub engine: Arc<Mutex<Engine>>,
