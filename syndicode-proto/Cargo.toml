@@ -8,6 +8,7 @@ tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
 prost = "0.13.5"
+prost-types = "0.13.5"
 tonic-reflection = "0.13.0"
 
 [build-dependencies]

@@ -892,7 +892,7 @@ pub mod player_action {
 /// / Represents an update sent to the client in response to a player action.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GameUpdate {
-    #[prost(oneof = "game_update::Update", tags = "1, 2, 3")]
+    #[prost(oneof = "game_update::Update", tags = "1, 2, 3, 4")]
     pub update: ::core::option::Option<game_update::Update>,
 }
 /// Nested message and enum types in `GameUpdate`.
@@ -902,13 +902,34 @@ pub mod game_update {
         /// / Response containing corporation data.
         #[prost(message, tag = "1")]
         GetCorporation(super::super::syndicode_economy_v1::GetCorporationResponse),
-        /// / Response to a unit spawn request.
-        #[prost(message, tag = "2")]
-        SpawnUnit(super::super::syndicode_warfare_v1::SpawnUnitResponse),
         /// / Response listing all units.
-        #[prost(message, tag = "3")]
+        #[prost(message, tag = "2")]
         ListUnits(super::super::syndicode_warfare_v1::ListUnitsResponse),
+        #[prost(message, tag = "3")]
+        ActionInitResponse(super::ActionInitResponse),
+        #[prost(message, tag = "4")]
+        TickNotification(super::TickNotification),
     }
+}
+/// Acknowledges receipt and queuing of a player command.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionInitResponse {
+    /// Simple confirmation message.
+    #[prost(string, tag = "1")]
+    pub confirmation_message: ::prost::alloc::string::String,
+    /// Timestamp when the server acknowledged the command.
+    #[prost(message, optional, tag = "3")]
+    pub initiated_at: ::core::option::Option<::prost_types::Timestamp>,
+}
+/// Notifies the client that the authoritative game tick has advanced.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct TickNotification {
+    /// The game tick number that has just become current.
+    #[prost(int64, tag = "1")]
+    pub new_game_tick: i64,
+    /// Timestamp when this tick became effective on the server.
+    #[prost(message, optional, tag = "2")]
+    pub effective_at: ::core::option::Option<::prost_types::Timestamp>,
 }
 /// Generated client implementations.
 pub mod game_service_client {

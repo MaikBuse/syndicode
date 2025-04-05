@@ -3,8 +3,9 @@ use std::sync::Arc;
 
 use crate::{
     application::{
-        admin::bootstrap_admin::BootstrapAdminUseCase, bootstrap::Bootstrap,
-        crypto::PasswordHandler, uow::UnitOfWork,
+        admin::bootstrap_admin::BootstrapAdminUseCase,
+        bootstrap::Bootstrap,
+        ports::{crypto::PasswordHandler, uow::UnitOfWork},
     },
     infrastructure::postgres::migration::PostgresMigrator,
 };

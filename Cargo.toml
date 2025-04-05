@@ -17,4 +17,4 @@ lto = true
 tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 tokio-stream = "0.1.17"
 tonic = "0.13.0"
-uuid = { version = "1.16.0", features = ["v7"] }
+uuid = { version = "1.16.0", features = ["v7", "serde"] }

@@ -1,9 +1,7 @@
 use super::{
     admin::bootstrap_admin::BootstrapAdminUseCase,
-    crypto::PasswordHandler,
     error::{ApplicationError, ApplicationResult},
-    migration::MigrationRunner,
-    uow::UnitOfWork,
+    ports::{crypto::PasswordHandler, migration::MigrationRunner, uow::UnitOfWork},
 };
 use crate::utils::read_env_var;
 use std::sync::Arc;

@@ -1,4 +1,4 @@
-use crate::{application::migration::MigrationRunner, domain::repository::RepositoryResult};
+use crate::{application::ports::migration::MigrationRunner, domain::repository::RepositoryResult};
 use sqlx::PgPool;
 use std::sync::Arc;
 

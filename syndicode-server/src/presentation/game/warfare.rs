@@ -1,25 +1,42 @@
-use crate::{application::warfare::list_units::ListUnitsUseCase, engine::Job};
-use std::{collections::VecDeque, sync::Arc};
-use syndicode_proto::{
-    syndicode_interface_v1::{game_update::Update, GameUpdate},
-    syndicode_warfare_v1::{ListUnitsResponse, SpawnUnitResponse, Unit},
+use crate::{
+    application::{
+        action::{ActionHandler, QueuedAction},
+        ports::action_queue::ActionQueuer,
+        warfare::list_units::ListUnitsUseCase,
+    },
+    utils::timestamp_now,
 };
-use tokio::sync::Mutex;
+use std::sync::Arc;
+use syndicode_proto::{
+    syndicode_interface_v1::{game_update::Update, ActionInitResponse, GameUpdate},
+    syndicode_warfare_v1::{ListUnitsResponse, Unit},
+};
 use tonic::{Code, Result, Status};
 use uuid::Uuid;
 
-pub async fn spawn_unit(
-    jobs: Arc<Mutex<VecDeque<Job>>>,
+pub async fn spawn_unit<A>(
+    action_handler: Arc<ActionHandler<A>>,
     req_user_uuid: Uuid,
-) -> Result<GameUpdate, Status> {
-    let mut jobs = jobs.lock().await;
+) -> Result<GameUpdate, Status>
+where
+    A: ActionQueuer,
+{
+    let payload = QueuedAction::SpawnUnit { req_user_uuid };
 
-    jobs.push_front(Job::UnitSpawn {
-        user_uuid: req_user_uuid,
-    });
+    if let Err(err) = action_handler.submit_action(payload).await {
+        return Err(Status::internal(err.to_string()));
+    }
+
+    let now = timestamp_now().map_err(|err| {
+        tracing::error!("Failed to create timestamp now: {}", err);
+        Status::internal("Internal server error")
+    })?;
 
     Ok(GameUpdate {
-        update: Some(Update::SpawnUnit(SpawnUnitResponse {})),
+        update: Some(Update::ActionInitResponse(ActionInitResponse {
+            confirmation_message: "Successfully initiated action to spawn a unit".to_string(),
+            initiated_at: Some(now),
+        })),
     })
 }
 

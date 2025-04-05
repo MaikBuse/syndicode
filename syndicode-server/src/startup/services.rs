@@ -1,5 +1,6 @@
 use crate::{
     application::{
+        action::ActionHandler,
         admin::{
             bootstrap_admin::BootstrapAdminUseCase, create_user::CreateUserUseCase,
             delete_user::DeleteUserUseCase,
@@ -12,7 +13,7 @@ use crate::{
         corporation::repository::CorporationRepository, unit::repository::UnitRepository,
         user::repository::UserRepository,
     },
-    engine::{Engine, Job},
+    engine::Engine,
     infrastructure::{
         crypto::CryptoService,
         postgres::{
@@ -26,7 +27,7 @@ use crate::{
 };
 use dashmap::DashMap;
 use sqlx::PgPool;
-use std::{collections::VecDeque, sync::Arc};
+use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::GameUpdate;
 use tokio::sync::{mpsc::Sender, Mutex};
 use tonic::Status;
@@ -34,8 +35,8 @@ use uuid::Uuid;
 
 pub struct AppState {
     pub engine: Arc<Mutex<Engine>>,
-    pub jobs: Arc<Mutex<VecDeque<Job>>>,
     pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
+    pub action_handler: Arc<ActionHandler<ValkeyStore>>,
     pub crypto: Arc<CryptoService>,
     pub user_service: Arc<dyn UserRepository>,
     pub unit_service: Arc<dyn UnitRepository>,
@@ -53,8 +54,10 @@ pub async fn build_services(
     pg_pool: Arc<PgPool>,
     valkey: Arc<ValkeyStore>,
 ) -> anyhow::Result<AppState> {
-    let jobs = Arc::new(Mutex::new(VecDeque::new()));
     let user_channels = Arc::new(DashMap::new());
+
+    // Action handler
+    let action_handler = Arc::new(ActionHandler::new(Arc::clone(&valkey)));
 
     // Crypto service
     let crypto = Arc::new(CryptoService::new()?);
@@ -93,14 +96,11 @@ pub async fn build_services(
     let get_corporation_uc = Arc::new(GetCorporationUseCase::new(Arc::clone(&corporation_service)));
 
     // Setup tick-engine
-    let engine = Arc::new(Mutex::new(Engine::init(
-        Arc::clone(&jobs),
-        Arc::clone(&spawn_unit_uc),
-    )));
+    let engine = Arc::new(Mutex::new(Engine::init(Arc::clone(&spawn_unit_uc))));
 
     Ok(AppState {
         engine,
-        jobs,
+        action_handler,
         user_channels,
         crypto,
         user_service,

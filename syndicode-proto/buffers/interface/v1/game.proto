@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package syndicode_interface_v1;
 
+import "google/protobuf/timestamp.proto";
 import "economy/v1/economy.proto";
 import "warfare/v1/warfare.proto";
 
@@ -31,10 +32,28 @@ message GameUpdate {
     /// Response containing corporation data.
     syndicode_economy_v1.GetCorporationResponse get_corporation = 1;
 
-    /// Response to a unit spawn request.
-    syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 2;
-
     /// Response listing all units.
-    syndicode_warfare_v1.ListUnitsResponse list_units = 3;
+    syndicode_warfare_v1.ListUnitsResponse list_units = 2;
+
+    ActionInitResponse action_init_response = 3;
+
+    TickNotification tick_notification = 4;
   }
+}
+
+// Acknowledges receipt and queuing of a player command.
+message ActionInitResponse {
+  // Simple confirmation message.
+  string confirmation_message = 1;
+
+  // Timestamp when the server acknowledged the command.
+  google.protobuf.Timestamp initiated_at = 3;
+}
+
+// Notifies the client that the authoritative game tick has advanced.
+message TickNotification {
+  // The game tick number that has just become current.
+  int64 new_game_tick = 1; 
+  // Timestamp when this tick became effective on the server.
+  google.protobuf.Timestamp effective_at = 2;
 }

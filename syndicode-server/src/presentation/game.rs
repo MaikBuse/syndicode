@@ -1,32 +1,30 @@
-// src/presenter/game.rs (assuming file structure)
 mod economy;
 mod warfare;
 
+use super::common::uuid_from_metadata;
 use crate::{
     application::{
+        action::ActionHandler,
         economy::get_corporation::GetCorporationUseCase,
-        limitation::{LimitationError, RateLimitationEnforcer},
+        ports::{
+            action_queue::ActionQueuer,
+            limiter::{LimitationError, RateLimitEnforcer},
+        },
         warfare::list_units::ListUnitsUseCase,
     },
     config::Config,
-    engine::Job,
 };
 use dashmap::DashMap;
 use economy::get_corporation;
-use std::{collections::VecDeque, pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc};
 use syndicode_proto::syndicode_interface_v1::{
     game_service_server::GameService, player_action::Action, GameUpdate, PlayerAction,
 };
-use tokio::sync::{
-    mpsc::{self, error::SendError},
-    Mutex,
-};
+use tokio::sync::mpsc::{self, error::SendError};
 use tokio_stream::{wrappers::ReceiverStream, Stream, StreamExt};
 use tonic::{Request, Response, Status, Streaming};
 use uuid::Uuid;
 use warfare::{list_units, spawn_unit};
-
-use super::common::uuid_from_metadata;
 
 // Type alias for the sender part of the channel for game updates to a specific user.
 type UserTx = mpsc::Sender<Result<GameUpdate, Status>>;
@@ -51,17 +49,25 @@ impl Drop for UserChannelGuard {
     }
 }
 
-pub struct GamePresenter {
+pub struct GamePresenter<L, A>
+where
+    L: RateLimitEnforcer,
+    A: ActionQueuer,
+{
     pub config: Arc<Config>,
-    pub limit: Arc<dyn RateLimitationEnforcer>,
-    pub jobs: Arc<Mutex<VecDeque<Job>>>,
+    pub limit: Arc<L>,
+    pub action_handler: Arc<ActionHandler<A>>,
     pub user_channels: UserChannels,
     pub get_corporation_uc: Arc<GetCorporationUseCase>,
     pub list_units_uc: Arc<ListUnitsUseCase>,
 }
 
 #[tonic::async_trait]
-impl GameService for GamePresenter {
+impl<L, A> GameService for GamePresenter<L, A>
+where
+    L: RateLimitEnforcer + 'static,
+    A: ActionQueuer,
+{
     type PlayStreamStream = Pin<Box<dyn Stream<Item = Result<GameUpdate, Status>> + Send>>;
 
     async fn play_stream(
@@ -99,10 +105,10 @@ impl GameService for GamePresenter {
         }
 
         // Clone Arcs needed for the spawned task.
-        let jobs = Arc::clone(&self.jobs);
         let get_corporation_uc = Arc::clone(&self.get_corporation_uc);
         let list_units_uc = Arc::clone(&self.list_units_uc);
         let limit = Arc::clone(&self.limit);
+        let action_handler = Arc::clone(&self.action_handler);
         let user_channels_clone = Arc::clone(&self.user_channels);
 
         // Spawn Task to Handle Incoming Client Actions
@@ -147,8 +153,8 @@ impl GameService for GamePresenter {
                             let send_result = process_action(
                                 request_enum,
                                 &tx, // Pass borrow for this use case
+                                Arc::clone(&action_handler),
                                 user_uuid,
-                                Arc::clone(&jobs), // Clone Arcs for the specific handler call
                                 Arc::clone(&get_corporation_uc),
                                 Arc::clone(&list_units_uc),
                             )
@@ -198,18 +204,20 @@ impl GameService for GamePresenter {
 
 /// Processes a single action and sends the result/error back through the channel.
 /// Returns Ok(()) if sending succeeded, Err(()) if the channel was closed.
-async fn process_action(
+async fn process_action<A>(
     action: Action,
     tx: &UserTx, // Borrow the sender channel
+    action_handler: Arc<ActionHandler<A>>,
     user_uuid: Uuid,
-    jobs: Arc<Mutex<VecDeque<Job>>>, // Pass cloned Arcs
     get_corporation_uc: Arc<GetCorporationUseCase>,
     list_units_uc: Arc<ListUnitsUseCase>,
-) -> Result<(), SendError<Result<GameUpdate, Status>>> // Indicate send success/failure
+) -> Result<(), SendError<Result<GameUpdate, Status>>>
+where
+    A: ActionQueuer,
 {
     let result = match action {
         Action::GetCorporation(req) => get_corporation(req, get_corporation_uc, user_uuid).await,
-        Action::SpawnUnit(_) => spawn_unit(jobs, user_uuid).await,
+        Action::SpawnUnit(_) => spawn_unit(action_handler, user_uuid).await,
         Action::ListUnit(_) => list_units(list_units_uc, user_uuid).await,
     };
 

@@ -35,7 +35,7 @@ pub async fn start_grpc_services(
     let game_presenter = GamePresenter {
         config: Arc::clone(&config),
         limit: valkey.clone(),
-        jobs: Arc::clone(&app.jobs),
+        action_handler: Arc::clone(&app.action_handler),
         user_channels: Arc::clone(&app.user_channels),
         list_units_uc: Arc::clone(&app.list_units_uc),
         get_corporation_uc: Arc::clone(&app.get_corporation_uc),

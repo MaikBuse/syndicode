@@ -2,7 +2,7 @@ use super::common::{application_error_into_status, uuid_from_metadata};
 use crate::{
     application::{
         admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
-        uow::UnitOfWork,
+        ports::uow::UnitOfWork,
     },
     domain::user::model::role::UserRole,
 };

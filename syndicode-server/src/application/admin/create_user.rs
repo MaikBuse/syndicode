@@ -1,8 +1,7 @@
 use crate::{
     application::{
-        crypto::PasswordHandler,
         error::{ApplicationError, ApplicationResult},
-        uow::UnitOfWork,
+        ports::{crypto::PasswordHandler, uow::UnitOfWork},
     },
     domain::{
         corporation::model::Corporation,
@@ -59,7 +58,7 @@ impl<U: UnitOfWork> CreateUserUseCase<U> {
 
         let password_hash = self.pw.hash_user_password(user_password)?;
 
-        let user_to_create = User {
+        let user = User {
             uuid: Uuid::now_v7(),
             name: user_name,
             password_hash: password_hash.to_string(),
@@ -70,13 +69,15 @@ impl<U: UnitOfWork> CreateUserUseCase<U> {
             .uow
             .execute(|ctx| {
                 Box::pin(async move {
-                    let user_created = ctx.create_user(user_to_create).await?;
+                    let user_to_create = user.clone();
 
-                    let corporation = Corporation::new(user_created.uuid, corporation_name);
+                    ctx.create_user(&user_to_create).await?;
 
-                    ctx.create_corporation(corporation).await?;
+                    let corporation = Corporation::new(user_to_create.uuid, corporation_name);
 
-                    Ok(user_created)
+                    ctx.insert_corporation(&corporation).await?;
+
+                    Ok(user_to_create)
                 })
             })
             .await
@@ -98,7 +99,7 @@ impl<U: UnitOfWork> CreateUserUseCase<U> {
 mod tests {
     use super::*;
     use crate::{
-        application::{crypto::MockPasswordHandler, uow::MockUnitOfWork},
+        application::ports::{crypto::MockPasswordHandler, uow::MockUnitOfWork},
         domain::user::repository::MockUserRepository,
     };
     use mockall::predicate::*;

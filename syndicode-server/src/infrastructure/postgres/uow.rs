@@ -1,7 +1,8 @@
 use super::corporation::PgCorporationRepository;
+use super::game_tick::PgGameTickRepository;
 use super::unit::PgUnitRepository;
 use super::user::PgUserRepository;
-use crate::application::uow::{TransactionalContext, UnitOfWork};
+use crate::application::ports::uow::{TransactionalContext, UnitOfWork};
 use crate::domain::repository::RepositoryResult;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::future::Future;
@@ -13,6 +14,7 @@ where
     'tx: 'a,
 {
     pub tx: &'a mut Transaction<'tx, Postgres>,
+    pub game_tick_repo: &'a PgGameTickRepository,
     pub user_repo: &'a PgUserRepository,
     pub corporation_repo: &'a PgCorporationRepository,
     pub unit_repo: &'a PgUnitRepository,
@@ -20,11 +22,12 @@ where
 
 // Implement the marker trait. Note the lifetimes match the struct.
 // The 'a from the trait definition corresponds to the 'a lifetime here.
-impl<'a, 'tx> TransactionalContext<'a> for PgTransactionContext<'a, 'tx> {}
+impl<'a> TransactionalContext<'a> for PgTransactionContext<'a, '_> {}
 
 #[derive(Clone)]
 pub struct PostgresUnitOfWork {
     pool: Arc<PgPool>,
+    game_tick: PgGameTickRepository,
     user_repo: PgUserRepository,
     corporation_repo: PgCorporationRepository,
     unit_repo: PgUnitRepository,
@@ -34,6 +37,7 @@ impl PostgresUnitOfWork {
     pub fn new(pool: Arc<PgPool>) -> Self {
         Self {
             pool,
+            game_tick: PgGameTickRepository,
             user_repo: PgUserRepository,
             corporation_repo: PgCorporationRepository,
             unit_repo: PgUnitRepository,
@@ -62,6 +66,7 @@ impl UnitOfWork for PostgresUnitOfWork {
             // will be inferred from the lifetime of this borrow.
             let mut context = PgTransactionContext {
                 tx: &mut tx,
+                game_tick_repo: &self.game_tick,
                 user_repo: &self.user_repo,
                 corporation_repo: &self.corporation_repo,
                 unit_repo: &self.unit_repo,

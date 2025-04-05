@@ -1,4 +1,5 @@
 pub mod corporation;
+pub mod game_tick;
 pub mod migration;
 pub mod unit;
 pub mod uow;

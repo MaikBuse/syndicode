@@ -1,4 +1,4 @@
-use super::uow::PgTransactionContext;
+use super::{game_tick::PgGameTickRepository, uow::PgTransactionContext};
 use crate::domain::{
     corporation::{
         model::Corporation,
@@ -14,40 +14,45 @@ use uuid::Uuid;
 pub struct PgCorporationRepository;
 
 impl PgCorporationRepository {
-    pub async fn create_corporation(
+    /// Inserts a new state record for a corporation at a specific game tick.
+    /// This is used when advancing the game state from N to N+1.
+    /// The Corporation input should contain the state calculated for the *new* tick.
+    pub async fn insert_corporation(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        corporation: Corporation,
-    ) -> RepositoryResult<Corporation> {
-        let corporation = sqlx::query_as!(
-            Corporation,
+        corporation: &Corporation,
+        game_tick: i64,
+    ) -> RepositoryResult<()> {
+        sqlx::query!(
             r#"
             INSERT INTO corporations (
-            uuid,
-            user_uuid,
-            name,
-            balance
-        )
-        VALUES (
-            $1, $2, $3, $4
-        )
-        RETURNING uuid, user_uuid, name, balance
-        "#,
+                game_tick,
+                uuid,
+                user_uuid,
+                name,
+                balance
+            )
+            VALUES ($1, $2, $3, $4, $5)
+            "#,
+            game_tick,
             corporation.uuid,
             corporation.user_uuid,
             corporation.name,
             corporation.balance
         )
-        .fetch_one(executor)
+        .execute(executor)
         .await?;
 
-        Ok(corporation)
+        Ok(())
     }
 
-    pub async fn get_corporation_by_user(
+    /// Retrieves the state of a specific user's corporation at a given game tick.
+    /// This is typically used by clients reading the "current" game state.
+    pub async fn get_corporation_by_user_at_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         user_uuid: Uuid,
+        game_tick: i64,
     ) -> RepositoryResult<Corporation> {
         let corporation = sqlx::query_as!(
             Corporation,
@@ -60,8 +65,10 @@ impl PgCorporationRepository {
             FROM corporations
             WHERE
                 user_uuid = $1
+                AND game_tick = $2
             "#,
-            user_uuid
+            user_uuid,
+            game_tick
         )
         .fetch_one(executor)
         .await?;
@@ -69,27 +76,26 @@ impl PgCorporationRepository {
         Ok(corporation)
     }
 
-    pub async fn update_corporation(
+    /// Retrieves the state of a specific corporation (by its UUID) at a given game tick.
+    pub async fn get_corporation_by_uuid_at_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        corporation: Corporation,
+        corporation_uuid: Uuid,
+        game_tick: i64,
     ) -> RepositoryResult<Corporation> {
+        // Return Option<>
         let corporation = sqlx::query_as!(
             Corporation,
             r#"
-            UPDATE corporations
-            SET
-                uuid = $1,
-                user_uuid = $2,
-                name = $3,
-                balance = $4
-            WHERE uuid = $1
-            RETURNING uuid, user_uuid, name, balance
+            SELECT
+                uuid, user_uuid, name, balance
+            FROM corporations
+            WHERE
+                uuid = $1
+                AND game_tick = $2
             "#,
-            corporation.uuid,
-            corporation.user_uuid,
-            corporation.name,
-            corporation.balance
+            corporation_uuid,
+            game_tick
         )
         .fetch_one(executor)
         .await?;
@@ -100,6 +106,7 @@ impl PgCorporationRepository {
 
 pub struct PgCorporationService {
     pool: Arc<PgPool>,
+    game_tick_repo: PgGameTickRepository,
     corporation_repo: PgCorporationRepository,
 }
 
@@ -107,6 +114,7 @@ impl PgCorporationService {
     pub fn new(pool: Arc<PgPool>) -> Self {
         Self {
             pool,
+            game_tick_repo: PgGameTickRepository,
             corporation_repo: PgCorporationRepository,
         }
     }
@@ -114,48 +122,78 @@ impl PgCorporationService {
 
 #[tonic::async_trait]
 impl CorporationRepository for PgCorporationService {
+    async fn insert_corporation(&self, corporation: &Corporation) -> RepositoryResult<()> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&*self.pool)
+            .await?;
+
+        self.corporation_repo
+            .insert_corporation(&*self.pool, corporation, game_tick)
+            .await
+    }
+
     async fn get_corporation_by_user(&self, user_uuid: Uuid) -> RepositoryResult<Corporation> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&*self.pool)
+            .await?;
+
         self.corporation_repo
-            .get_corporation_by_user(&*self.pool, user_uuid)
+            .get_corporation_by_user_at_tick(&*self.pool, user_uuid, game_tick)
             .await
     }
 
-    async fn create_corporation(&self, corporation: Corporation) -> RepositoryResult<Corporation> {
-        self.corporation_repo
-            .create_corporation(&*self.pool, corporation)
-            .await
-    }
+    async fn get_corporation_by_uuid(
+        &self,
+        corporation_uuid: Uuid,
+    ) -> RepositoryResult<Corporation> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&*self.pool)
+            .await?;
 
-    async fn update_corporation(&self, corporation: Corporation) -> RepositoryResult<Corporation> {
         self.corporation_repo
-            .update_corporation(&*self.pool, corporation)
+            .get_corporation_by_uuid_at_tick(&*self.pool, corporation_uuid, game_tick)
             .await
     }
 }
 
 #[tonic::async_trait]
-impl<'a, 'tx> CorporationTxRepository for PgTransactionContext<'a, 'tx> {
+impl CorporationTxRepository for PgTransactionContext<'_, '_> {
+    async fn insert_corporation(&mut self, corporation: &Corporation) -> RepositoryResult<()> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&mut **self.tx)
+            .await?;
+
+        self.corporation_repo
+            .insert_corporation(&mut **self.tx, corporation, game_tick)
+            .await
+    }
+
     async fn get_corporation_by_user(&mut self, user_uuid: Uuid) -> RepositoryResult<Corporation> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&mut **self.tx)
+            .await?;
+
         self.corporation_repo
-            .get_corporation_by_user(&mut **self.tx, user_uuid)
+            .get_corporation_by_user_at_tick(&mut **self.tx, user_uuid, game_tick)
             .await
     }
 
-    async fn create_corporation(
+    async fn get_corporation_by_uuid(
         &mut self,
-        corporation: Corporation,
+        corporation_uuid: Uuid,
     ) -> RepositoryResult<Corporation> {
-        self.corporation_repo
-            .create_corporation(&mut **self.tx, corporation)
-            .await
-    }
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&mut **self.tx)
+            .await?;
 
-    async fn update_corporation(
-        &mut self,
-        corporation: Corporation,
-    ) -> RepositoryResult<Corporation> {
         self.corporation_repo
-            .update_corporation(&mut **self.tx, corporation)
+            .get_corporation_by_uuid_at_tick(&mut **self.tx, corporation_uuid, game_tick)
             .await
     }
 }

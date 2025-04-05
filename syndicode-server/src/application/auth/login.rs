@@ -1,7 +1,7 @@
 use crate::{
     application::{
-        crypto::{JwtHandler, PasswordHandler},
         error::{ApplicationError, ApplicationResult},
+        ports::crypto::{JwtHandler, PasswordHandler},
     },
     domain::user::repository::UserRepository,
 };

@@ -1,5 +1,5 @@
-use crate::application::crypto::JwtHandler;
-use crate::application::limitation::{LimitationError, RateLimitationEnforcer};
+use crate::application::ports::crypto::JwtHandler;
+use crate::application::ports::limiter::{LimitationError, RateLimitEnforcer};
 use crate::config::Config;
 use http::HeaderValue;
 use std::collections::HashSet;
@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 pub struct MiddlewareLayer<J, R>
 where
     J: JwtHandler + Clone,
-    R: RateLimitationEnforcer + Clone,
+    R: RateLimitEnforcer + Clone,
 {
     ip_header_name: Arc<String>,
     jwt: Arc<J>,
@@ -42,7 +42,7 @@ where
 impl<J, R> MiddlewareLayer<J, R>
 where
     J: JwtHandler + Clone,
-    R: RateLimitationEnforcer + Clone,
+    R: RateLimitEnforcer + Clone,
 {
     pub fn new(config: Arc<Config>, jwt: Arc<J>, limit: Arc<R>) -> Self {
         let ip_header_name = Arc::new(config.ip_address_header.clone());
@@ -60,7 +60,7 @@ where
 impl<S, J, R> Layer<S> for MiddlewareLayer<J, R>
 where
     J: JwtHandler + Clone,
-    R: RateLimitationEnforcer + Clone,
+    R: RateLimitEnforcer + Clone,
 {
     type Service = Middleware<S, J, R>;
 
@@ -79,7 +79,7 @@ where
 pub struct Middleware<S, J, R>
 where
     J: JwtHandler + Clone,
-    R: RateLimitationEnforcer + Clone,
+    R: RateLimitEnforcer + Clone,
 {
     inner: S,
     ip_header_name: Arc<String>,
@@ -94,10 +94,10 @@ impl<S, J, R, ReqBody, ResBody> Service<http::Request<ReqBody>> for Middleware<S
 where
     S: Service<http::Request<ReqBody>, Response = http::Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError> + Send + Sync + std::fmt::Debug + 'static,
+    S::Error: Into<BoxError> + Send + Sync + std::fmt::Debug + std::fmt::Display + 'static,
     ReqBody: Send + 'static,
-    J: JwtHandler + Clone + 'static, // Add necessary bounds
-    R: RateLimitationEnforcer + Clone + 'static, // Add necessary bounds
+    J: JwtHandler + Clone + 'static,        // Add necessary bounds
+    R: RateLimitEnforcer + Clone + 'static, // Add necessary bounds
 {
     type Response = S::Response;
     type Error = BoxError; // BoxError is often convenient for middleware
@@ -222,7 +222,7 @@ where
                     tracing::error!(
                         user_uuid = user_uuid_str_opt.as_deref().unwrap_or("anonymous"),
                         elapsed_ms,
-                        // error = %err,
+                        error = %err,
                         action = "request_failure",
                         path = %path,
                     );

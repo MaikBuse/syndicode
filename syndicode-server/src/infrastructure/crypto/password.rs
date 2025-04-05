@@ -1,5 +1,5 @@
 use super::CryptoService;
-use crate::application::crypto::PasswordHandler;
+use crate::application::ports::crypto::PasswordHandler;
 use crate::domain::user::model::password::UserPassword;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{password_hash::SaltString, PasswordHash};

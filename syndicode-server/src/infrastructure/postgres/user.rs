@@ -17,11 +17,11 @@ impl PgUserRepository {
     pub async fn create_user(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        user: User,
-    ) -> RepositoryResult<User> {
-        let user_role: i16 = user.role.into();
+        user: &User,
+    ) -> RepositoryResult<()> {
+        let user_role: i16 = user.role.clone().into();
 
-        match sqlx::query_as!(
+        if let Err(err) = sqlx::query_as!(
             User,
             r#"
             INSERT INTO users (
@@ -31,11 +31,6 @@ impl PgUserRepository {
                 role
             )
             VALUES ( $1, $2, $3, $4 )
-            RETURNING
-                uuid,
-                name,
-                password_hash,
-                role
             "#,
             user.uuid,
             user.name,
@@ -45,16 +40,17 @@ impl PgUserRepository {
         .fetch_one(executor)
         .await
         {
-            Ok(user) => Ok(user),
-            Err(err) => match err {
+            match err {
                 sqlx::Error::Database(database_error) => match database_error.is_unique_violation()
                 {
-                    true => Err(RepositoryError::UniqueConstraint),
-                    false => Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
+                    true => return Err(RepositoryError::UniqueConstraint),
+                    false => return Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
                 },
-                _ => Err(err.into()),
-            },
+                _ => return Err(err.into()),
+            };
         }
+
+        Ok(())
     }
 
     pub async fn get_user(
@@ -149,7 +145,7 @@ impl UserRepository for PgUserService {
             .await
     }
 
-    async fn create_user(&self, user: User) -> RepositoryResult<User> {
+    async fn create_user(&self, user: &User) -> RepositoryResult<()> {
         self.user_repo.create_user(&*self.pool, user).await
     }
 
@@ -159,7 +155,7 @@ impl UserRepository for PgUserService {
 }
 
 #[tonic::async_trait]
-impl<'a, 'tx> UserTxRepository for PgTransactionContext<'a, 'tx> {
+impl UserTxRepository for PgTransactionContext<'_, '_> {
     async fn get_user(&mut self, user_uuid: Uuid) -> RepositoryResult<User> {
         self.user_repo.get_user(&mut **self.tx, user_uuid).await
     }
@@ -170,7 +166,7 @@ impl<'a, 'tx> UserTxRepository for PgTransactionContext<'a, 'tx> {
             .await
     }
 
-    async fn create_user(&mut self, user: User) -> RepositoryResult<User> {
+    async fn create_user(&mut self, user: &User) -> RepositoryResult<()> {
         self.user_repo.create_user(&mut **self.tx, user).await
     }
 

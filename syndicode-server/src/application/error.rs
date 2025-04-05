@@ -1,4 +1,4 @@
-use super::limitation::LimitationError;
+use super::ports::limiter::LimitationError;
 use crate::domain::repository::RepositoryError;
 
 pub type ApplicationResult<T> = std::result::Result<T, ApplicationError>;

@@ -20,6 +20,8 @@ impl SpawnUnitUseCase {
             user_uuid: req_user_uuid,
         };
 
-        Ok(self.unit_repository.create_unit(unit).await?)
+        self.unit_repository.insert_unit(&unit).await?;
+
+        Ok(unit)
     }
 }

@@ -10,6 +10,6 @@ pub enum LimitationError {
 pub type LimitationResult<T> = std::result::Result<T, LimitationError>;
 
 #[tonic::async_trait]
-pub trait RateLimitationEnforcer: Send + Sync {
+pub trait RateLimitEnforcer: Send + Sync {
     async fn check(&self, ip_address: &str) -> LimitationResult<()>;
 }
