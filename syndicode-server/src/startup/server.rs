@@ -33,7 +33,7 @@ pub async fn start_grpc_services(
     // Setup reflection service for service discovery
     let reflection_service = syndicode_proto::create_reflection_service()?;
 
-    tracing::info!("Starting server...");
+    tracing::info!("Server with id '{}' starting up...", config.instance_id);
 
     Server::builder()
         .layer(MiddlewareLayer::new(

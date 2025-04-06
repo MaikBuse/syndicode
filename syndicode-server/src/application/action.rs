@@ -1,4 +1,4 @@
-use super::ports::action_queue::ActionQueuer;
+use super::ports::queue::ActionQueuer;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -23,14 +23,11 @@ where
         Self { action_queue }
     }
 
-    pub async fn submit_action(&self, payload: QueuedAction) -> anyhow::Result<()> {
+    pub async fn submit_action(&self, action: QueuedAction) -> anyhow::Result<()> {
         // ... 1. Perform initial validation ...
         // if validation_fails { return Err(...) }
 
-        let serialized_payload =
-            rmp_serde::to_vec(&payload).map_err(|err| anyhow::format_err!(err))?;
-
-        match self.action_queue.enqueue_action(&serialized_payload).await {
+        match self.action_queue.enqueue_action(action).await {
             Ok(entry_id) => {
                 // Log success, maybe include entry_id
                 tracing::info!("Successfully enqueued action with ID: {}", entry_id);

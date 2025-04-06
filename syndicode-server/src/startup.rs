@@ -1,19 +1,18 @@
 mod bootstrap;
-mod leader;
 mod logging;
 mod server;
 mod services;
 
 use crate::{
+    application::leader::LeaderLoopManager,
     config::Config,
     infrastructure::{
         postgres::PostgresDatabase,
         valkey::{LeaderElectionConfig, LimiterConfig, ValkeyStore},
     },
 };
-use leader::run_leader_election_loop;
 use services::AppState;
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 const LIMIT_MAX_REQUESTS: usize = 100;
 const LIMIT_WINDOW: usize = 60;
@@ -27,7 +26,8 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     let valkey_store = Arc::new(
         ValkeyStore::new(
-            LeaderElectionConfig::new(config.instance_id.clone(), config.leader_lock_ttl),
+            config.instance_id.clone(),
+            LeaderElectionConfig::new(config.leader_lock_ttl),
             LimiterConfig::new(LIMIT_MAX_REQUESTS, LIMIT_WINDOW),
         )
         .await?,
@@ -38,12 +38,16 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     bootstrap::run(pg_pool, state.bootstrap_admin_uc.clone()).await?;
 
-    tokio::spawn(run_leader_election_loop(
+    let leader_loop_manager = LeaderLoopManager::new(
         state.leader_elector.clone(),
+        state.game_tick_processor.clone(),
         config.instance_id.clone(),
         config.leader_lock_refresh_interval,
-        config.non_leader_retry_acquisition_internal,
-    ));
+        config.non_leader_acquisition_retry_internal,
+        Duration::from_millis(config.game_tick_interval as u64),
+    );
+
+    tokio::spawn(leader_loop_manager.run());
 
     server::start_grpc_services(config, state, valkey_store.clone()).await?;
 

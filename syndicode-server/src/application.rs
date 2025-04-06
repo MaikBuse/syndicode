@@ -4,5 +4,7 @@ pub mod auth;
 pub mod bootstrap;
 pub mod economy;
 pub mod error;
+pub mod leader;
 pub mod ports;
+pub mod processor;
 pub mod warfare;

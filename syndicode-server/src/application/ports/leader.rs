@@ -1,10 +1,10 @@
-#[derive(thiserror::Error, Debug)]
-pub enum LeaderElectionError {
-    #[error("Failed to configure Redis client: {0}")]
-    ConfigurationError(String),
+#[cfg(test)]
+use mockall::{automock, predicate::*};
 
+#[derive(thiserror::Error, Clone, Debug)]
+pub enum LeaderElectionError {
     #[error("Redis command failed: {0}")]
-    RedisCommandError(#[from] redis::RedisError),
+    RedisCommandError(String),
 
     #[error("Failed to acquire lock for key '{key}': {details}")]
     LockAcquireFailed { key: String, details: String },
@@ -19,11 +19,12 @@ pub enum LeaderElectionError {
     NotHoldingLock { key: String, instance_id: String },
 
     #[error("An unexpected error occurred: {0}")]
-    Unexpected(#[from] anyhow::Error),
+    Unexpected(String),
 }
 
 pub type LeaderElectionResult<T> = Result<T, LeaderElectionError>;
 
+#[cfg_attr(test, automock)]
 #[tonic::async_trait]
 pub trait LeaderElector: Send + Sync + 'static {
     /// Attempts to acquire the leader lock.

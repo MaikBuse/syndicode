@@ -9,7 +9,7 @@ impl LeaderElector for ValkeyStore {
     async fn try_acquire(&self) -> LeaderElectionResult<bool> {
         let mut conn = self.conn.clone();
 
-        let value = &self.leader_config.instance_id;
+        let value = &self.instance_id;
 
         // Type annotation ::<Option<String>> is important here.
         // SET ... NX returns "OK" (as a String) on success, or nil (None) if not set.
@@ -20,7 +20,8 @@ impl LeaderElector for ValkeyStore {
             .arg("PX") // Set expiry in milliseconds
             .arg(self.leader_config.leader_lock_ttl)
             .query_async(&mut conn)
-            .await?;
+            .await
+            .map_err(|err| LeaderElectionError::RedisCommandError(err.to_string()))?;
 
         match result {
             Some(ref s) if s == "OK" => Ok(true), // Successfully acquired the lock
@@ -38,7 +39,7 @@ impl LeaderElector for ValkeyStore {
     /// Releases the lock using the safe Lua script.
     async fn release(&self) -> LeaderElectionResult<()> {
         let mut conn = self.conn.clone();
-        let instance_id = &self.leader_config.instance_id;
+        let instance_id = &self.instance_id;
 
         let result: i32 = self
             .leader_config
@@ -46,7 +47,8 @@ impl LeaderElector for ValkeyStore {
             .key(LOCK_KEY) // Pass lock_key as KEYS[1]
             .arg(instance_id) // Pass instance_id as ARGV[1]
             .invoke_async(&mut conn)
-            .await?;
+            .await
+            .map_err(|err| LeaderElectionError::RedisCommandError(err.to_string()))?;
 
         match result {
             1 => {
@@ -76,7 +78,7 @@ impl LeaderElector for ValkeyStore {
     /// Refreshes the lock TTL using the safe Lua script.
     async fn refresh(&self) -> LeaderElectionResult<()> {
         let mut conn = self.conn.clone();
-        let instance_id = &self.leader_config.instance_id;
+        let instance_id = &self.instance_id;
 
         let result: i32 = self
             .leader_config
@@ -85,7 +87,8 @@ impl LeaderElector for ValkeyStore {
             .arg(instance_id) // ARGV[1]
             .arg(self.leader_config.leader_lock_ttl) // ARGV[2]
             .invoke_async(&mut conn)
-            .await?;
+            .await
+            .map_err(|err| LeaderElectionError::RedisCommandError(err.to_string()))?;
 
         match result {
             1 => {

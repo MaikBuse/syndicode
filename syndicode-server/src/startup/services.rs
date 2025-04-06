@@ -8,12 +8,14 @@ use crate::{
         auth::login::LoginUseCase,
         economy::get_corporation::GetCorporationUseCase,
         ports::{
-            action_queue::ActionQueuer,
             crypto::{JwtHandler, PasswordHandler},
             leader::LeaderElector,
             limiter::RateLimitEnforcer,
+            processor::GameTickProcessable,
+            queue::ActionQueuer,
             uow::UnitOfWork,
         },
+        processor::GameTickProcessor,
         warfare::{list_units::ListUnitsUseCase, spawn_unit::SpawnUnitUseCase},
     },
     config::Config,
@@ -43,6 +45,7 @@ use uuid::Uuid;
 
 // Represents the standard configuration of the application state
 pub type DefaultAppState = AppState<
+    GameTickProcessor,
     CryptoService,
     CryptoService,
     ValkeyStore,
@@ -54,8 +57,9 @@ pub type DefaultAppState = AppState<
     PgCorporationService,
 >;
 
-pub struct AppState<P, J, Q, R, L, UOW, USR, UNT, CRP>
+pub struct AppState<G, P, J, Q, R, L, UOW, USR, UNT, CRP>
 where
+    G: GameTickProcessable + 'static,
     P: PasswordHandler + 'static,
     J: JwtHandler + 'static,
     Q: ActionQueuer + 'static,
@@ -66,6 +70,7 @@ where
     UNT: UnitRepository + 'static,
     CRP: CorporationRepository + 'static,
 {
+    pub game_tick_processor: Arc<G>,
     pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
     pub action_handler: Arc<ActionHandler<Q>>,
     pub leader_elector: Arc<L>,
@@ -134,6 +139,8 @@ impl DefaultAppState {
         let get_corporation_uc =
             Arc::new(GetCorporationUseCase::new(Arc::clone(&corporation_service)));
 
+        let game_tick_processor = Arc::new(GameTickProcessor::new());
+
         // Presenter
         let game_presenter = GamePresenter {
             config: Arc::clone(&config),
@@ -172,6 +179,7 @@ impl DefaultAppState {
             game_presenter,
             admin_presenter,
             auth_presenter,
+            game_tick_processor,
         })
     }
 }

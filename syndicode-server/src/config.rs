@@ -8,10 +8,10 @@ pub struct Config {
     /// Used to ensure only the lock holder can release/refresh it.
     pub instance_id: String,
     pub ip_address_header: String,
-    pub game_tick_duration: usize,
+    pub game_tick_interval: usize,
     pub leader_lock_ttl: usize,
     pub leader_lock_refresh_interval: Duration,
-    pub non_leader_retry_acquisition_internal: Duration,
+    pub non_leader_acquisition_retry_internal: Duration,
 }
 
 impl Config {
@@ -20,19 +20,19 @@ impl Config {
 
         let ip_address_header = read_env_var("IP_ADDRESS_HEADER")?;
 
-        let game_tick_duration = int_from_env("GAME_TICK_DURATION")?;
+        let game_tick_interval = int_from_env("GAME_TICK_INTERVAL")?;
         let leader_lock_ttl = int_from_env("LEADER_LOCK_TTL")?;
         let leader_lock_refresh_interval = int_from_env("LEADER_LOCK_REFRESH")?;
-        let non_leader_retry_acquisition_internal = int_from_env("NON_LEADER_RETRY")?;
+        let non_leader_acquisition_retry_internal = int_from_env("NON_LEADER_RETRY")?;
 
         Ok(Self {
             instance_id,
             ip_address_header,
-            game_tick_duration,
+            game_tick_interval,
             leader_lock_refresh_interval: Duration::from_millis(leader_lock_refresh_interval),
             leader_lock_ttl,
-            non_leader_retry_acquisition_internal: Duration::from_millis(
-                non_leader_retry_acquisition_internal,
+            non_leader_acquisition_retry_internal: Duration::from_millis(
+                non_leader_acquisition_retry_internal,
             ),
         })
     }

@@ -1,7 +1,7 @@
 use crate::{
     application::{
         action::{ActionHandler, QueuedAction},
-        ports::action_queue::ActionQueuer,
+        ports::queue::ActionQueuer,
         warfare::list_units::ListUnitsUseCase,
     },
     domain::unit::repository::UnitRepository,

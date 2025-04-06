@@ -4,7 +4,7 @@ pub mod queue;
 
 use crate::utils::read_env_var;
 use anyhow::Context;
-use queue::{ACTION_STREAM_KEY, CONSUMER_GROUP_NAME};
+use queue::{ACTION_CONSUMER_GROUP, ACTION_STREAM_KEY};
 use redis::{aio::MultiplexedConnection, AsyncCommands, Script};
 
 #[derive(Clone)]
@@ -43,7 +43,7 @@ impl ValkeyStore {
         ValkeyStore::ensure_consumer_group_exists(
             conn.clone(),
             ACTION_STREAM_KEY,
-            CONSUMER_GROUP_NAME,
+            ACTION_CONSUMER_GROUP,
         )
         .await?;
 
