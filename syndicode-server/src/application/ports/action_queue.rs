@@ -1,3 +1,5 @@
+use crate::application::action::QueuedAction;
+
 #[derive(thiserror::Error, Debug)]
 pub enum QueueError {
     #[error("Failed to enqueue action: {0}")]
@@ -14,4 +16,11 @@ pub type QueueResult<T> = Result<T, QueueError>;
 pub trait ActionQueuer: Send + Sync + 'static {
     /// Enqueues a serialized action payload onto the appropriate stream/queue.
     async fn enqueue_action(&self, action_payload: &[u8]) -> QueueResult<String>;
+
+    async fn pull_actions(&self, count: usize) -> QueueResult<Vec<QueuedAction>>;
+
+    async fn acknowledge_actions(
+        &self,
+        ids: &[&str], // Slice of message IDs to acknowledge
+    ) -> QueueResult<()>;
 }

@@ -4,10 +4,14 @@ pub mod queue;
 
 use crate::utils::read_env_var;
 use anyhow::Context;
-use redis::{aio::MultiplexedConnection, Script};
+use queue::{ACTION_STREAM_KEY, CONSUMER_GROUP_NAME};
+use redis::{aio::MultiplexedConnection, AsyncCommands, Script};
 
 #[derive(Clone)]
 pub struct ValkeyStore {
+    /// A unique identifier for this specific instance trying to acquire the lock.
+    /// Used to ensure only the lock holder can release/refresh it.
+    instance_id: String,
     conn: MultiplexedConnection,
     leader_config: LeaderElectionConfig,
     limiter_config: LimiterConfig,
@@ -15,6 +19,7 @@ pub struct ValkeyStore {
 
 impl ValkeyStore {
     pub async fn new(
+        instance_id: String,
         leader_config: LeaderElectionConfig,
         limiter_config: LimiterConfig,
     ) -> anyhow::Result<Self> {
@@ -35,19 +40,61 @@ impl ValkeyStore {
             .await
             .context("Failed to establish multiplexed Valkey connection")?;
 
+        ValkeyStore::ensure_consumer_group_exists(
+            conn.clone(),
+            ACTION_STREAM_KEY,
+            CONSUMER_GROUP_NAME,
+        )
+        .await?;
+
         Ok(Self {
+            instance_id,
             conn,
             limiter_config,
             leader_config,
         })
     }
+    async fn ensure_consumer_group_exists(
+        mut conn: MultiplexedConnection,
+        stream_key: &str,
+        group_name: &str,
+    ) -> anyhow::Result<()> {
+        // Attempt to create the group, starting from new messages ($)
+        // MKSTREAM creates the stream if it doesn't exist
+        let result: Result<(), redis::RedisError> = conn
+            .xgroup_create_mkstream(stream_key, group_name, "$")
+            .await;
+
+        match result {
+            Ok(()) => {
+                tracing::info!(
+                    stream = stream_key,
+                    group = group_name,
+                    "Successfully created Redis consumer group."
+                );
+                Ok(())
+            }
+            Err(err) => {
+                // Check if the error is specifically "BUSYGROUP Consumer Group name already exists"
+                if err.to_string().contains("BUSYGROUP") {
+                    tracing::info!(
+                        stream = stream_key,
+                        group = group_name,
+                        "Redis consumer group already exists."
+                    );
+                    Ok(()) // It's okay if it already exists
+                } else {
+                    // Different error, propagate it
+                    tracing::error!(stream = stream_key, group = group_name, error = %err, "Failed to create or verify Redis consumer group.");
+                    Err(err.into())
+                }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct LeaderElectionConfig {
-    /// A unique identifier for this specific instance trying to acquire the lock.
-    /// Used to ensure only the lock holder can release/refresh it.
-    pub instance_id: String,
     pub leader_lock_ttl: usize,
     // Lua scripts for safe release and refresh
     pub release_script: Script,
@@ -56,7 +103,7 @@ pub struct LeaderElectionConfig {
 
 impl LeaderElectionConfig {
     /// Creates a default configuration with a unique instance ID.
-    pub fn new(instance_id: String, leader_lock_ttl: usize) -> Self {
+    pub fn new(leader_lock_ttl: usize) -> Self {
         // Lua script for safe release:
         // Deletes the key ONLY if its value matches the provided instance_id.
         // KEYS[1]: lock_key
@@ -91,7 +138,6 @@ impl LeaderElectionConfig {
         Self {
             release_script,
             refresh_script,
-            instance_id,
             leader_lock_ttl,
         }
     }
