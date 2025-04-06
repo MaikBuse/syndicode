@@ -12,16 +12,21 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct BootstrapAdminUseCase<U: UnitOfWork, P>
+pub struct BootstrapAdminUseCase<UOW, P>
 where
+    UOW: UnitOfWork,
     P: PasswordHandler,
 {
     pw: Arc<P>,
-    uow: Arc<U>,
+    uow: Arc<UOW>,
 }
 
-impl<U: UnitOfWork, P: PasswordHandler> BootstrapAdminUseCase<U, P> {
-    pub fn new(pw: Arc<P>, uow: Arc<U>) -> Self {
+impl<UOW, P> BootstrapAdminUseCase<UOW, P>
+where
+    UOW: UnitOfWork,
+    P: PasswordHandler,
+{
+    pub fn new(pw: Arc<P>, uow: Arc<UOW>) -> Self {
         Self { pw, uow }
     }
 

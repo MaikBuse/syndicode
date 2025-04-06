@@ -8,12 +8,18 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct GetUserUseCase {
-    user_repo: Arc<dyn UserRepository>,
+pub struct GetUserUseCase<USR>
+where
+    USR: UserRepository,
+{
+    user_repo: Arc<USR>,
 }
 
-impl GetUserUseCase {
-    pub fn new(user_repo: Arc<dyn UserRepository>) -> Self {
+impl<USR> GetUserUseCase<USR>
+where
+    USR: UserRepository,
+{
+    pub fn new(user_repo: Arc<USR>) -> Self {
         Self { user_repo }
     }
 

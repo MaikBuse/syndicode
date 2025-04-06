@@ -1,8 +1,14 @@
+use super::common::application_error_into_status;
 use crate::{
     application::{
-        admin::create_user::CreateUserUseCase, auth::login::LoginUseCase, ports::uow::UnitOfWork,
+        admin::create_user::CreateUserUseCase,
+        auth::login::LoginUseCase,
+        ports::{
+            crypto::{JwtHandler, PasswordHandler},
+            uow::UnitOfWork,
+        },
     },
-    domain::user::model::role::UserRole,
+    domain::user::{model::role::UserRole, repository::UserRepository},
 };
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::{
@@ -11,15 +17,25 @@ use syndicode_proto::syndicode_interface_v1::{
 };
 use tonic::{async_trait, Request, Response, Status};
 
-use super::common::application_error_into_status;
-
-pub struct AuthPresenter<U: UnitOfWork + 'static> {
-    pub create_user_uc: Arc<CreateUserUseCase<U>>,
-    pub login_uc: Arc<LoginUseCase>,
+pub struct AuthPresenter<P, J, UOW, USR>
+where
+    P: PasswordHandler + 'static,
+    J: JwtHandler + 'static,
+    UOW: UnitOfWork + 'static,
+    USR: UserRepository + 'static,
+{
+    pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
+    pub login_uc: Arc<LoginUseCase<P, J, USR>>,
 }
 
 #[async_trait]
-impl<U: UnitOfWork> AuthService for AuthPresenter<U> {
+impl<P, J, UOW, USR> AuthService for AuthPresenter<P, J, UOW, USR>
+where
+    P: PasswordHandler + 'static,
+    J: JwtHandler + 'static,
+    UOW: UnitOfWork + 'static,
+    USR: UserRepository + 'static,
+{
     async fn register(
         &self,
         request: Request<RegisterRequest>,

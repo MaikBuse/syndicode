@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
-const STREAM_KEY: &str = "game_actions";
-
 #[derive(Serialize, Deserialize)]
 pub enum QueuedAction {
     SpawnUnit { req_user_uuid: Uuid },
@@ -32,11 +30,7 @@ where
         let serialized_payload =
             rmp_serde::to_vec(&payload).map_err(|err| anyhow::format_err!(err))?;
 
-        match self
-            .action_queue
-            .enqueue_action(STREAM_KEY, &serialized_payload)
-            .await
-        {
+        match self.action_queue.enqueue_action(&serialized_payload).await {
             Ok(entry_id) => {
                 // Log success, maybe include entry_id
                 tracing::info!("Successfully enqueued action with ID: {}", entry_id);

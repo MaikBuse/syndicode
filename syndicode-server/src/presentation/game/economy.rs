@@ -1,4 +1,7 @@
-use crate::application::economy::get_corporation::GetCorporationUseCase;
+use crate::{
+    application::economy::get_corporation::GetCorporationUseCase,
+    domain::corporation::repository::CorporationRepository,
+};
 use std::sync::Arc;
 use syndicode_proto::{
     syndicode_economy_v1::{Corporation, GetCorporationRequest, GetCorporationResponse},
@@ -7,11 +10,14 @@ use syndicode_proto::{
 use tonic::{Code, Status};
 use uuid::Uuid;
 
-pub async fn get_corporation(
+pub async fn get_corporation<CRP>(
     _: GetCorporationRequest,
-    get_corporation_uc: Arc<GetCorporationUseCase>,
+    get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     user_uuid: Uuid,
-) -> Result<GameUpdate, Status> {
+) -> Result<GameUpdate, Status>
+where
+    CRP: CorporationRepository,
+{
     match get_corporation_uc.execute(user_uuid).await {
         Ok(corporation) => Ok(GameUpdate {
             update: Some(Update::GetCorporation(GetCorporationResponse {

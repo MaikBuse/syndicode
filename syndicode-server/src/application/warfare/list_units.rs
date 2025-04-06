@@ -5,12 +5,18 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct ListUnitsUseCase {
-    unit_repository: Arc<dyn UnitRepository>,
+pub struct ListUnitsUseCase<UNT>
+where
+    UNT: UnitRepository,
+{
+    unit_repository: Arc<UNT>,
 }
 
-impl ListUnitsUseCase {
-    pub fn new(unit_repository: Arc<dyn UnitRepository>) -> Self {
+impl<UNT> ListUnitsUseCase<UNT>
+where
+    UNT: UnitRepository,
+{
+    pub fn new(unit_repository: Arc<UNT>) -> Self {
         Self { unit_repository }
     }
 

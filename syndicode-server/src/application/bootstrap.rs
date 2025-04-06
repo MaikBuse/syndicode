@@ -9,20 +9,23 @@ use std::sync::Arc;
 const ADMIN_CORPORATION_NAME: &str = "Shinkai Heavyworks";
 const ADMIN_USERNAME: &str = "admin";
 
-pub struct Bootstrap<U: UnitOfWork, P: PasswordHandler> {
-    pub migrator: Arc<dyn MigrationRunner>,
-    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<U, P>>,
+pub struct Bootstrap<UOW, P, M>
+where
+    UOW: UnitOfWork,
+    P: PasswordHandler,
+    M: MigrationRunner,
+{
+    pub migrator: Arc<M>,
+    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
 }
 
-impl<U, P> Bootstrap<U, P>
+impl<UOW, P, M> Bootstrap<UOW, P, M>
 where
-    U: UnitOfWork,
+    UOW: UnitOfWork,
     P: PasswordHandler,
+    M: MigrationRunner,
 {
-    pub fn new(
-        migrator: Arc<dyn MigrationRunner>,
-        bootstrap_admin_uc: Arc<BootstrapAdminUseCase<U, P>>,
-    ) -> Self {
+    pub fn new(migrator: Arc<M>, bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>) -> Self {
         Self {
             migrator,
             bootstrap_admin_uc,
@@ -30,6 +33,8 @@ where
     }
 
     pub async fn run(&self) -> ApplicationResult<()> {
+        tracing::info!("Bootstrapping server...");
+
         let admin_password = read_env_var("ADMIN_PASSWORD")?;
 
         self.migrator.run_migration().await?;

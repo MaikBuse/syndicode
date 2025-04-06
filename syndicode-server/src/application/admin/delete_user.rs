@@ -5,12 +5,18 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct DeleteUserUseCase {
-    user_repo: Arc<dyn UserRepository>,
+pub struct DeleteUserUseCase<USR>
+where
+    USR: UserRepository,
+{
+    user_repo: Arc<USR>,
 }
 
-impl DeleteUserUseCase {
-    pub fn new(user_repo: Arc<dyn UserRepository>) -> Self {
+impl<USR> DeleteUserUseCase<USR>
+where
+    USR: UserRepository,
+{
+    pub fn new(user_repo: Arc<USR>) -> Self {
         Self { user_repo }
     }
 

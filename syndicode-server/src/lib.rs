@@ -1,7 +1,6 @@
 mod application;
 mod config;
 mod domain;
-mod engine;
 mod infrastructure;
 mod presentation;
 mod startup;

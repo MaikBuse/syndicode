@@ -13,5 +13,5 @@ pub type QueueResult<T> = Result<T, QueueError>;
 #[tonic::async_trait]
 pub trait ActionQueuer: Send + Sync + 'static {
     /// Enqueues a serialized action payload onto the appropriate stream/queue.
-    async fn enqueue_action(&self, stream_key: &str, action_payload: &[u8]) -> QueueResult<String>;
+    async fn enqueue_action(&self, action_payload: &[u8]) -> QueueResult<String>;
 }

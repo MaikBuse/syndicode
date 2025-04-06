@@ -7,18 +7,24 @@ use crate::{
 };
 use std::sync::Arc;
 
-pub struct LoginUseCase {
-    pw: Arc<dyn PasswordHandler>,
-    jwt: Arc<dyn JwtHandler>,
-    user_repo: Arc<dyn UserRepository>,
+pub struct LoginUseCase<P, J, USR>
+where
+    P: PasswordHandler,
+    J: JwtHandler,
+    USR: UserRepository,
+{
+    pw: Arc<P>,
+    jwt: Arc<J>,
+    user_repo: Arc<USR>,
 }
 
-impl LoginUseCase {
-    pub fn new(
-        pw: Arc<dyn PasswordHandler>,
-        jwt: Arc<dyn JwtHandler>,
-        user_repo: Arc<dyn UserRepository>,
-    ) -> Self {
+impl<P, J, USR> LoginUseCase<P, J, USR>
+where
+    P: PasswordHandler,
+    J: JwtHandler,
+    USR: UserRepository,
+{
+    pub fn new(pw: Arc<P>, jwt: Arc<J>, user_repo: Arc<USR>) -> Self {
         Self { pw, jwt, user_repo }
     }
 

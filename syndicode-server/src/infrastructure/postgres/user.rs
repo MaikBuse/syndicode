@@ -37,7 +37,7 @@ impl PgUserRepository {
             user.password_hash,
             user_role
         )
-        .fetch_one(executor)
+        .execute(executor)
         .await
         {
             match err {

@@ -13,6 +13,7 @@ use crate::{
         warfare::list_units::ListUnitsUseCase,
     },
     config::Config,
+    domain::{corporation::repository::CorporationRepository, unit::repository::UnitRepository},
 };
 use dashmap::DashMap;
 use economy::get_corporation;
@@ -49,24 +50,28 @@ impl Drop for UserChannelGuard {
     }
 }
 
-pub struct GamePresenter<L, A>
+pub struct GamePresenter<R, Q, UNT, CRP>
 where
-    L: RateLimitEnforcer,
-    A: ActionQueuer,
+    R: RateLimitEnforcer,
+    Q: ActionQueuer,
+    UNT: UnitRepository,
+    CRP: CorporationRepository,
 {
     pub config: Arc<Config>,
-    pub limit: Arc<L>,
-    pub action_handler: Arc<ActionHandler<A>>,
+    pub limit: Arc<R>,
+    pub action_handler: Arc<ActionHandler<Q>>,
     pub user_channels: UserChannels,
-    pub get_corporation_uc: Arc<GetCorporationUseCase>,
-    pub list_units_uc: Arc<ListUnitsUseCase>,
+    pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
+    pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
 }
 
 #[tonic::async_trait]
-impl<L, A> GameService for GamePresenter<L, A>
+impl<R, Q, UNT, CRP> GameService for GamePresenter<R, Q, UNT, CRP>
 where
-    L: RateLimitEnforcer + 'static,
-    A: ActionQueuer,
+    R: RateLimitEnforcer + 'static,
+    Q: ActionQueuer + 'static,
+    UNT: UnitRepository + 'static,
+    CRP: CorporationRepository + 'static,
 {
     type PlayStreamStream = Pin<Box<dyn Stream<Item = Result<GameUpdate, Status>> + Send>>;
 
@@ -204,16 +209,18 @@ where
 
 /// Processes a single action and sends the result/error back through the channel.
 /// Returns Ok(()) if sending succeeded, Err(()) if the channel was closed.
-async fn process_action<A>(
+async fn process_action<A, UNT, CRP>(
     action: Action,
     tx: &UserTx, // Borrow the sender channel
     action_handler: Arc<ActionHandler<A>>,
     user_uuid: Uuid,
-    get_corporation_uc: Arc<GetCorporationUseCase>,
-    list_units_uc: Arc<ListUnitsUseCase>,
+    get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
+    list_units_uc: Arc<ListUnitsUseCase<UNT>>,
 ) -> Result<(), SendError<Result<GameUpdate, Status>>>
 where
     A: ActionQueuer,
+    UNT: UnitRepository,
+    CRP: CorporationRepository,
 {
     let result = match action {
         Action::GetCorporation(req) => get_corporation(req, get_corporation_uc, user_uuid).await,

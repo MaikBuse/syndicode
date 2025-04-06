@@ -5,12 +5,18 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct GetCorporationUseCase {
-    corporation_repo: Arc<dyn CorporationRepository>,
+pub struct GetCorporationUseCase<CRP>
+where
+    CRP: CorporationRepository,
+{
+    corporation_repo: Arc<CRP>,
 }
 
-impl GetCorporationUseCase {
-    pub fn new(corporation_repo: Arc<dyn CorporationRepository>) -> Self {
+impl<CRP> GetCorporationUseCase<CRP>
+where
+    CRP: CorporationRepository,
+{
+    pub fn new(corporation_repo: Arc<CRP>) -> Self {
         Self { corporation_repo }
     }
 

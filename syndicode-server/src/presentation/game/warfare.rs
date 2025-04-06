@@ -4,6 +4,7 @@ use crate::{
         ports::action_queue::ActionQueuer,
         warfare::list_units::ListUnitsUseCase,
     },
+    domain::unit::repository::UnitRepository,
     utils::timestamp_now,
 };
 use std::sync::Arc;
@@ -40,10 +41,13 @@ where
     })
 }
 
-pub async fn list_units(
-    list_units_uc: Arc<ListUnitsUseCase>,
+pub async fn list_units<UNT>(
+    list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     req_user_uuid: Uuid,
-) -> Result<GameUpdate, Status> {
+) -> Result<GameUpdate, Status>
+where
+    UNT: UnitRepository,
+{
     let units = match list_units_uc.execute(req_user_uuid).await {
         Ok(units) => units,
         Err(err) => return Err(Status::new(Code::Internal, err.to_string())),

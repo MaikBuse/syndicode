@@ -2,9 +2,9 @@ use super::common::{application_error_into_status, uuid_from_metadata};
 use crate::{
     application::{
         admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
-        ports::uow::UnitOfWork,
+        ports::{crypto::PasswordHandler, uow::UnitOfWork},
     },
-    domain::user::model::role::UserRole,
+    domain::user::{model::role::UserRole, repository::UserRepository},
 };
 use std::{result::Result, sync::Arc};
 use syndicode_proto::syndicode_interface_v1::{
@@ -14,13 +14,23 @@ use syndicode_proto::syndicode_interface_v1::{
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
-pub struct AdminPresenter<U: UnitOfWork + 'static> {
-    pub create_user_uc: Arc<CreateUserUseCase<U>>,
-    pub delete_user_uc: Arc<DeleteUserUseCase>,
+pub struct AdminPresenter<P, UOW, USR>
+where
+    P: PasswordHandler + 'static,
+    UOW: UnitOfWork + 'static,
+    USR: UserRepository + 'static,
+{
+    pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
+    pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
 }
 
 #[async_trait]
-impl<U: UnitOfWork> AdminService for AdminPresenter<U> {
+impl<P, UOW, USR> AdminService for AdminPresenter<P, UOW, USR>
+where
+    P: PasswordHandler + 'static,
+    UOW: UnitOfWork + 'static,
+    USR: UserRepository + 'static,
+{
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,

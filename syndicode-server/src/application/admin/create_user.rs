@@ -15,18 +15,24 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct CreateUserUseCase<U: UnitOfWork> {
-    pw: Arc<dyn PasswordHandler>,
-    uow: Arc<U>,
-    user_repo: Arc<dyn UserRepository>,
+pub struct CreateUserUseCase<P, UOW, USR>
+where
+    P: PasswordHandler,
+    UOW: UnitOfWork,
+    USR: UserRepository,
+{
+    pw: Arc<P>,
+    uow: Arc<UOW>,
+    user_repo: Arc<USR>,
 }
 
-impl<U: UnitOfWork> CreateUserUseCase<U> {
-    pub fn new(
-        pw: Arc<dyn PasswordHandler>,
-        uow: Arc<U>,
-        user_repo: Arc<dyn UserRepository>,
-    ) -> Self {
+impl<P, UOW, USR> CreateUserUseCase<P, UOW, USR>
+where
+    P: PasswordHandler,
+    UOW: UnitOfWork,
+    USR: UserRepository,
+{
+    pub fn new(pw: Arc<P>, uow: Arc<UOW>, user_repo: Arc<USR>) -> Self {
         Self { pw, uow, user_repo }
     }
 
@@ -170,7 +176,9 @@ mod tests {
         }
 
         /// Builds the use case instance, consuming the fixture
-        fn build_use_case(self) -> CreateUserUseCase<MockUnitOfWork> {
+        fn build_use_case(
+            self,
+        ) -> CreateUserUseCase<MockPasswordHandler, MockUnitOfWork, MockUserRepository> {
             CreateUserUseCase::new(
                 Arc::new(self.mock_pw),
                 Arc::new(self.mock_uow),
