@@ -8,11 +8,13 @@ use crate::domain::{
 use std::{future::Future, pin::Pin};
 use tonic::async_trait;
 
+use super::game_tick::GameTickTxRepository;
+
 // This trait combines all repositories needed within a single transaction.
 // It acts as the handle passed to the business logic closure.
 // The 'a lifetime ensures it cannot outlive the transaction scope.
 pub trait TransactionalContext<'a>:
-    UserTxRepository + CorporationTxRepository + UnitTxRespository + Send + Sync
+    GameTickTxRepository + UserTxRepository + CorporationTxRepository + UnitTxRespository + Send + Sync
 {
     // This trait is just a marker/combiner, no methods needed here.
     // Add other repositories here as needed: + ProductRepository, etc.

@@ -1,10 +1,11 @@
+use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
 use validator::Validate;
 
 const DEFAULT_BALANCE: i64 = 1000000;
 
-#[derive(Debug, Clone, Validate, FromRow)]
+#[derive(Serialize, Deserialize, Debug, Clone, Validate, FromRow)]
 pub struct Corporation {
     pub uuid: Uuid,
     pub user_uuid: Uuid,

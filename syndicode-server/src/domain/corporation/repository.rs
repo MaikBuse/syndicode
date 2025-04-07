@@ -14,6 +14,8 @@ pub trait CorporationRepository: Send + Sync {
         &self,
         corporation_uuid: Uuid,
     ) -> RepositoryResult<Corporation>;
+
+    async fn list_corporations(&self) -> RepositoryResult<Vec<Corporation>>;
 }
 
 #[async_trait]

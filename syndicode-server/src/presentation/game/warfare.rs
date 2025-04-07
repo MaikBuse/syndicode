@@ -2,7 +2,7 @@ use crate::{
     application::{
         action::{ActionHandler, QueuedAction},
         ports::queue::ActionQueuer,
-        warfare::list_units::ListUnitsUseCase,
+        warfare::list_units_by_user::ListUnitsByUserUseCase,
     },
     domain::unit::repository::UnitRepository,
     utils::timestamp_now,
@@ -42,13 +42,13 @@ where
 }
 
 pub async fn list_units<UNT>(
-    list_units_uc: Arc<ListUnitsUseCase<UNT>>,
+    list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
     req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status>
 where
     UNT: UnitRepository,
 {
-    let units = match list_units_uc.execute(req_user_uuid).await {
+    let units = match list_units_by_user_uc.execute(req_user_uuid).await {
         Ok(units) => units,
         Err(err) => return Err(Status::new(Code::Internal, err.to_string())),
     };

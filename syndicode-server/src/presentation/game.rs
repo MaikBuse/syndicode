@@ -10,7 +10,7 @@ use crate::{
             limiter::{LimitationError, RateLimitEnforcer},
             queue::ActionQueuer,
         },
-        warfare::list_units::ListUnitsUseCase,
+        warfare::list_units_by_user::ListUnitsByUserUseCase,
     },
     config::Config,
     domain::{corporation::repository::CorporationRepository, unit::repository::UnitRepository},
@@ -62,7 +62,7 @@ where
     pub action_handler: Arc<ActionHandler<Q>>,
     pub user_channels: UserChannels,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
-    pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
+    pub list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
 }
 
 #[tonic::async_trait]
@@ -111,7 +111,7 @@ where
 
         // Clone Arcs needed for the spawned task.
         let get_corporation_uc = Arc::clone(&self.get_corporation_uc);
-        let list_units_uc = Arc::clone(&self.list_units_uc);
+        let list_units_by_user_uc = Arc::clone(&self.list_units_by_user_uc);
         let limit = Arc::clone(&self.limit);
         let action_handler = Arc::clone(&self.action_handler);
         let user_channels_clone = Arc::clone(&self.user_channels);
@@ -161,7 +161,7 @@ where
                                 Arc::clone(&action_handler),
                                 user_uuid,
                                 Arc::clone(&get_corporation_uc),
-                                Arc::clone(&list_units_uc),
+                                Arc::clone(&list_units_by_user_uc),
                             )
                             .await;
 
@@ -215,7 +215,7 @@ async fn process_action<A, UNT, CRP>(
     action_handler: Arc<ActionHandler<A>>,
     user_uuid: Uuid,
     get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
-    list_units_uc: Arc<ListUnitsUseCase<UNT>>,
+    list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
 ) -> Result<(), SendError<Result<GameUpdate, Status>>>
 where
     A: ActionQueuer,
@@ -225,7 +225,7 @@ where
     let result = match action {
         Action::GetCorporation(req) => get_corporation(req, get_corporation_uc, user_uuid).await,
         Action::SpawnUnit(_) => spawn_unit(action_handler, user_uuid).await,
-        Action::ListUnit(_) => list_units(list_units_uc, user_uuid).await,
+        Action::ListUnit(_) => list_units(list_units_by_user_uc, user_uuid).await,
     };
 
     // Send the result back to the client

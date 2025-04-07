@@ -1,18 +1,19 @@
+use uuid::Uuid;
+
 use crate::{
     application::error::ApplicationResult,
     domain::{unit::model::Unit, unit::repository::UnitRepository},
 };
 use std::sync::Arc;
-use uuid::Uuid;
 
-pub struct SpawnUnitUseCase<UNT>
+pub struct ListUnitsByUserUseCase<UNT>
 where
     UNT: UnitRepository,
 {
     unit_repository: Arc<UNT>,
 }
 
-impl<UNT> SpawnUnitUseCase<UNT>
+impl<UNT> ListUnitsByUserUseCase<UNT>
 where
     UNT: UnitRepository,
 {
@@ -20,14 +21,9 @@ where
         Self { unit_repository }
     }
 
-    pub async fn execute(&self, req_user_uuid: Uuid) -> ApplicationResult<Unit> {
-        let unit = Unit {
-            uuid: Uuid::now_v7(),
-            user_uuid: req_user_uuid,
-        };
+    pub async fn execute(&self, user_uuid: Uuid) -> ApplicationResult<Vec<Unit>> {
+        let units = self.unit_repository.list_units_by_user(user_uuid).await?;
 
-        self.unit_repository.insert_unit(&unit).await?;
-
-        Ok(unit)
+        Ok(units)
     }
 }
