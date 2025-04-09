@@ -14,14 +14,29 @@ use uuid::Uuid;
 pub struct PgUnitRepository;
 
 impl PgUnitRepository {
-    /// Inserts a new state record for a unit (representing its existence and ownership)
-    /// at a specific game tick.
-    pub async fn insert_unit(
+    pub async fn insert_units_in_tick(
         &self,
-        executor: impl Executor<'_, Database = Postgres>,
-        unit: &Unit,
+        executor: impl sqlx::Executor<'_, Database = Postgres>,
+        units: Vec<Unit>,
         game_tick: i64,
     ) -> RepositoryResult<()> {
+        // If there are no units, we don't need to do anything.
+        if units.is_empty() {
+            return Ok(());
+        }
+
+        // Prepare separate vectors for each column to be bulk inserted.
+        // Pre-allocate capacity for efficiency.
+        let count = units.len();
+        let mut uuids = Vec::with_capacity(count);
+        let mut user_uuids = Vec::with_capacity(count);
+
+        for unit in units {
+            uuids.push(unit.uuid);
+            user_uuids.push(unit.user_uuid);
+        }
+
+        // Execute the bulk insert query using UNNEST
         sqlx::query!(
             r#"
             INSERT INTO units (
@@ -29,16 +44,42 @@ impl PgUnitRepository {
                 uuid,
                 user_uuid
             )
-            VALUES ($1, $2, $3)
+            SELECT
+                $1 as game_tick,
+                unnest($2::UUID[]) as uuid,
+                unnest($3::UUID[]) as user_uuid
             "#,
             game_tick,
-            unit.uuid,
-            unit.user_uuid
+            &uuids,
+            &user_uuids,
         )
         .execute(executor)
         .await?;
 
         Ok(())
+    }
+
+    pub async fn list_units_at_tick(
+        &self,
+        executor: impl Executor<'_, Database = Postgres>,
+        game_tick: i64,
+    ) -> RepositoryResult<Vec<Unit>> {
+        let units = sqlx::query_as!(
+            Unit,
+            r#"
+            SELECT
+                uuid,
+                user_uuid
+            FROM units
+            WHERE
+                game_tick = $1
+            "#,
+            game_tick
+        )
+        .fetch_all(executor)
+        .await?;
+
+        Ok(units)
     }
 
     /// Retrieves all units (UUID and owner UUID) belonging to a specific user
@@ -99,18 +140,18 @@ impl PgUnitRepository {
         Ok(unit)
     }
 
-    /// Deletes ALL historical state for a specific unit UUID across ALL ticks.
-    pub async fn delete_unit_history<'e>(
+    pub async fn delete_units_before_tick(
         &self,
-        executor: impl Executor<'e, Database = Postgres>,
-        unit_uuid: Uuid,
+        executor: impl Executor<'_, Database = Postgres>,
+        game_tick: i64,
     ) -> RepositoryResult<u64> {
         let result = sqlx::query!(
             r#"
              DELETE FROM units
-             WHERE uuid = $1
+             WHERE
+                game_tick < $1
              "#,
-            unit_uuid
+            game_tick
         )
         .execute(executor)
         .await?;
@@ -137,7 +178,18 @@ impl PgUnitService {
 
 #[tonic::async_trait]
 impl UnitRepository for PgUnitService {
-    async fn list_units(&self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>> {
+    async fn list_units(&self) -> RepositoryResult<Vec<Unit>> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&*self.pool)
+            .await?;
+
+        self.unit_repo
+            .list_units_at_tick(&*self.pool, game_tick)
+            .await
+    }
+
+    async fn list_units_by_user(&self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&*self.pool)
@@ -147,22 +199,22 @@ impl UnitRepository for PgUnitService {
             .list_user_units_at_tick(&*self.pool, user_uuid, game_tick)
             .await
     }
-
-    async fn insert_unit(&self, unit: &Unit) -> RepositoryResult<()> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&*self.pool)
-            .await?;
-
-        self.unit_repo
-            .insert_unit(&*self.pool, unit, game_tick)
-            .await
-    }
 }
 
 #[tonic::async_trait]
 impl UnitTxRespository for PgTransactionContext<'_, '_> {
-    async fn list_units(&mut self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>> {
+    async fn list_units(&mut self) -> RepositoryResult<Vec<Unit>> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&mut **self.tx)
+            .await?;
+
+        self.unit_repo
+            .list_units_at_tick(&mut **self.tx, game_tick)
+            .await
+    }
+
+    async fn list_units_by_user(&mut self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&mut **self.tx)
@@ -173,14 +225,19 @@ impl UnitTxRespository for PgTransactionContext<'_, '_> {
             .await
     }
 
-    async fn insert_unit(&mut self, unit: &Unit) -> RepositoryResult<()> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&mut **self.tx)
-            .await?;
-
+    async fn insert_units_in_tick(
+        &mut self,
+        game_tick: i64,
+        units: Vec<Unit>,
+    ) -> RepositoryResult<()> {
         self.unit_repo
-            .insert_unit(&mut **self.tx, unit, game_tick)
+            .insert_units_in_tick(&mut **self.tx, units, game_tick)
+            .await
+    }
+
+    async fn delete_units_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64> {
+        self.unit_repo
+            .delete_units_before_tick(&mut **self.tx, game_tick)
             .await
     }
 }

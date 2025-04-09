@@ -20,8 +20,8 @@ pub trait UnitTxRespository: Send + Sync {
     async fn list_units_by_user(&mut self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>>;
     async fn insert_units_in_tick(
         &mut self,
-        game_tick: usize,
+        game_tick: i64,
         units: Vec<Unit>,
     ) -> RepositoryResult<()>;
-    async fn delete_units_before_tick(&mut self, game_tick: usize) -> RepositoryResult<()>;
+    async fn delete_units_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64>;
 }

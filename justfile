@@ -4,6 +4,7 @@ set dotenv-load := true
 set export := true
 
 mod proto
+mod grpcurl
 mod server
 mod client
 mod db
@@ -13,6 +14,8 @@ mod docker
 help:
   @echo "[proto]"
   @just --list proto --list-heading ""
+  @echo "[grpcurl]"
+  @just --list grpcurl --list-heading ""
   @echo "[client]"
   @just --list client --list-heading ""
   @echo "[server]"

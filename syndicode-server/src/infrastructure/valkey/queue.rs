@@ -160,10 +160,7 @@ impl ActionQueuer for ValkeyStore {
     }
 
     /// Acknowledges processed messages using XACK.
-    async fn acknowledge_actions(
-        &self,
-        ids: &[String], // Changed to slice of owned Strings
-    ) -> QueueResult<()> {
+    async fn acknowledge_actions(&self, ids: &[&str]) -> QueueResult<()> {
         if ids.is_empty() {
             return Ok(()); // Nothing to acknowledge
         }
@@ -171,11 +168,8 @@ impl ActionQueuer for ValkeyStore {
         let mut conn = self.conn.clone();
 
         // Execute XACK
-        // redis-rs xack takes &[&str], so we need to convert &[String]
-        let ids_str: Vec<&str> = ids.iter().map(AsRef::as_ref).collect();
-
         let ack_count: i64 = conn
-            .xack(ACTION_STREAM_KEY, ACTION_CONSUMER_GROUP, &ids_str) // Pass slice of &str
+            .xack(ACTION_STREAM_KEY, ACTION_CONSUMER_GROUP, &ids) // Pass slice of &str
             .await
             .map_err(|err| QueueError::ConnectionError(format!("XACK failed: {}", err)))?;
 

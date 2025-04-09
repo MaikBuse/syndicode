@@ -18,6 +18,8 @@ pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
     match err {
         ApplicationError::PasswordTooShort(_)
         | ApplicationError::PasswordTooLong(_)
+        | ApplicationError::CorporationNameTooShort(_)
+        | ApplicationError::CorporationNameTooLong(_)
         | ApplicationError::UsernameInvalid
         | ApplicationError::UniqueConstraint => Status::invalid_argument(err.to_string()),
         ApplicationError::WrongUserCredentials | ApplicationError::MissingAuthentication => {
@@ -26,6 +28,7 @@ pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
         ApplicationError::Unauthorized => Status::permission_denied(err.to_string()),
         ApplicationError::Limitation(_)
         | ApplicationError::Database(_)
+        | ApplicationError::Queue(_)
         | ApplicationError::Other(_) => Status::internal(err.to_string()),
     }
 }

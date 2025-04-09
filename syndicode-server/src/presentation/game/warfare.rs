@@ -1,10 +1,10 @@
 use crate::{
     application::{
-        action::{ActionHandler, QueuedAction},
         ports::queue::ActionQueuer,
-        warfare::list_units_by_user::ListUnitsByUserUseCase,
+        warfare::{list_units_by_user::ListUnitsByUserUseCase, spawn_unit::SpawnUnitUseCase},
     },
     domain::unit::repository::UnitRepository,
+    presentation::common::application_error_into_status,
     utils::timestamp_now,
 };
 use std::sync::Arc;
@@ -15,17 +15,15 @@ use syndicode_proto::{
 use tonic::{Code, Result, Status};
 use uuid::Uuid;
 
-pub async fn spawn_unit<A>(
-    action_handler: Arc<ActionHandler<A>>,
+pub async fn spawn_unit<Q>(
+    spawn_unit_uc: Arc<SpawnUnitUseCase<Q>>,
     req_user_uuid: Uuid,
 ) -> Result<GameUpdate, Status>
 where
-    A: ActionQueuer,
+    Q: ActionQueuer,
 {
-    let payload = QueuedAction::SpawnUnit { req_user_uuid };
-
-    if let Err(err) = action_handler.submit_action(payload).await {
-        return Err(Status::internal(err.to_string()));
+    if let Err(err) = spawn_unit_uc.execute(req_user_uuid).await {
+        return Err(application_error_into_status(err));
     }
 
     let now = timestamp_now().map_err(|err| {

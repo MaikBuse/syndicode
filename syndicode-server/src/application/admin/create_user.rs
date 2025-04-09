@@ -4,7 +4,7 @@ use crate::{
         ports::{crypto::PasswordHandler, uow::UnitOfWork},
     },
     domain::{
-        corporation::model::Corporation,
+        corporation::model::{name::CorporationName, Corporation},
         repository::RepositoryError,
         user::{
             model::{password::UserPassword, role::UserRole, User},
@@ -78,6 +78,9 @@ where
                     let user_to_create = user.clone();
 
                     ctx.create_user(&user_to_create).await?;
+
+                    let corporation_name = CorporationName::new(corporation_name)
+                        .map_err(|err| anyhow::format_err!(err))?;
 
                     let corporation = Corporation::new(user_to_create.uuid, corporation_name);
 

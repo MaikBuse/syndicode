@@ -4,13 +4,12 @@ mod warfare;
 use super::common::uuid_from_metadata;
 use crate::{
     application::{
-        action::ActionHandler,
         economy::get_corporation::GetCorporationUseCase,
         ports::{
             limiter::{LimitationError, RateLimitEnforcer},
             queue::ActionQueuer,
         },
-        warfare::list_units_by_user::ListUnitsByUserUseCase,
+        warfare::{list_units_by_user::ListUnitsByUserUseCase, spawn_unit::SpawnUnitUseCase},
     },
     config::Config,
     domain::{corporation::repository::CorporationRepository, unit::repository::UnitRepository},
@@ -59,10 +58,10 @@ where
 {
     pub config: Arc<Config>,
     pub limit: Arc<R>,
-    pub action_handler: Arc<ActionHandler<Q>>,
     pub user_channels: UserChannels,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
+    pub spawn_unit_uc: Arc<SpawnUnitUseCase<Q>>,
 }
 
 #[tonic::async_trait]
@@ -112,8 +111,9 @@ where
         // Clone Arcs needed for the spawned task.
         let get_corporation_uc = Arc::clone(&self.get_corporation_uc);
         let list_units_by_user_uc = Arc::clone(&self.list_units_by_user_uc);
+        let spawn_unit_uc = Arc::clone(&self.spawn_unit_uc);
+
         let limit = Arc::clone(&self.limit);
-        let action_handler = Arc::clone(&self.action_handler);
         let user_channels_clone = Arc::clone(&self.user_channels);
 
         // Spawn Task to Handle Incoming Client Actions
@@ -158,10 +158,10 @@ where
                             let send_result = process_action(
                                 request_enum,
                                 &tx, // Pass borrow for this use case
-                                Arc::clone(&action_handler),
                                 user_uuid,
-                                Arc::clone(&get_corporation_uc),
-                                Arc::clone(&list_units_by_user_uc),
+                                get_corporation_uc.clone(),
+                                list_units_by_user_uc.clone(),
+                                spawn_unit_uc.clone(),
                             )
                             .await;
 
@@ -209,22 +209,22 @@ where
 
 /// Processes a single action and sends the result/error back through the channel.
 /// Returns Ok(()) if sending succeeded, Err(()) if the channel was closed.
-async fn process_action<A, UNT, CRP>(
+async fn process_action<Q, UNT, CRP>(
     action: Action,
     tx: &UserTx, // Borrow the sender channel
-    action_handler: Arc<ActionHandler<A>>,
     user_uuid: Uuid,
     get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
+    spawn_unit_uc: Arc<SpawnUnitUseCase<Q>>,
 ) -> Result<(), SendError<Result<GameUpdate, Status>>>
 where
-    A: ActionQueuer,
+    Q: ActionQueuer,
     UNT: UnitRepository,
     CRP: CorporationRepository,
 {
     let result = match action {
         Action::GetCorporation(req) => get_corporation(req, get_corporation_uc, user_uuid).await,
-        Action::SpawnUnit(_) => spawn_unit(action_handler, user_uuid).await,
+        Action::SpawnUnit(_) => spawn_unit(spawn_unit_uc, user_uuid).await,
         Action::ListUnit(_) => list_units(list_units_by_user_uc, user_uuid).await,
     };
 

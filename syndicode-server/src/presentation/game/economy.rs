@@ -24,7 +24,7 @@ where
                 corporation: Some(Corporation {
                     uuid: corporation.uuid.to_string(),
                     user_uuid: corporation.user_uuid.to_string(),
-                    name: corporation.name,
+                    name: corporation.name.to_string(),
                     balance: corporation.balance,
                 }),
             })),

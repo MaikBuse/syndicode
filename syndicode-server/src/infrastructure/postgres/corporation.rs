@@ -37,8 +37,64 @@ impl PgCorporationRepository {
             game_tick,
             corporation.uuid,
             corporation.user_uuid,
-            corporation.name,
+            corporation.name.to_string(),
             corporation.balance
+        )
+        .execute(executor)
+        .await?;
+
+        Ok(())
+    }
+
+    /// This leverages PostgreSQL's UNNEST function for efficiency.
+    pub async fn insert_corporations_in_tick(
+        &self,
+        executor: impl sqlx::Executor<'_, Database = Postgres>,
+        corporations: Vec<Corporation>, // Take ownership for efficiency
+        game_tick: i64,                 // Use i64 to match insert_corporation and DB schema
+    ) -> RepositoryResult<()> {
+        // If there are no corporations, we don't need to do anything.
+        if corporations.is_empty() {
+            return Ok(());
+        }
+
+        // Prepare separate vectors for each column to be bulk inserted.
+        // Pre-allocate capacity for efficiency.
+        let count = corporations.len();
+        let mut uuids = Vec::with_capacity(count);
+        let mut user_uuids = Vec::with_capacity(count);
+        let mut names = Vec::with_capacity(count);
+        let mut balances = Vec::with_capacity(count);
+
+        for corp in corporations {
+            uuids.push(corp.uuid);
+            user_uuids.push(corp.user_uuid);
+            names.push(corp.name.to_string());
+            balances.push(corp.balance);
+        }
+
+        // Execute the bulk insert query using UNNEST
+        sqlx::query!(
+            r#"
+            INSERT INTO corporations (
+                game_tick,
+                uuid,
+                user_uuid,
+                name,
+                balance
+            )
+            SELECT
+                $1 as game_tick,
+                unnest($2::UUID[]) as uuid,
+                unnest($3::UUID[]) as user_uuid,
+                unnest($4::TEXT[]) as name,
+                unnest($5::BIGINT[]) as balance
+            "#,
+            game_tick,
+            &uuids,
+            &user_uuids,
+            &names,
+            &balances
         )
         .execute(executor)
         .await?;
@@ -102,6 +158,47 @@ impl PgCorporationRepository {
 
         Ok(corporation)
     }
+
+    pub async fn list_corporations_at_tick(
+        &self,
+        executor: impl sqlx::Executor<'_, Database = Postgres>,
+        game_tick: i64,
+    ) -> RepositoryResult<Vec<Corporation>> {
+        let corporations = sqlx::query_as!(
+            Corporation,
+            r#"
+            SELECT
+                uuid, user_uuid, name, balance
+            FROM corporations
+            WHERE
+                game_tick = $1
+            "#,
+            game_tick
+        )
+        .fetch_all(executor)
+        .await?;
+
+        Ok(corporations)
+    }
+
+    pub async fn delete_corporations_before_tick(
+        &self,
+        executor: impl sqlx::Executor<'_, Database = Postgres>,
+        game_tick: i64,
+    ) -> RepositoryResult<u64> {
+        let result = sqlx::query!(
+            r#"
+            DELETE FROM corporations
+            WHERE
+                game_tick < $1
+            "#,
+            game_tick
+        )
+        .execute(executor)
+        .await?;
+
+        Ok(result.rows_affected())
+    }
 }
 
 pub struct PgCorporationService {
@@ -157,6 +254,17 @@ impl CorporationRepository for PgCorporationService {
             .get_corporation_by_uuid_at_tick(&*self.pool, corporation_uuid, game_tick)
             .await
     }
+
+    async fn list_corporations(&self) -> RepositoryResult<Vec<Corporation>> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&*self.pool)
+            .await?;
+
+        self.corporation_repo
+            .list_corporations_at_tick(&*self.pool, game_tick)
+            .await
+    }
 }
 
 #[tonic::async_trait]
@@ -194,6 +302,22 @@ impl CorporationTxRepository for PgTransactionContext<'_, '_> {
 
         self.corporation_repo
             .get_corporation_by_uuid_at_tick(&mut **self.tx, corporation_uuid, game_tick)
+            .await
+    }
+
+    async fn insert_corporations_in_tick(
+        &mut self,
+        game_tick: i64,
+        corporations: Vec<Corporation>,
+    ) -> RepositoryResult<()> {
+        self.corporation_repo
+            .insert_corporations_in_tick(&mut **self.tx, corporations, game_tick)
+            .await
+    }
+
+    async fn delete_corporations_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64> {
+        self.corporation_repo
+            .delete_corporations_before_tick(&mut **self.tx, game_tick)
             .await
     }
 }

@@ -1,12 +1,13 @@
 use crate::{
     application::{
-        action::ActionHandler,
         admin::{
             bootstrap_admin::BootstrapAdminUseCase, create_user::CreateUserUseCase,
             delete_user::DeleteUserUseCase,
         },
         auth::login::LoginUseCase,
-        economy::get_corporation::GetCorporationUseCase,
+        economy::{
+            get_corporation::GetCorporationUseCase, list_corporations::ListCorporationsUseCase,
+        },
         ports::{
             crypto::{JwtHandler, PasswordHandler},
             leader::LeaderElector,
@@ -16,7 +17,10 @@ use crate::{
             uow::UnitOfWork,
         },
         processor::GameTickProcessor,
-        warfare::{list_units::ListUnitsUseCase, spawn_unit::SpawnUnitUseCase},
+        warfare::{
+            list_units::ListUnitsUseCase, list_units_by_user::ListUnitsByUserUseCase,
+            spawn_unit::SpawnUnitUseCase,
+        },
     },
     config::Config,
     domain::{
@@ -45,7 +49,7 @@ use uuid::Uuid;
 
 // Represents the standard configuration of the application state
 pub type DefaultAppState = AppState<
-    GameTickProcessor,
+    GameTickProcessor<ValkeyStore, PostgresUnitOfWork, PgUnitService, PgCorporationService>,
     CryptoService,
     CryptoService,
     ValkeyStore,
@@ -72,7 +76,6 @@ where
 {
     pub game_tick_processor: Arc<G>,
     pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
-    pub action_handler: Arc<ActionHandler<Q>>,
     pub leader_elector: Arc<L>,
     pub crypto: Arc<CryptoService>,
     pub user_service: Arc<USR>,
@@ -82,7 +85,6 @@ where
     pub bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
     pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
     pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
-    pub spawn_unit_uc: Arc<SpawnUnitUseCase<UNT>>,
     pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub game_presenter: GamePresenter<R, Q, UNT, CRP>,
@@ -97,11 +99,6 @@ impl DefaultAppState {
         valkey: Arc<ValkeyStore>,
     ) -> anyhow::Result<DefaultAppState> {
         let user_channels = Arc::new(DashMap::new());
-
-        let leader_elector = valkey.clone();
-
-        // Action handler
-        let action_handler = Arc::new(ActionHandler::new(valkey.clone()));
 
         // Crypto service
         let crypto = Arc::new(CryptoService::new()?);
@@ -132,22 +129,30 @@ impl DefaultAppState {
         let delete_user_uc = Arc::new(DeleteUserUseCase::new(Arc::clone(&user_service)));
 
         // Warfare use cases
-        let spawn_unit_uc = Arc::new(SpawnUnitUseCase::new(Arc::clone(&unit_service)));
         let list_units_uc = Arc::new(ListUnitsUseCase::new(Arc::clone(&unit_service)));
+        let list_units_by_user_uc = Arc::new(ListUnitsByUserUseCase::new(unit_service.clone()));
+        let spawn_unit_uc = Arc::new(SpawnUnitUseCase::new(valkey.clone()));
 
         // Economy use cases
         let get_corporation_uc =
             Arc::new(GetCorporationUseCase::new(Arc::clone(&corporation_service)));
+        let list_corporations_uc =
+            Arc::new(ListCorporationsUseCase::new(corporation_service.clone()));
 
-        let game_tick_processor = Arc::new(GameTickProcessor::new());
+        let game_tick_processor = Arc::new(GameTickProcessor::new(
+            valkey.clone(),
+            uow.clone(),
+            list_units_uc.clone(),
+            list_corporations_uc.clone(),
+        ));
 
         // Presenter
         let game_presenter = GamePresenter {
             config: Arc::clone(&config),
             limit: valkey.clone(),
-            action_handler: Arc::clone(&action_handler),
             user_channels: Arc::clone(&user_channels),
-            list_units_uc: Arc::clone(&list_units_uc),
+            list_units_by_user_uc: list_units_by_user_uc.clone(),
+            spawn_unit_uc: spawn_unit_uc.clone(),
             get_corporation_uc: Arc::clone(&get_corporation_uc),
         };
 
@@ -162,8 +167,7 @@ impl DefaultAppState {
         };
 
         Ok(AppState {
-            action_handler,
-            leader_elector,
+            leader_elector: valkey.clone(),
             user_channels,
             crypto,
             user_service,
@@ -173,7 +177,6 @@ impl DefaultAppState {
             bootstrap_admin_uc,
             create_user_uc,
             delete_user_uc,
-            spawn_unit_uc,
             list_units_uc,
             get_corporation_uc,
             game_presenter,

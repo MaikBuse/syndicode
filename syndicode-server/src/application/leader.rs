@@ -264,10 +264,10 @@ mod tests {
     }
 
     struct MockGameTickState {
-        process_results: VecDeque<Result<usize, anyhow::Error>>,
-        ticks_processed: Vec<usize>,
+        process_results: VecDeque<Result<i64, anyhow::Error>>,
+        ticks_processed: Vec<i64>,
         errors_encountered: Vec<String>,
-        call_count: usize,
+        call_count: i64,
     }
 
     // --- Mock Implementations ---
@@ -490,13 +490,13 @@ mod tests {
                 })),
             }
         }
-        fn add_process_result(&self, result: Result<usize, anyhow::Error>) {
+        fn add_process_result(&self, result: Result<i64, anyhow::Error>) {
             self.state.lock().unwrap().process_results.push_back(result);
         }
-        fn get_processed_ticks(&self) -> Vec<usize> {
+        fn get_processed_ticks(&self) -> Vec<i64> {
             self.state.lock().unwrap().ticks_processed.clone()
         }
-        fn get_call_count(&self) -> usize {
+        fn get_call_count(&self) -> i64 {
             self.state.lock().unwrap().call_count
         }
         fn get_errors(&self) -> Vec<String> {
@@ -506,7 +506,7 @@ mod tests {
 
     #[tonic::async_trait]
     impl GameTickProcessable for MockGameTickProcessor {
-        async fn process_next_tick(&self) -> anyhow::Result<usize> {
+        async fn process_next_tick(&self) -> anyhow::Result<i64> {
             // --- Start Lock ---
             let mut state = self.state.lock().unwrap();
             state.call_count += 1;
@@ -519,7 +519,7 @@ mod tests {
 
             // Prepare the value to be returned *after* the lock is dropped
             #[allow(clippy::needless_late_init)]
-            let outcome: anyhow::Result<usize>;
+            let outcome: anyhow::Result<i64>;
 
             // Process the result *inside* the lock to update state
             match result {

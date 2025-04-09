@@ -57,8 +57,8 @@ where
     UNT: UnitRepository,
     CRP: CorporationRepository,
 {
-    async fn process_next_tick(&self) -> anyhow::Result<usize> {
-        // 1. Read Current State & Tick (N) from Repository
+    async fn process_next_tick(&self) -> anyhow::Result<i64> {
+        // 1. Read Current State & Tick (N) from Repositories
         let mut units = self.list_units_uc.execute().await?;
         let mut corporations = self.list_corporations_uc.execute().await?;
 
@@ -68,12 +68,16 @@ where
         tracing::debug!(num_actions = actions.len(), "Pulled actions.");
 
         // 3. Calculate State N+1
-        'for_action: for (message_id, action) in actions {
+        let mut messages_ids: Vec<&str> = Vec::with_capacity(actions.len());
+
+        'for_action: for (message_id, action) in actions.iter() {
+            messages_ids.push(message_id.as_str());
+
             match action {
                 QueuedAction::SpawnUnit { req_user_uuid } => {
                     let unit = Unit {
                         uuid: Uuid::now_v7(),
-                        user_uuid: req_user_uuid,
+                        user_uuid: *req_user_uuid,
                     };
 
                     units.push(unit);
@@ -89,7 +93,7 @@ where
                         continue 'for_action;
                     };
 
-                    *corporation_to_update = corporation;
+                    *corporation_to_update = corporation.clone();
                 }
             }
         }
@@ -103,14 +107,20 @@ where
                 Box::pin(async move {
                     let current_game_tick = ctx.get_current_game_tick().await?;
 
-                    let current_game_tick = usize::try_from(current_game_tick)
-                        .map_err(|err| anyhow::format_err!(err))?;
-
                     let next_game_tick = current_game_tick + 1;
 
+                    // Units
                     ctx.insert_units_in_tick(next_game_tick, units).await?;
-
                     ctx.delete_units_before_tick(current_game_tick).await?;
+
+                    // Corporations
+                    ctx.insert_corporations_in_tick(next_game_tick, corporations)
+                        .await?;
+                    ctx.delete_corporations_before_tick(current_game_tick)
+                        .await?;
+
+                    // Update game tick state
+                    ctx.update_current_game_tick(next_game_tick).await?;
 
                     Ok(next_game_tick)
                 })
@@ -121,14 +131,13 @@ where
 
         // 5. Acknowledge processed actions
         if !actions.is_empty() {
-            let action_ids: Vec<&str> = actions.iter().map(|a| a.stream_id.as_str()).collect();
             self.action_queuer
-                .acknowledge_actions(&action_ids)
+                .acknowledge_actions(&messages_ids)
                 .await
                 .context("Failed to acknowledge actions")?;
 
             tracing::debug!(
-                num_acked = action_ids.len(),
+                num_acked = messages_ids.len(),
                 "Acknowledged processed actions."
             );
         }

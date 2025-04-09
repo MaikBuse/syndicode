@@ -33,6 +33,6 @@ pub trait ActionQueuer: Send + Sync {
     /// Acknowledges processed messages using XACK.
     async fn acknowledge_actions(
         &self,
-        ids: &[String], // Changed to slice of owned Strings
+        ids: &[&str], // Changed to slice of owned Strings
     ) -> QueueResult<()>;
 }
