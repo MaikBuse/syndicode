@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/MaikBuse/syndicode/compare/v0.7.0...v0.7.1) (2025-04-13)
+
+
+### Bug Fixes
+
+* github rust ci ([cd7c62a](https://github.com/MaikBuse/syndicode/commit/cd7c62aee4bf781b1980c482ef279fddab022264))
+* stop rate limits for health checks ([3674f1c](https://github.com/MaikBuse/syndicode/commit/3674f1c104c8ba28258cf31a83f8333e5e861452))
+
 ## [0.7.0](https://github.com/MaikBuse/syndicode/compare/v0.6.0...v0.7.0) (2025-04-13)
 
 
