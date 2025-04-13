@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/MaikBuse/syndicode/compare/v0.6.0...v0.7.0) (2025-04-13)
+
+
+### Features
+
+* update sqlx preparation ([18ab05e](https://github.com/MaikBuse/syndicode/commit/18ab05ea391e8713830d4e7a00831153b305bd3b))
+
 ## [0.6.0](https://github.com/MaikBuse/syndicode/compare/v0.5.0...v0.6.0) (2025-04-09)
 
 
