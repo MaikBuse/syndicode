@@ -56,17 +56,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(game_update) => {
                 if let Some(update) = game_update.update {
                     match update {
-                        Update::SpawnUnit(spawn_response) => {
-                            println!("Unit spawned: {:?}", spawn_response);
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-
-                            // Now delete the user
-                            let _ = tx_clone
-                                .send(PlayerAction {
-                                    action: Some(Action::ListUnit(ListUnitsRequest {})),
-                                })
-                                .await;
-                        }
                         Update::ListUnits(list_unit_response) => {
                             println!("List unit reponse: {:?}", list_unit_response);
                         }

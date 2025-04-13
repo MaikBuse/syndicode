@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE corporations\n            SET\n                uuid = $1,\n                user_uuid = $2,\n                name = $3,\n                balance = $4\n            WHERE uuid = $1\n            RETURNING uuid, user_uuid, name, balance\n            ",
+  "query": "\n            SELECT\n                uuid,\n                user_uuid,\n                name,\n                balance\n            FROM corporations\n            WHERE\n                user_uuid = $1\n                AND game_tick = $2\n            ",
   "describe": {
     "columns": [
       {
@@ -27,8 +27,6 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
-        "Text",
         "Int8"
       ]
     },
@@ -39,5 +37,5 @@
       false
     ]
   },
-  "hash": "e9bd8552c8ef450f958ac6da745cb725696fa7a4643ffefd78876d6ec782cf3b"
+  "hash": "d3e0df130648f899929d065ad467976e7f978786406706681af1c6cd7b386e87"
 }

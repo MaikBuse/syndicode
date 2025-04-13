@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM corporations\n            WHERE\n                game_tick < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b39d785434b1eb84e664b6148c5aea69e956d50e12a436cb2490ea4cb2a41e99"
+}
