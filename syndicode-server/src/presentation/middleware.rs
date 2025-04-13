@@ -123,41 +123,40 @@ where
             let start_time = Instant::now();
             let path = req.uri().path().to_string(); // Clone path for logging etc.
 
-            // IP Address Extraction ---
-            let ip_address = req
-                .headers()
-                .get(ip_header_name.as_str())
-                .and_then(|h| h.to_str().ok())
-                .ok_or_else(|| {
-                    tracing::warn!(
-                        "Failed to retrieve client IP address from header '{}'",
-                        *ip_header_name
-                    );
-
-                    Status::invalid_argument("Missing required client identification")
-                })?;
-
-            // Rate Limiting
-            let check_result = limit.check(ip_address).await;
-            match check_result {
-                Ok(()) => {
-                    // Continue processing the request
-                }
-                Err(LimitationError::RateExhausted) => {
-                    return Err(Status::resource_exhausted("Rate limit exceeded").into());
-                }
-                Err(LimitationError::Internal(msg)) => {
-                    tracing::error!("Rate limiter internal error: {}", msg);
-
-                    return Err(Status::internal("An internal error occurred").into());
-                }
-            }
-
-            // Path Handling & Logging
             let skip_auth = auth_excepted_paths.contains(path.as_str());
-            let skip_logging = path == HEALTH_CHECK_PATH; // Direct comparison is fine
+            let is_health_check = path == HEALTH_CHECK_PATH;
 
-            if !skip_logging {
+            if !is_health_check {
+                // IP Address Extraction ---
+                let ip_address = req
+                    .headers()
+                    .get(ip_header_name.as_str())
+                    .and_then(|h| h.to_str().ok())
+                    .ok_or_else(|| {
+                        tracing::warn!(
+                            "Failed to retrieve client IP address from header '{}'",
+                            *ip_header_name
+                        );
+
+                        Status::invalid_argument("Missing required client identification")
+                    })?;
+
+                // Rate Limiting
+                let check_result = limit.check(ip_address).await;
+                match check_result {
+                    Ok(()) => {
+                        // Continue processing the request
+                    }
+                    Err(LimitationError::RateExhausted) => {
+                        return Err(Status::resource_exhausted("Rate limit exceeded").into());
+                    }
+                    Err(LimitationError::Internal(msg)) => {
+                        tracing::error!("Rate limiter internal error: {}", msg);
+
+                        return Err(Status::internal("An internal error occurred").into());
+                    }
+                }
+
                 // Use structured logging
                 tracing::info!(
                     method = %req.method(),
@@ -208,7 +207,7 @@ where
             // Response Logging
             match &response_result {
                 Ok(res) => {
-                    if !skip_logging {
+                    if !is_health_check {
                         tracing::info!(
                             status = %res.status(), // Log HTTP status if available/relevant
                             user_uuid = user_uuid_str_opt.as_deref().unwrap_or("anonymous"),
