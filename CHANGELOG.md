@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/MaikBuse/syndicode/compare/v0.5.0...v0.6.0) (2025-04-09)
+
+
+### Features
+
+* add test for create user uc ([da60707](https://github.com/MaikBuse/syndicode/commit/da60707563a3e1711ad91dff39490441ca1e23a9))
+* consume actions from valkey stream ([e6c9301](https://github.com/MaikBuse/syndicode/commit/e6c930154b682465b83a4046ea20d5f858eb725d))
+* implement fundamental processing logic ([6f35157](https://github.com/MaikBuse/syndicode/commit/6f35157f50fd1ab7784a0404121ad8a540b0a1d7))
+* implement leader election with multiple server instances ([62f5ab4](https://github.com/MaikBuse/syndicode/commit/62f5ab4ad70a0e993f9a1d29bdac6218ac719e24))
+* improve password verification ([9b65a5e](https://github.com/MaikBuse/syndicode/commit/9b65a5e78550b3a797f365846b2105c18f9575e2))
+* introducing rate limiting for requests ([9f48d30](https://github.com/MaikBuse/syndicode/commit/9f48d30cb0e35285d6c72d14eb2afbbb6a536a83))
+* introducing sleeping logic to establish fixed game tick intervals ([a2bb6de](https://github.com/MaikBuse/syndicode/commit/a2bb6de065b797843347b8c37d40f9a163caf020))
+* introducing valkey based rate limiting ([a78bc02](https://github.com/MaikBuse/syndicode/commit/a78bc0235464a6ba3d0426697c06ea2e39219257))
+* moved logic from action handler to use cases ([7b5b963](https://github.com/MaikBuse/syndicode/commit/7b5b96314704462cbfabbc8f4a5ff71b3735b90d))
+* push actions to a valkey stream in order to enable decoupled handling ([2fdea02](https://github.com/MaikBuse/syndicode/commit/2fdea02b7de881cd589c84633b77dcf8ae487821))
+
 ## [0.5.0](https://github.com/MaikBuse/syndicode/compare/v0.4.2...v0.5.0) (2025-03-30)
 
 
