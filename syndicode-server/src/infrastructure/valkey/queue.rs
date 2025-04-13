@@ -169,7 +169,7 @@ impl ActionQueuer for ValkeyStore {
 
         // Execute XACK
         let ack_count: i64 = conn
-            .xack(ACTION_STREAM_KEY, ACTION_CONSUMER_GROUP, &ids) // Pass slice of &str
+            .xack(ACTION_STREAM_KEY, ACTION_CONSUMER_GROUP, ids) // Pass slice of &str
             .await
             .map_err(|err| QueueError::ConnectionError(format!("XACK failed: {}", err)))?;
 
