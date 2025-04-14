@@ -1,9 +1,14 @@
-use super::common::{application_error_into_status, uuid_from_metadata};
+use super::common::{application_error_into_status, check_rate_limit, uuid_from_metadata};
 use crate::{
     application::{
         admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
-        ports::{crypto::PasswordHandler, uow::UnitOfWork},
+        ports::{
+            crypto::PasswordHandler,
+            limiter::{LimiterCategory, RateLimitEnforcer},
+            uow::UnitOfWork,
+        },
     },
+    config::Config,
     domain::user::{model::role::UserRole, repository::UserRepository},
 };
 use std::{result::Result, sync::Arc};
@@ -14,19 +19,23 @@ use syndicode_proto::syndicode_interface_v1::{
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
-pub struct AdminPresenter<P, UOW, USR>
+pub struct AdminPresenter<R, P, UOW, USR>
 where
+    R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
 {
+    pub config: Arc<Config>,
+    pub limit: Arc<R>,
     pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
     pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
 }
 
 #[async_trait]
-impl<P, UOW, USR> AdminService for AdminPresenter<P, UOW, USR>
+impl<R, P, UOW, USR> AdminService for AdminPresenter<R, P, UOW, USR>
 where
+    R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
@@ -35,6 +44,14 @@ where
         &self,
         request: Request<CreateUserRequest>,
     ) -> Result<Response<CreateUserResponse>, Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            &self.config.ip_address_header,
+            LimiterCategory::Admin,
+        )
+        .await?;
+
         let req_user_uuid = match uuid_from_metadata(request.metadata()) {
             Ok(uuid) => uuid,
             Err(status) => return Err(status),
@@ -45,7 +62,7 @@ where
         let user_role = match request.user_role() {
             ProtoUserRole::Unspecified => {
                 return Err(Status::invalid_argument(
-                    "The user role needs to either be 'User' or 'Admin'",
+                    "The user's role needs to either be 'Player' or 'Admin'",
                 ));
             }
             ProtoUserRole::Player => UserRole::Player,
@@ -83,6 +100,14 @@ where
         &self,
         request: Request<DeleteUserRequest>,
     ) -> Result<Response<DeleteUserResponse>, Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            &self.config.ip_address_header,
+            LimiterCategory::Admin,
+        )
+        .await?;
+
         let req_user_uuid = match uuid_from_metadata(request.metadata()) {
             Ok(uuid) => uuid,
             Err(status) => return Err(status),

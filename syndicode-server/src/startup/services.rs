@@ -88,8 +88,8 @@ where
     pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub game_presenter: GamePresenter<R, Q, UNT, CRP>,
-    pub admin_presenter: AdminPresenter<P, UOW, USR>,
-    pub auth_presenter: AuthPresenter<P, J, UOW, USR>,
+    pub admin_presenter: AdminPresenter<R, P, UOW, USR>,
+    pub auth_presenter: AuthPresenter<R, P, J, UOW, USR>,
 }
 
 impl DefaultAppState {
@@ -157,11 +157,15 @@ impl DefaultAppState {
         };
 
         let admin_presenter = AdminPresenter {
+            config: config.clone(),
+            limit: valkey.clone(),
             create_user_uc: Arc::clone(&create_user_uc),
             delete_user_uc: Arc::clone(&delete_user_uc),
         };
 
         let auth_presenter = AuthPresenter {
+            config: config.clone(),
+            limit: valkey.clone(),
             create_user_uc: Arc::clone(&create_user_uc),
             login_uc: Arc::clone(&login_uc),
         };

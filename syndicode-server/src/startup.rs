@@ -14,9 +14,6 @@ use crate::{
 use services::AppState;
 use std::{sync::Arc, time::Duration};
 
-const LIMIT_MAX_REQUESTS: usize = 100;
-const LIMIT_WINDOW: usize = 60;
-
 pub async fn start_server() -> anyhow::Result<()> {
     let config = Arc::new(Config::new()?);
 
@@ -28,7 +25,16 @@ pub async fn start_server() -> anyhow::Result<()> {
         ValkeyStore::new(
             config.instance_id.clone(),
             LeaderElectionConfig::new(config.leader_lock_ttl),
-            LimiterConfig::new(LIMIT_MAX_REQUESTS, LIMIT_WINDOW),
+            LimiterConfig {
+                middleware_max_req: 150,
+                middleware_window_secs: 60,
+                game_stream_max_req: 100,
+                game_stream_window_secs: 10,
+                auth_max_req: 5,
+                auth_window_secs: 60,
+                admin_max_req: 10,
+                admin_window_secs: 60,
+            },
         )
         .await?,
     );

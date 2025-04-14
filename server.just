@@ -8,6 +8,11 @@ build:
 run:
   cargo run -p syndicode-server
 
+# Run clippy
+[group('cargo')]
+clippy:
+  cargo clippy -p syndicode-server
+
 # Test the server crate
 [group('cargo')]
 test:

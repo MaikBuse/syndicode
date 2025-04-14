@@ -1,21 +1,25 @@
 use super::ValkeyStore;
-use crate::application::ports::limiter::{LimitationError, LimitationResult, RateLimitEnforcer};
+use crate::application::ports::limiter::{
+    LimitationError, LimitationResult, LimiterCategory, RateLimitEnforcer,
+};
 use redis::AsyncCommands;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[tonic::async_trait]
 impl RateLimitEnforcer for ValkeyStore {
-    async fn check(&self, ip_address: &str) -> LimitationResult<()> {
+    async fn check(&self, category: LimiterCategory, ip_address: &str) -> LimitationResult<()> {
         let mut conn = self.conn.clone();
 
-        let key = format!("syndicode:rate_limit:{}", ip_address);
+        let key = format!("syndicode:rate_limit:{}:{}", category, ip_address);
         let now_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("SystemTime before UNIX EPOCH")
             .as_millis();
         let now_ms_str = now_ms.to_string(); // Store string representation
 
-        let window_millis = (self.limiter_config.window_secs as u128) * 1000;
+        let window_secs = self.limiter_config.get_window_secs(category);
+
+        let window_millis = (window_secs as u128) * 1000;
         let window_start = now_ms.saturating_sub(window_millis);
 
         // Atomically clean old entries AND add the current timestamp
@@ -25,7 +29,7 @@ impl RateLimitEnforcer for ValkeyStore {
             .atomic()
             .zrembyscore(&key, "-inf", window_start as f64) // Remove outdated entries first
             .zadd(&key, &now_ms_str, now_ms as f64) // Add current request timestamp
-            .expire(&key, self.limiter_config.window_secs as i64 * 2) // Refresh expiration
+            .expire(&key, window_secs as i64 * 2) // Refresh expiration
             .query_async(&mut conn)
             .await;
 
@@ -44,17 +48,19 @@ impl RateLimitEnforcer for ValkeyStore {
              LimitationError::Internal(anyhow::Error::from(e).context("Redis zcount failed").to_string())
         })?;
 
+        let max_requests = self.limiter_config.get_max_requests(category);
+
         // Decide if the limit was exceeded
         // If the count *after* adding is strictly greater than max_requests,
         // it means this request pushed it over the limit (or it was already over).
         // In this case, we deny the request and undo the addition.
-        if count > self.limiter_config.max_requests {
+        if count > max_requests {
             // Use '>' because we already added the current request
             tracing::warn!(
                 %ip_address,
                 %key,
                 current_count_after_add = count,
-                max_requests = self.limiter_config.max_requests,
+                max_requests = max_requests,
                 "Rate limit exceeded, removing added timestamp"
             );
 

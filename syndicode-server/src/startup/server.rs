@@ -27,7 +27,9 @@ pub async fn start_grpc_services(
     // Add health checks for servers
     let (health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter
-        .set_serving::<AdminServiceServer<AdminPresenter<CryptoService, PostgresUnitOfWork, PgUserService>>>()
+        .set_serving::<AdminServiceServer<
+            AdminPresenter<ValkeyStore, CryptoService, PostgresUnitOfWork, PgUserService>,
+        >>()
         .await;
 
     // Setup reflection service for service discovery

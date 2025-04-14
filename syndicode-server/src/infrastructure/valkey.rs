@@ -2,7 +2,7 @@ pub mod leader;
 pub mod limiter;
 pub mod queue;
 
-use crate::utils::read_env_var;
+use crate::{application::ports::limiter::LimiterCategory, utils::read_env_var};
 use anyhow::Context;
 use queue::{ACTION_CONSUMER_GROUP, ACTION_STREAM_KEY};
 use redis::{aio::MultiplexedConnection, AsyncCommands, Script};
@@ -145,15 +145,32 @@ impl LeaderElectionConfig {
 
 #[derive(Clone, Debug)]
 pub struct LimiterConfig {
-    pub max_requests: usize,
-    pub window_secs: usize,
+    pub middleware_max_req: usize,
+    pub middleware_window_secs: usize,
+    pub game_stream_max_req: usize,
+    pub game_stream_window_secs: usize,
+    pub auth_max_req: usize,
+    pub auth_window_secs: usize,
+    pub admin_max_req: usize,
+    pub admin_window_secs: usize,
 }
 
 impl LimiterConfig {
-    pub fn new(max_requests: usize, window_secs: usize) -> Self {
-        Self {
-            max_requests,
-            window_secs,
+    pub fn get_max_requests(&self, category: LimiterCategory) -> usize {
+        match category {
+            LimiterCategory::Middleware => self.middleware_max_req,
+            LimiterCategory::GameStream => self.game_stream_max_req,
+            LimiterCategory::Auth => self.auth_max_req,
+            LimiterCategory::Admin => self.admin_max_req,
+        }
+    }
+
+    pub fn get_window_secs(&self, category: LimiterCategory) -> usize {
+        match category {
+            LimiterCategory::Middleware => self.middleware_window_secs,
+            LimiterCategory::GameStream => self.game_stream_window_secs,
+            LimiterCategory::Auth => self.auth_window_secs,
+            LimiterCategory::Admin => self.admin_window_secs,
         }
     }
 }

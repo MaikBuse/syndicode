@@ -1,13 +1,15 @@
-use super::common::application_error_into_status;
+use super::common::{application_error_into_status, check_rate_limit};
 use crate::{
     application::{
         admin::create_user::CreateUserUseCase,
         auth::login::LoginUseCase,
         ports::{
             crypto::{JwtHandler, PasswordHandler},
+            limiter::{LimiterCategory, RateLimitEnforcer},
             uow::UnitOfWork,
         },
     },
+    config::Config,
     domain::user::{model::role::UserRole, repository::UserRepository},
 };
 use std::sync::Arc;
@@ -17,20 +19,24 @@ use syndicode_proto::syndicode_interface_v1::{
 };
 use tonic::{async_trait, Request, Response, Status};
 
-pub struct AuthPresenter<P, J, UOW, USR>
+pub struct AuthPresenter<R, P, J, UOW, USR>
 where
+    R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     J: JwtHandler + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
 {
+    pub config: Arc<Config>,
+    pub limit: Arc<R>,
     pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
     pub login_uc: Arc<LoginUseCase<P, J, USR>>,
 }
 
 #[async_trait]
-impl<P, J, UOW, USR> AuthService for AuthPresenter<P, J, UOW, USR>
+impl<R, P, J, UOW, USR> AuthService for AuthPresenter<R, P, J, UOW, USR>
 where
+    R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     J: JwtHandler + 'static,
     UOW: UnitOfWork + 'static,
@@ -40,6 +46,14 @@ where
         &self,
         request: Request<RegisterRequest>,
     ) -> Result<Response<RegisterResponse>, Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            &self.config.ip_address_header,
+            LimiterCategory::Auth,
+        )
+        .await?;
+
         let request = request.into_inner();
 
         match self
@@ -63,6 +77,14 @@ where
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginResponse>, Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            &self.config.ip_address_header,
+            LimiterCategory::Auth,
+        )
+        .await?;
+
         let request = request.into_inner();
 
         let jwt = match self

@@ -43,10 +43,10 @@ pub mod auth_service_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// / Handles user authentication and registration.
     #[derive(Debug, Clone)]
     pub struct AuthServiceClient<T> {
@@ -91,8 +91,9 @@ pub mod auth_service_client {
                     <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::Body>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             AuthServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -131,19 +132,27 @@ pub mod auth_service_client {
         pub async fn register(
             &mut self,
             request: impl tonic::IntoRequest<super::RegisterRequest>,
-        ) -> std::result::Result<tonic::Response<super::RegisterResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::RegisterResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/syndicode_interface_v1.AuthService/Register",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "syndicode_interface_v1.AuthService",
-                "Register",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("syndicode_interface_v1.AuthService", "Register"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// / Authenticates a user and returns a JWT token.
@@ -151,17 +160,21 @@ pub mod auth_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::LoginRequest>,
         ) -> std::result::Result<tonic::Response<super::LoginResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/syndicode_interface_v1.AuthService/Login");
+            let path = http::uri::PathAndQuery::from_static(
+                "/syndicode_interface_v1.AuthService/Login",
+            );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "syndicode_interface_v1.AuthService",
-                "Login",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("syndicode_interface_v1.AuthService", "Login"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -173,7 +186,7 @@ pub mod auth_service_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with AuthServiceServer.
@@ -183,7 +196,10 @@ pub mod auth_service_server {
         async fn register(
             &self,
             request: tonic::Request<super::RegisterRequest>,
-        ) -> std::result::Result<tonic::Response<super::RegisterResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::RegisterResponse>,
+            tonic::Status,
+        >;
         /// / Authenticates a user and returns a JWT token.
         async fn login(
             &self,
@@ -212,7 +228,10 @@ pub mod auth_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -267,16 +286,23 @@ pub mod auth_service_server {
                 "/syndicode_interface_v1.AuthService/Register" => {
                     #[allow(non_camel_case_types)]
                     struct RegisterSvc<T: AuthService>(pub Arc<T>);
-                    impl<T: AuthService> tonic::server::UnaryService<super::RegisterRequest> for RegisterSvc<T> {
+                    impl<
+                        T: AuthService,
+                    > tonic::server::UnaryService<super::RegisterRequest>
+                    for RegisterSvc<T> {
                         type Response = super::RegisterResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RegisterRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as AuthService>::register(&inner, request).await };
+                            let fut = async move {
+                                <T as AuthService>::register(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -305,16 +331,21 @@ pub mod auth_service_server {
                 "/syndicode_interface_v1.AuthService/Login" => {
                     #[allow(non_camel_case_types)]
                     struct LoginSvc<T: AuthService>(pub Arc<T>);
-                    impl<T: AuthService> tonic::server::UnaryService<super::LoginRequest> for LoginSvc<T> {
+                    impl<T: AuthService> tonic::server::UnaryService<super::LoginRequest>
+                    for LoginSvc<T> {
                         type Response = super::LoginResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::LoginRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as AuthService>::login(&inner, request).await };
+                            let fut = async move {
+                                <T as AuthService>::login(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -340,19 +371,25 @@ pub mod auth_service_server {
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    let mut response = http::Response::new(tonic::body::Body::default());
-                    let headers = response.headers_mut();
-                    headers.insert(
-                        tonic::Status::GRPC_STATUS,
-                        (tonic::Code::Unimplemented as i32).into(),
-                    );
-                    headers.insert(
-                        http::header::CONTENT_TYPE,
-                        tonic::metadata::GRPC_CONTENT_TYPE,
-                    );
-                    Ok(response)
-                }),
+                _ => {
+                    Box::pin(async move {
+                        let mut response = http::Response::new(
+                            tonic::body::Body::default(),
+                        );
+                        let headers = response.headers_mut();
+                        headers
+                            .insert(
+                                tonic::Status::GRPC_STATUS,
+                                (tonic::Code::Unimplemented as i32).into(),
+                            );
+                        headers
+                            .insert(
+                                http::header::CONTENT_TYPE,
+                                tonic::metadata::GRPC_CONTENT_TYPE,
+                            );
+                        Ok(response)
+                    })
+                }
             }
         }
     }
@@ -453,10 +490,10 @@ pub mod admin_service_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// Provides administrative operations
     #[derive(Debug, Clone)]
     pub struct AdminServiceClient<T> {
@@ -501,8 +538,9 @@ pub mod admin_service_client {
                     <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::Body>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             AdminServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -541,40 +579,54 @@ pub mod admin_service_client {
         pub async fn create_user(
             &mut self,
             request: impl tonic::IntoRequest<super::CreateUserRequest>,
-        ) -> std::result::Result<tonic::Response<super::CreateUserResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::CreateUserResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/syndicode_interface_v1.AdminService/CreateUser",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "syndicode_interface_v1.AdminService",
-                "CreateUser",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("syndicode_interface_v1.AdminService", "CreateUser"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Deletes an existing user by UUID.
         pub async fn delete_user(
             &mut self,
             request: impl tonic::IntoRequest<super::DeleteUserRequest>,
-        ) -> std::result::Result<tonic::Response<super::DeleteUserResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::DeleteUserResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/syndicode_interface_v1.AdminService/DeleteUser",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "syndicode_interface_v1.AdminService",
-                "DeleteUser",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("syndicode_interface_v1.AdminService", "DeleteUser"),
+                );
             self.inner.unary(req, path, codec).await
         }
     }
@@ -586,7 +638,7 @@ pub mod admin_service_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with AdminServiceServer.
@@ -596,12 +648,18 @@ pub mod admin_service_server {
         async fn create_user(
             &self,
             request: tonic::Request<super::CreateUserRequest>,
-        ) -> std::result::Result<tonic::Response<super::CreateUserResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::CreateUserResponse>,
+            tonic::Status,
+        >;
         /// Deletes an existing user by UUID.
         async fn delete_user(
             &self,
             request: tonic::Request<super::DeleteUserRequest>,
-        ) -> std::result::Result<tonic::Response<super::DeleteUserResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::DeleteUserResponse>,
+            tonic::Status,
+        >;
     }
     /// Provides administrative operations
     #[derive(Debug)]
@@ -625,7 +683,10 @@ pub mod admin_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -680,9 +741,15 @@ pub mod admin_service_server {
                 "/syndicode_interface_v1.AdminService/CreateUser" => {
                     #[allow(non_camel_case_types)]
                     struct CreateUserSvc<T: AdminService>(pub Arc<T>);
-                    impl<T: AdminService> tonic::server::UnaryService<super::CreateUserRequest> for CreateUserSvc<T> {
+                    impl<
+                        T: AdminService,
+                    > tonic::server::UnaryService<super::CreateUserRequest>
+                    for CreateUserSvc<T> {
                         type Response = super::CreateUserResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::CreateUserRequest>,
@@ -719,9 +786,15 @@ pub mod admin_service_server {
                 "/syndicode_interface_v1.AdminService/DeleteUser" => {
                     #[allow(non_camel_case_types)]
                     struct DeleteUserSvc<T: AdminService>(pub Arc<T>);
-                    impl<T: AdminService> tonic::server::UnaryService<super::DeleteUserRequest> for DeleteUserSvc<T> {
+                    impl<
+                        T: AdminService,
+                    > tonic::server::UnaryService<super::DeleteUserRequest>
+                    for DeleteUserSvc<T> {
                         type Response = super::DeleteUserResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::DeleteUserRequest>,
@@ -755,19 +828,25 @@ pub mod admin_service_server {
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    let mut response = http::Response::new(tonic::body::Body::default());
-                    let headers = response.headers_mut();
-                    headers.insert(
-                        tonic::Status::GRPC_STATUS,
-                        (tonic::Code::Unimplemented as i32).into(),
-                    );
-                    headers.insert(
-                        http::header::CONTENT_TYPE,
-                        tonic::metadata::GRPC_CONTENT_TYPE,
-                    );
-                    Ok(response)
-                }),
+                _ => {
+                    Box::pin(async move {
+                        let mut response = http::Response::new(
+                            tonic::body::Body::default(),
+                        );
+                        let headers = response.headers_mut();
+                        headers
+                            .insert(
+                                tonic::Status::GRPC_STATUS,
+                                (tonic::Code::Unimplemented as i32).into(),
+                            );
+                        headers
+                            .insert(
+                                http::header::CONTENT_TYPE,
+                                tonic::metadata::GRPC_CONTENT_TYPE,
+                            );
+                        Ok(response)
+                    })
+                }
             }
         }
     }
@@ -859,10 +938,10 @@ pub mod game_service_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// / Main entry point for player actions and game updates.
     #[derive(Debug, Clone)]
     pub struct GameServiceClient<T> {
@@ -907,8 +986,9 @@ pub mod game_service_client {
                     <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::Body>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             GameServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -951,18 +1031,23 @@ pub mod game_service_client {
             tonic::Response<tonic::codec::Streaming<super::GameUpdate>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/syndicode_interface_v1.GameService/PlayStream",
             );
             let mut req = request.into_streaming_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "syndicode_interface_v1.GameService",
-                "PlayStream",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("syndicode_interface_v1.GameService", "PlayStream"),
+                );
             self.inner.streaming(req, path, codec).await
         }
     }
@@ -974,7 +1059,7 @@ pub mod game_service_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with GameServiceServer.
@@ -983,7 +1068,8 @@ pub mod game_service_server {
         /// Server streaming response type for the PlayStream method.
         type PlayStreamStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::GameUpdate, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// / Bidirectional stream where players send actions and receive updates.
         async fn play_stream(
@@ -1013,7 +1099,10 @@ pub mod game_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -1068,14 +1157,21 @@ pub mod game_service_server {
                 "/syndicode_interface_v1.GameService/PlayStream" => {
                     #[allow(non_camel_case_types)]
                     struct PlayStreamSvc<T: GameService>(pub Arc<T>);
-                    impl<T: GameService> tonic::server::StreamingService<super::PlayerAction> for PlayStreamSvc<T> {
+                    impl<
+                        T: GameService,
+                    > tonic::server::StreamingService<super::PlayerAction>
+                    for PlayStreamSvc<T> {
                         type Response = super::GameUpdate;
                         type ResponseStream = T::PlayStreamStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<tonic::Streaming<super::PlayerAction>>,
+                            request: tonic::Request<
+                                tonic::Streaming<super::PlayerAction>,
+                            >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
@@ -1106,19 +1202,25 @@ pub mod game_service_server {
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    let mut response = http::Response::new(tonic::body::Body::default());
-                    let headers = response.headers_mut();
-                    headers.insert(
-                        tonic::Status::GRPC_STATUS,
-                        (tonic::Code::Unimplemented as i32).into(),
-                    );
-                    headers.insert(
-                        http::header::CONTENT_TYPE,
-                        tonic::metadata::GRPC_CONTENT_TYPE,
-                    );
-                    Ok(response)
-                }),
+                _ => {
+                    Box::pin(async move {
+                        let mut response = http::Response::new(
+                            tonic::body::Body::default(),
+                        );
+                        let headers = response.headers_mut();
+                        headers
+                            .insert(
+                                tonic::Status::GRPC_STATUS,
+                                (tonic::Code::Unimplemented as i32).into(),
+                            );
+                        headers
+                            .insert(
+                                http::header::CONTENT_TYPE,
+                                tonic::metadata::GRPC_CONTENT_TYPE,
+                            );
+                        Ok(response)
+                    })
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
 use crate::application::ports::crypto::JwtHandler;
-use crate::application::ports::limiter::{LimitationError, RateLimitEnforcer};
+use crate::application::ports::limiter::{LimitationError, LimiterCategory, RateLimitEnforcer};
 use crate::config::Config;
 use http::HeaderValue;
 use std::collections::HashSet;
@@ -142,7 +142,7 @@ where
                     })?;
 
                 // Rate Limiting
-                let check_result = limit.check(ip_address).await;
+                let check_result = limit.check(LimiterCategory::Middleware, ip_address).await;
                 match check_result {
                     Ok(()) => {
                         // Continue processing the request

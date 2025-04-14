@@ -1,18 +1,19 @@
 mod economy;
 mod warfare;
 
-use super::common::uuid_from_metadata;
+use super::common::{ip_address_from_metadata, uuid_from_metadata};
 use crate::{
     application::{
         economy::get_corporation::GetCorporationUseCase,
         ports::{
-            limiter::{LimitationError, RateLimitEnforcer},
+            limiter::{LimiterCategory, RateLimitEnforcer},
             queue::ActionQueuer,
         },
         warfare::{list_units_by_user::ListUnitsByUserUseCase, spawn_unit::SpawnUnitUseCase},
     },
     config::Config,
     domain::{corporation::repository::CorporationRepository, unit::repository::UnitRepository},
+    presentation::common::limitation_error_into_status,
 };
 use dashmap::DashMap;
 use economy::get_corporation;
@@ -78,15 +79,10 @@ where
         &self,
         request: Request<Streaming<PlayerAction>>,
     ) -> Result<Response<Self::PlayStreamStream>, Status> {
-        let ip_address = request
-            .metadata()
-            .get(self.config.ip_address_header.to_lowercase())
-            .and_then(|h| h.to_str().ok())
-            .map(|s| s.to_owned())
-            .ok_or_else(|| {
-                tracing::warn!("Failed to retrieve client IP address from metadata");
-                Status::invalid_argument("Missing required client identification (IP)")
-            })?;
+        let ip_address = ip_address_from_metadata(
+            request.metadata(),
+            &self.config.ip_address_header.to_lowercase(),
+        )?;
 
         let user_uuid = uuid_from_metadata(request.metadata())?; // Propagates error status
 
@@ -131,16 +127,11 @@ where
                 match action_result {
                     Ok(action) => {
                         // --- Rate Limiting ---
-                        if let Err(err) = limit.check(&ip_address).await {
-                            let status = match err {
-                                LimitationError::RateExhausted => {
-                                    Status::resource_exhausted("Rate limit exceeded")
-                                }
-                                LimitationError::Internal(msg) => {
-                                    tracing::error!("Rate limiter internal error: {}", msg);
-                                    Status::internal("Rate limiter error")
-                                }
-                            };
+                        if let Err(err) =
+                            limit.check(LimiterCategory::GameStream, &ip_address).await
+                        {
+                            let status = limitation_error_into_status(err);
+
                             // Try to send error status. If send fails, client is gone, break loop.
                             if tx.send(Err(status)).await.is_err() {
                                 tracing::warn!(
