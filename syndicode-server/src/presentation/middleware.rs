@@ -1,6 +1,7 @@
 use crate::application::ports::crypto::JwtHandler;
-use crate::application::ports::limiter::{LimitationError, LimiterCategory, RateLimitEnforcer};
+use crate::application::ports::limiter::{LimiterCategory, RateLimitEnforcer};
 use crate::config::Config;
+use crate::presentation::common::limitation_error_into_status;
 use http::HeaderValue;
 use std::collections::HashSet;
 use std::pin::Pin;
@@ -142,19 +143,8 @@ where
                     })?;
 
                 // Rate Limiting
-                let check_result = limit.check(LimiterCategory::Middleware, ip_address).await;
-                match check_result {
-                    Ok(()) => {
-                        // Continue processing the request
-                    }
-                    Err(LimitationError::RateExhausted) => {
-                        return Err(Status::resource_exhausted("Rate limit exceeded").into());
-                    }
-                    Err(LimitationError::Internal(msg)) => {
-                        tracing::error!("Rate limiter internal error: {}", msg);
-
-                        return Err(Status::internal("An internal error occurred").into());
-                    }
+                if let Err(err) = limit.check(LimiterCategory::Middleware, ip_address).await {
+                    return Err(limitation_error_into_status(err).into());
                 }
 
                 // Use structured logging
