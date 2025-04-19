@@ -2,7 +2,7 @@ use super::{game_tick::PgGameTickRepository, uow::PgTransactionContext};
 use crate::domain::{
     corporation::{
         model::Corporation,
-        repository::{CorporationRepository, CorporationTxRepository},
+        repository::{CorporationRepository, CorporationTxRepository, GetCorporationOutcome},
     },
     repository::RepositoryResult,
 };
@@ -230,15 +230,24 @@ impl CorporationRepository for PgCorporationService {
             .await
     }
 
-    async fn get_corporation_by_user(&self, user_uuid: Uuid) -> RepositoryResult<Corporation> {
+    async fn get_corporation_by_user(
+        &self,
+        user_uuid: Uuid,
+    ) -> RepositoryResult<GetCorporationOutcome> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&*self.pool)
             .await?;
 
-        self.corporation_repo
+        let corporation = self
+            .corporation_repo
             .get_corporation_by_user_at_tick(&*self.pool, user_uuid, game_tick)
-            .await
+            .await?;
+
+        Ok(GetCorporationOutcome {
+            game_tick,
+            corporation,
+        })
     }
 
     async fn get_corporation_by_uuid(

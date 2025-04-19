@@ -1,114 +1,108 @@
 use super::{
     economy::list_corporations::ListCorporationsUseCase,
-    ports::{processor::GameTickProcessable, queue::ActionQueuer, uow::UnitOfWork},
+    ports::{
+        game_tick::GameTickRepository,
+        processor::GameTickProcessable,
+        puller::ActionPullable,
+        results::{ResultNotifier, ResultStoreWriter},
+        uow::UnitOfWork,
+    },
     warfare::list_units::ListUnitsUseCase,
 };
-use crate::{
-    application::action::QueuedAction,
-    domain::{
-        corporation::repository::CorporationRepository,
-        unit::{model::Unit, repository::UnitRepository},
-    },
+use crate::domain::{
+    corporation::repository::CorporationRepository, outcome::DomainActionOutcome,
+    ports::simulation::Simulationable, unit::repository::UnitRepository,
 };
 use anyhow::Context;
+use bon::Builder;
 use std::sync::Arc;
-use uuid::Uuid;
 
-pub struct GameTickProcessor<Q, UOW, UNT, CRP>
+#[derive(Builder)]
+pub struct GameTickProcessor<S, P, RSW, RN, UOW, GTR, UNT, CRP>
 where
-    Q: ActionQueuer,
+    S: Simulationable,
+    P: ActionPullable,
+    RSW: ResultStoreWriter,
+    RN: ResultNotifier,
     UOW: UnitOfWork,
+    GTR: GameTickRepository,
     UNT: UnitRepository,
     CRP: CorporationRepository,
 {
-    action_queuer: Arc<Q>,
+    simulation: Arc<S>,
+    action_puller: Arc<P>,
+    result_store_writer: Arc<RSW>,
+    result_notifier: Arc<RN>,
     uow: Arc<UOW>,
+    game_tick_repo: Arc<GTR>,
     list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     list_corporations_uc: Arc<ListCorporationsUseCase<CRP>>,
 }
 
-impl<Q, UOW, UNT, CRP> GameTickProcessor<Q, UOW, UNT, CRP>
+impl<S, P, RSW, RN, UOW, GTR, UNT, CRP> GameTickProcessor<S, P, RSW, RN, UOW, GTR, UNT, CRP>
 where
-    Q: ActionQueuer,
+    S: Simulationable,
+    P: ActionPullable,
+    RSW: ResultStoreWriter,
+    RN: ResultNotifier,
     UOW: UnitOfWork,
+    GTR: GameTickRepository,
     UNT: UnitRepository,
     CRP: CorporationRepository,
 {
-    pub fn new(
-        action_queuer: Arc<Q>,
-        uow: Arc<UOW>,
-        list_units_uc: Arc<ListUnitsUseCase<UNT>>,
-        list_corporations_uc: Arc<ListCorporationsUseCase<CRP>>,
-    ) -> Self {
-        Self {
-            action_queuer,
-            uow,
-            list_units_uc,
-            list_corporations_uc,
-        }
+    // Helper to serialize the outcome into bytes for storage
+    fn serialize_outcome_for_delivery(
+        &self,
+        outcome: &DomainActionOutcome,
+    ) -> Result<Vec<u8>, anyhow::Error> {
+        rmp_serde::to_vec(outcome).context("Failed to serialize outcome for delivery")
     }
 }
 
 #[tonic::async_trait]
-impl<Q, UOW, UNT, CRP> GameTickProcessable for GameTickProcessor<Q, UOW, UNT, CRP>
+impl<S, P, RSW, RN, UOW, GTR, UNT, CRP> GameTickProcessable
+    for GameTickProcessor<S, P, RSW, RN, UOW, GTR, UNT, CRP>
 where
-    Q: ActionQueuer,
+    S: Simulationable,
+    P: ActionPullable,
+    RSW: ResultStoreWriter,
+    RN: ResultNotifier,
     UOW: UnitOfWork,
+    GTR: GameTickRepository,
     UNT: UnitRepository,
     CRP: CorporationRepository,
 {
     async fn process_next_tick(&self) -> anyhow::Result<i64> {
         // 1. Read Current State & Tick (N) from Repositories
+        let current_game_tick = self.game_tick_repo.get_current_game_tick().await?;
+        let next_game_tick = current_game_tick + 1;
+
         let mut units = self.list_units_uc.execute().await?;
         let mut corporations = self.list_corporations_uc.execute().await?;
 
         // 2. Pull Actions
-        let actions = self.action_queuer.pull_all_available_actions().await?;
+        let act_msg_slice = self.action_puller.pull_all_available_actions().await?;
+        let act_msg_count = act_msg_slice.len();
 
-        tracing::debug!(num_actions = actions.len(), "Pulled actions.");
+        tracing::debug!(num_actions = act_msg_slice.len(), "Pulled actions.");
 
         // 3. Calculate State N+1
-        let mut messages_ids: Vec<&str> = Vec::with_capacity(actions.len());
+        let mut messages_ids: Vec<String> = Vec::with_capacity(act_msg_slice.len());
 
-        'for_action: for (message_id, action) in actions.iter() {
-            messages_ids.push(message_id.as_str());
-
-            match action {
-                QueuedAction::SpawnUnit { req_user_uuid } => {
-                    let unit = Unit {
-                        uuid: Uuid::now_v7(),
-                        user_uuid: *req_user_uuid,
-                    };
-
-                    units.push(unit);
-                }
-                QueuedAction::UpdateCorporation { corporation } => {
-                    let Some(corporation_to_update) =
-                        corporations.iter_mut().find(|c| c.uuid == corporation.uuid)
-                    else {
-                        tracing::warn!(
-                            "Failed to find corporation with uuid '{}'",
-                            corporation.uuid
-                        );
-                        continue 'for_action;
-                    };
-
-                    *corporation_to_update = corporation.clone();
-                }
-            }
-        }
+        let action_outcomes = self.simulation.calculate_next_state(
+            next_game_tick,
+            act_msg_slice,
+            &mut messages_ids,
+            &mut units,
+            &mut corporations,
+        );
 
         tracing::debug!("Calculated next state.");
 
         // 4. Write State N+1 Atomically
-        let next_game_tick = self
-            .uow
-            .execute(|ctx| {
+        self.uow
+            .execute(move |ctx| {
                 Box::pin(async move {
-                    let current_game_tick = ctx.get_current_game_tick().await?;
-
-                    let next_game_tick = current_game_tick + 1;
-
                     // Units
                     ctx.insert_units_in_tick(next_game_tick, units).await?;
                     ctx.delete_units_before_tick(current_game_tick).await?;
@@ -122,7 +116,7 @@ where
                     // Update game tick state
                     ctx.update_current_game_tick(next_game_tick).await?;
 
-                    Ok(next_game_tick)
+                    Ok(())
                 })
             })
             .await?;
@@ -130,16 +124,55 @@ where
         tracing::debug!("Atomically wrote next state.");
 
         // 5. Acknowledge processed actions
-        if !actions.is_empty() {
-            self.action_queuer
-                .acknowledge_actions(&messages_ids)
+        if act_msg_count != 0 {
+            let message_count = messages_ids.len();
+
+            self.action_puller
+                .acknowledge_actions(messages_ids)
                 .await
                 .context("Failed to acknowledge actions")?;
 
+            tracing::debug!(num_acked = message_count, "Acknowledged processed actions.");
+        }
+
+        // 6. Store Results and Notify
+        if !action_outcomes.is_empty() {
             tracing::debug!(
-                num_acked = messages_ids.len(),
-                "Acknowledged processed actions."
+                tick = next_game_tick,
+                count = action_outcomes.len(),
+                "Storing results and notifying."
             );
+
+            // Need to map outcome back to its request_uuid
+            // This requires the SimulationService/Handlers to pass it through
+            for outcome in action_outcomes {
+                // Assuming outcome includes request_uuid and user_uuid
+                let (request_uuid, user_uuid) = match &outcome {
+                    DomainActionOutcome::UnitSpawned {
+                        request_uuid,
+                        user_uuid,
+                        ..
+                    } => (*request_uuid, *user_uuid),
+                    DomainActionOutcome::ActionFailed {
+                        request_uuid,
+                        user_uuid,
+                        ..
+                    } => (*request_uuid, *user_uuid),
+                };
+
+                // a. Store the full outcome/payload
+                // Serialize the specific data needed for the final response
+                let result_payload = self.serialize_outcome_for_delivery(&outcome)?; // Helper needed
+
+                self.result_store_writer
+                    .store_result(request_uuid, &result_payload)
+                    .await?; // Handle store error
+
+                // b. Publish notification
+                self.result_notifier
+                    .notify_result_ready(user_uuid, request_uuid)
+                    .await?; // Handle notify error
+            }
         }
 
         Ok(next_game_tick)

@@ -1,17 +1,24 @@
 pub mod leader;
 pub mod limiter;
-pub mod queue;
+pub mod puller;
+pub mod queuer;
+pub mod results;
 
 use crate::{application::ports::limiter::LimiterCategory, utils::read_env_var};
 use anyhow::Context;
-use queue::{ACTION_CONSUMER_GROUP, ACTION_STREAM_KEY};
 use redis::{aio::MultiplexedConnection, AsyncCommands, Script};
+
+pub const ACTION_STREAM_KEY: &str = "syndicode:game_actions";
+pub const ACTION_CONSUMER_GROUP: &str = "leader_processors";
+pub const PAYLOAD_FIELD: &str = "payload";
+const BATCH_PULL_SIZE: usize = 100; // How many messages to request per internal batch
 
 #[derive(Clone)]
 pub struct ValkeyStore {
     /// A unique identifier for this specific instance trying to acquire the lock.
     /// Used to ensure only the lock holder can release/refresh it.
     instance_id: String,
+    client: redis::Client,
     conn: MultiplexedConnection,
     leader_config: LeaderElectionConfig,
     limiter_config: LimiterConfig,
@@ -49,6 +56,7 @@ impl ValkeyStore {
 
         Ok(Self {
             instance_id,
+            client,
             conn,
             limiter_config,
             leader_config,
@@ -90,6 +98,10 @@ impl ValkeyStore {
                 }
             }
         }
+    }
+
+    pub fn get_client(&self) -> redis::Client {
+        self.client.clone()
     }
 }
 

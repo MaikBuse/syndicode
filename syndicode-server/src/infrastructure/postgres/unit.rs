@@ -3,7 +3,7 @@ use crate::domain::{
     repository::RepositoryResult,
     unit::{
         model::Unit,
-        repository::{UnitRepository, UnitTxRespository},
+        repository::{ListUnitsOutcome, UnitRepository, UnitTxRespository},
     },
 };
 use sqlx::{Executor, PgPool, Postgres};
@@ -189,15 +189,18 @@ impl UnitRepository for PgUnitService {
             .await
     }
 
-    async fn list_units_by_user(&self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>> {
+    async fn list_units_by_user(&self, user_uuid: Uuid) -> RepositoryResult<ListUnitsOutcome> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&*self.pool)
             .await?;
 
-        self.unit_repo
+        let units = self
+            .unit_repo
             .list_user_units_at_tick(&*self.pool, user_uuid, game_tick)
-            .await
+            .await?;
+
+        Ok(ListUnitsOutcome { game_tick, units })
     }
 }
 

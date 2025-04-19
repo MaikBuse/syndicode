@@ -1,20 +1,20 @@
-use super::ValkeyStore;
+use super::{
+    ValkeyStore, ACTION_CONSUMER_GROUP, ACTION_STREAM_KEY, BATCH_PULL_SIZE, PAYLOAD_FIELD,
+};
 use crate::application::{
-    action::QueuedAction,
-    ports::queue::{ActionQueuer, QueueError, QueueResult},
+    action::QueuedActionPayload,
+    ports::puller::{ActionPullable, PullError, PullResult},
 };
 use redis::{streams::StreamReadReply, AsyncCommands, Value};
-
-pub const ACTION_STREAM_KEY: &str = "syndicode:game_actions";
-pub const ACTION_CONSUMER_GROUP: &str = "leader_processors";
-pub const PAYLOAD_FIELD: &str = "payload";
-const BATCH_PULL_SIZE: usize = 100; // How many messages to request per internal batch
 
 // Private helper function to avoid code duplication
 impl ValkeyStore {
     /// Fetches a batch of actions using XREADGROUP. Internal helper.
     /// Returns message IDs along with actions.
-    async fn pull_actions_batch(&self, count: usize) -> QueueResult<Vec<(String, QueuedAction)>> {
+    async fn pull_actions_batch(
+        &self,
+        count: usize,
+    ) -> PullResult<Vec<(String, QueuedActionPayload)>> {
         let mut conn = self.conn.clone();
 
         let opts = redis::streams::StreamReadOptions::default()
@@ -24,7 +24,7 @@ impl ValkeyStore {
         let result: StreamReadReply = conn
             .xread_options(&[ACTION_STREAM_KEY], &[">"], &opts)
             .await
-            .map_err(|err| QueueError::ConnectionError(format!("XREADGROUP failed: {}", err)))?;
+            .map_err(|err| PullError::ConnectionError(format!("XREADGROUP failed: {}", err)))?;
 
         let mut pulled_actions = Vec::new();
 
@@ -40,7 +40,7 @@ impl ValkeyStore {
 
                 match payload_value {
                     Some(Value::BulkString(payload_bytes)) => {
-                        match rmp_serde::from_slice::<QueuedAction>(payload_bytes) {
+                        match rmp_serde::from_slice::<QueuedActionPayload>(payload_bytes) {
                             Ok(action) => {
                                 // Store both ID and deserialized action
                                 pulled_actions.push((stream_id.clone(), action));
@@ -69,29 +69,10 @@ impl ValkeyStore {
 }
 
 #[tonic::async_trait]
-impl ActionQueuer for ValkeyStore {
-    /// Enqueues an action payload into a Redis Stream using the XADD command.
-    async fn enqueue_action(&self, action: QueuedAction) -> QueueResult<String> {
-        let mut conn = self.conn.clone();
-
-        // Use msgpack for potentially better performance/size than JSON
-        let action_payload = rmp_serde::to_vec(&action)
-            .map_err(|err| QueueError::SerializationError(err.to_string()))?;
-        // Removed anyhow::format_err! usage for direct QueueError variant
-
-        conn.xadd(ACTION_STREAM_KEY, "*", &[(PAYLOAD_FIELD, action_payload)])
-            .await
-            .map_err(|err| {
-                QueueError::EnqueueFailed(format!(
-                    "Redis XADD command failed for stream '{}': {}",
-                    ACTION_STREAM_KEY, err
-                ))
-            })
-    }
-
+impl ActionPullable for ValkeyStore {
     /// Pulls up to `count` new actions for this consumer from the stream.
     /// Returns a vector of tuples containing (message_id, QueuedAction).
-    async fn pull_actions(&self, count: usize) -> QueueResult<Vec<(String, QueuedAction)>> {
+    async fn pull_actions(&self, count: usize) -> PullResult<Vec<(String, QueuedActionPayload)>> {
         if count == 0 {
             return Ok(Vec::new()); // No need to call redis if count is zero
         }
@@ -107,7 +88,7 @@ impl ActionQueuer for ValkeyStore {
     ///
     /// Returns a Vec containing tuples of (message_id, QueuedAction).
     /// The message_id is needed for later acknowledgement (`XACK`).
-    async fn pull_all_available_actions(&self) -> QueueResult<Vec<(String, QueuedAction)>> {
+    async fn pull_all_available_actions(&self) -> PullResult<Vec<(String, QueuedActionPayload)>> {
         let mut all_actions = Vec::new();
         let mut total_fetched = 0;
 
@@ -160,7 +141,7 @@ impl ActionQueuer for ValkeyStore {
     }
 
     /// Acknowledges processed messages using XACK.
-    async fn acknowledge_actions(&self, ids: &[&str]) -> QueueResult<()> {
+    async fn acknowledge_actions(&self, ids: Vec<String>) -> PullResult<()> {
         if ids.is_empty() {
             return Ok(()); // Nothing to acknowledge
         }
@@ -169,9 +150,9 @@ impl ActionQueuer for ValkeyStore {
 
         // Execute XACK
         let ack_count: i64 = conn
-            .xack(ACTION_STREAM_KEY, ACTION_CONSUMER_GROUP, ids) // Pass slice of &str
+            .xack(ACTION_STREAM_KEY, ACTION_CONSUMER_GROUP, &ids) // Pass slice of &str
             .await
-            .map_err(|err| QueueError::ConnectionError(format!("XACK failed: {}", err)))?;
+            .map_err(|err| PullError::ConnectionError(format!("XACK failed: {}", err)))?;
 
         tracing::debug!(
             acked_count = ack_count,

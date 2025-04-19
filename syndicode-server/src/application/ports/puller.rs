@@ -1,7 +1,7 @@
-use crate::application::action::QueuedAction;
+use crate::application::action::QueuedActionPayload;
 
 #[derive(thiserror::Error, Debug)]
-pub enum QueueError {
+pub enum PullError {
     #[error("Failed to establish a connection: {0}")]
     ConnectionError(String),
 
@@ -15,24 +15,19 @@ pub enum QueueError {
     Unexpected(#[from] anyhow::Error),
 }
 
-pub type QueueResult<T> = Result<T, QueueError>;
+pub type PullResult<T> = Result<T, PullError>;
 
 /// Trait defining the port for an action queue.
 #[tonic::async_trait]
-pub trait ActionQueuer: Send + Sync {
-    async fn enqueue_action(&self, action: QueuedAction) -> QueueResult<String>;
-
+pub trait ActionPullable: Send + Sync {
     /// Pulls up to `count` new actions for the consumer.
     /// Returns a vector of tuples containing (message_id, QueuedAction).
-    async fn pull_actions(&self, count: usize) -> QueueResult<Vec<(String, QueuedAction)>>;
+    async fn pull_actions(&self, count: usize) -> PullResult<Vec<(String, QueuedActionPayload)>>;
 
     /// Pulls *all* available new actions for the consumer in batches.
     /// Returns a vector of tuples containing (message_id, QueuedAction).
-    async fn pull_all_available_actions(&self) -> QueueResult<Vec<(String, QueuedAction)>>;
+    async fn pull_all_available_actions(&self) -> PullResult<Vec<(String, QueuedActionPayload)>>;
 
     /// Acknowledges processed messages using XACK.
-    async fn acknowledge_actions(
-        &self,
-        ids: &[&str], // Changed to slice of owned Strings
-    ) -> QueueResult<()>;
+    async fn acknowledge_actions(&self, ids: Vec<String>) -> PullResult<()>;
 }

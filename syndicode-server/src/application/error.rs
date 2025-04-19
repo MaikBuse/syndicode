@@ -1,4 +1,4 @@
-use super::ports::{limiter::LimitationError, queue::QueueError};
+use super::ports::{limiter::LimitationError, puller::PullError, queuer::QueueError};
 use crate::domain::repository::RepositoryError;
 
 pub type ApplicationResult<T> = std::result::Result<T, ApplicationError>;
@@ -34,6 +34,9 @@ pub enum ApplicationError {
 
     #[error(transparent)]
     Queue(#[from] QueueError),
+
+    #[error(transparent)]
+    Pull(#[from] PullError),
 
     #[error(transparent)]
     Limitation(#[from] LimitationError),

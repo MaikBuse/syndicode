@@ -1,6 +1,6 @@
 use crate::{
     application::error::ApplicationResult,
-    domain::{corporation::model::Corporation, corporation::repository::CorporationRepository},
+    domain::corporation::repository::{CorporationRepository, GetCorporationOutcome},
 };
 use std::sync::Arc;
 use uuid::Uuid;
@@ -20,7 +20,7 @@ where
         Self { corporation_repo }
     }
 
-    pub async fn execute(&self, user_uuid: Uuid) -> ApplicationResult<Corporation> {
+    pub async fn execute(&self, user_uuid: Uuid) -> ApplicationResult<GetCorporationOutcome> {
         Ok(self
             .corporation_repo
             .get_corporation_by_user(user_uuid)

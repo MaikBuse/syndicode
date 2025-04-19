@@ -1,11 +1,12 @@
-use uuid::Uuid;
-
 use crate::{
     application::error::ApplicationResult,
-    domain::{unit::model::Unit, unit::repository::UnitRepository},
+    domain::unit::repository::{ListUnitsOutcome, UnitRepository},
 };
+use bon::{bon, Builder};
 use std::sync::Arc;
+use uuid::Uuid;
 
+#[derive(Builder)]
 pub struct ListUnitsByUserUseCase<UNT>
 where
     UNT: UnitRepository,
@@ -13,17 +14,13 @@ where
     unit_repository: Arc<UNT>,
 }
 
+#[bon]
 impl<UNT> ListUnitsByUserUseCase<UNT>
 where
     UNT: UnitRepository,
 {
-    pub fn new(unit_repository: Arc<UNT>) -> Self {
-        Self { unit_repository }
-    }
-
-    pub async fn execute(&self, user_uuid: Uuid) -> ApplicationResult<Vec<Unit>> {
-        let units = self.unit_repository.list_units_by_user(user_uuid).await?;
-
-        Ok(units)
+    #[builder]
+    pub async fn execute(&self, user_uuid: Uuid) -> ApplicationResult<ListUnitsOutcome> {
+        Ok(self.unit_repository.list_units_by_user(user_uuid).await?)
     }
 }

@@ -868,47 +868,63 @@ pub mod admin_service_server {
         const NAME: &'static str = SERVICE_NAME;
     }
 }
-/// / Represents an action sent by a player.
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+/// Represents an action sent by a player.
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlayerAction {
-    #[prost(oneof = "player_action::Action", tags = "1, 2, 3")]
+    /// UUID generated on the client to make the request trackable.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+    #[prost(oneof = "player_action::Action", tags = "2, 3, 4")]
     pub action: ::core::option::Option<player_action::Action>,
 }
 /// Nested message and enum types in `PlayerAction`.
 pub mod player_action {
     #[derive(Clone, Copy, PartialEq, ::prost::Oneof)]
     pub enum Action {
-        /// / Request to fetch corporation data.
-        #[prost(message, tag = "1")]
-        GetCorporation(super::super::syndicode_economy_v1::GetCorporationRequest),
-        /// / Request to spawn a new unit.
+        /// Request to fetch corporation data.
         #[prost(message, tag = "2")]
-        SpawnUnit(super::super::syndicode_warfare_v1::SpawnUnitRequest),
-        /// / Request to list currently active units.
+        GetCorporation(super::super::syndicode_economy_v1::GetCorporationRequest),
+        /// Request to spawn a new unit.
         #[prost(message, tag = "3")]
+        SpawnUnit(super::super::syndicode_warfare_v1::SpawnUnitRequest),
+        /// Request to list currently active units.
+        #[prost(message, tag = "4")]
         ListUnit(super::super::syndicode_warfare_v1::ListUnitsRequest),
     }
 }
-/// / Represents an update sent to the client in response to a player action.
+/// Represents an update sent to the client in response to a player action.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GameUpdate {
-    #[prost(oneof = "game_update::Update", tags = "1, 2, 3, 4")]
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+    /// The tick for which the update is relevant.
+    #[prost(int64, tag = "2")]
+    pub game_tick: i64,
+    #[prost(oneof = "game_update::Update", tags = "3, 4, 5, 6, 7, 8")]
     pub update: ::core::option::Option<game_update::Update>,
 }
 /// Nested message and enum types in `GameUpdate`.
 pub mod game_update {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Update {
-        /// / Response containing corporation data.
-        #[prost(message, tag = "1")]
-        GetCorporation(super::super::syndicode_economy_v1::GetCorporationResponse),
-        /// / Response listing all units.
-        #[prost(message, tag = "2")]
-        ListUnits(super::super::syndicode_warfare_v1::ListUnitsResponse),
+        /// Acknowledges receipt and queuing of a player command.
         #[prost(message, tag = "3")]
         ActionInitResponse(super::ActionInitResponse),
         #[prost(message, tag = "4")]
+        ActionFailedResponse(super::ActionFailedResponse),
+        /// Periodical notification of game tick progression.
+        #[prost(message, tag = "5")]
         TickNotification(super::TickNotification),
+        /// Response containing corporation data.
+        #[prost(message, tag = "6")]
+        GetCorporation(super::super::syndicode_economy_v1::GetCorporationResponse),
+        /// Response listing all units.
+        #[prost(message, tag = "7")]
+        ListUnits(super::super::syndicode_warfare_v1::ListUnitsResponse),
+        /// Response with the data of the newly spawned unit.
+        #[prost(message, tag = "8")]
+        SpawnUnit(super::super::syndicode_warfare_v1::SpawnUnitResponse),
     }
 }
 /// Acknowledges receipt and queuing of a player command.
@@ -918,8 +934,15 @@ pub struct ActionInitResponse {
     #[prost(string, tag = "1")]
     pub confirmation_message: ::prost::alloc::string::String,
     /// Timestamp when the server acknowledged the command.
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "2")]
     pub initiated_at: ::core::option::Option<::prost_types::Timestamp>,
+}
+/// Response returned for actions that failed to process.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionFailedResponse {
+    /// The reason why the action failed to process.
+    #[prost(string, tag = "1")]
+    pub reason: ::prost::alloc::string::String,
 }
 /// Notifies the client that the authoritative game tick has advanced.
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -942,7 +965,7 @@ pub mod game_service_client {
     )]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
-    /// / Main entry point for player actions and game updates.
+    /// Main entry point for player actions and game updates.
     #[derive(Debug, Clone)]
     pub struct GameServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -1023,7 +1046,7 @@ pub mod game_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// / Bidirectional stream where players send actions and receive updates.
+        /// Bidirectional stream where players send actions and receive updates.
         pub async fn play_stream(
             &mut self,
             request: impl tonic::IntoStreamingRequest<Message = super::PlayerAction>,
@@ -1071,13 +1094,13 @@ pub mod game_service_server {
             >
             + std::marker::Send
             + 'static;
-        /// / Bidirectional stream where players send actions and receive updates.
+        /// Bidirectional stream where players send actions and receive updates.
         async fn play_stream(
             &self,
             request: tonic::Request<tonic::Streaming<super::PlayerAction>>,
         ) -> std::result::Result<tonic::Response<Self::PlayStreamStream>, tonic::Status>;
     }
-    /// / Main entry point for player actions and game updates.
+    /// Main entry point for player actions and game updates.
     #[derive(Debug)]
     pub struct GameServiceServer<T> {
         inner: Arc<T>,

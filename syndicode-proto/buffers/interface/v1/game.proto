@@ -6,38 +6,51 @@ import "google/protobuf/timestamp.proto";
 import "economy/v1/economy.proto";
 import "warfare/v1/warfare.proto";
 
-/// Main entry point for player actions and game updates.
+// Main entry point for player actions and game updates.
 service GameService {
-  /// Bidirectional stream where players send actions and receive updates.
+  // Bidirectional stream where players send actions and receive updates.
   rpc PlayStream(stream PlayerAction) returns (stream GameUpdate);
 }
 
-/// Represents an action sent by a player.
+// Represents an action sent by a player.
 message PlayerAction {
+  // UUID generated on the client to make the request trackable.
+  string request_uuid = 1;
   oneof action {
-    /// Request to fetch corporation data.
-    syndicode_economy_v1.GetCorporationRequest get_corporation = 1;
+    // Request to fetch corporation data.
+    syndicode_economy_v1.GetCorporationRequest get_corporation = 2;
 
-    /// Request to spawn a new unit.
-    syndicode_warfare_v1.SpawnUnitRequest spawn_unit = 2;
+    // Request to spawn a new unit.
+    syndicode_warfare_v1.SpawnUnitRequest spawn_unit = 3;
 
-    /// Request to list currently active units.
-    syndicode_warfare_v1.ListUnitsRequest list_unit = 3;
+    // Request to list currently active units.
+    syndicode_warfare_v1.ListUnitsRequest list_unit = 4;
   }
 }
 
-/// Represents an update sent to the client in response to a player action.
+// Represents an update sent to the client in response to a player action.
 message GameUpdate {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+  // The tick for which the update is relevant.
+  int64 game_tick = 2;
   oneof update {
-    /// Response containing corporation data.
-    syndicode_economy_v1.GetCorporationResponse get_corporation = 1;
-
-    /// Response listing all units.
-    syndicode_warfare_v1.ListUnitsResponse list_units = 2;
-
+    // Acknowledges receipt and queuing of a player command.
     ActionInitResponse action_init_response = 3;
 
-    TickNotification tick_notification = 4;
+    ActionFailedResponse action_failed_response = 4;
+
+    // Periodical notification of game tick progression.
+    TickNotification tick_notification = 5;
+
+    // Response containing corporation data.
+    syndicode_economy_v1.GetCorporationResponse get_corporation = 6;
+
+    // Response listing all units.
+    syndicode_warfare_v1.ListUnitsResponse list_units = 7;
+
+    // Response with the data of the newly spawned unit.
+    syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 8;
   }
 }
 
@@ -47,7 +60,13 @@ message ActionInitResponse {
   string confirmation_message = 1;
 
   // Timestamp when the server acknowledged the command.
-  google.protobuf.Timestamp initiated_at = 3;
+  google.protobuf.Timestamp initiated_at = 2;
+}
+
+// Response returned for actions that failed to process.
+message ActionFailedResponse {
+  // The reason why the action failed to process.
+  string reason = 1;
 }
 
 // Notifies the client that the authoritative game tick has advanced.

@@ -2,10 +2,9 @@ pub mod claims;
 pub mod jwt;
 pub mod password;
 
+use crate::utils::read_env_var;
 use argon2::Argon2;
 use jsonwebtoken::{DecodingKey, EncodingKey};
-
-use crate::utils::read_env_var;
 
 #[derive(Clone)]
 pub struct CryptoService {

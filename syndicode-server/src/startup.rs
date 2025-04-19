@@ -42,8 +42,10 @@ pub async fn start_server() -> anyhow::Result<()> {
     let state =
         AppState::build_services(config.clone(), pg_pool.clone(), valkey_store.clone()).await?;
 
+    // Bootstrap
     bootstrap::run(pg_pool, state.bootstrap_admin_uc.clone()).await?;
 
+    // Spawn leader loop
     let leader_loop_manager = LeaderLoopManager::new(
         state.leader_elector.clone(),
         state.game_tick_processor.clone(),
@@ -55,6 +57,7 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     tokio::spawn(leader_loop_manager.run());
 
+    // Grpc Server
     server::start_grpc_services(config, state, valkey_store.clone()).await?;
 
     Ok(())

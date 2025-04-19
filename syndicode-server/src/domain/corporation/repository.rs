@@ -4,11 +4,19 @@ use uuid::Uuid;
 use super::model::Corporation;
 use crate::domain::repository::RepositoryResult;
 
+pub struct GetCorporationOutcome {
+    pub game_tick: i64,
+    pub corporation: Corporation,
+}
+
 #[async_trait]
 pub trait CorporationRepository: Send + Sync {
     async fn insert_corporation(&self, corporation: &Corporation) -> RepositoryResult<()>;
 
-    async fn get_corporation_by_user(&self, user_uuid: Uuid) -> RepositoryResult<Corporation>;
+    async fn get_corporation_by_user(
+        &self,
+        user_uuid: Uuid,
+    ) -> RepositoryResult<GetCorporationOutcome>;
 
     async fn get_corporation_by_uuid(
         &self,

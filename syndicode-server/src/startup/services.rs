@@ -10,10 +10,12 @@ use crate::{
         },
         ports::{
             crypto::{JwtHandler, PasswordHandler},
+            game_tick::GameTickRepository,
             leader::LeaderElector,
             limiter::RateLimitEnforcer,
             processor::GameTickProcessable,
-            queue::ActionQueuer,
+            queuer::ActionQueueable,
+            results::ResultStoreReader,
             uow::UnitOfWork,
         },
         processor::GameTickProcessor,
@@ -24,13 +26,14 @@ use crate::{
     },
     config::Config,
     domain::{
-        corporation::repository::CorporationRepository, unit::repository::UnitRepository,
-        user::repository::UserRepository,
+        corporation::repository::CorporationRepository, simulation::SimulationService,
+        unit::repository::UnitRepository, user::repository::UserRepository,
     },
     infrastructure::{
         crypto::CryptoService,
         postgres::{
             corporation::PgCorporationService,
+            game_tick::PgGameTickService,
             unit::PgUnitService,
             uow::PostgresUnitOfWork,
             user::{PgUserRepository, PgUserService},
@@ -49,7 +52,16 @@ use uuid::Uuid;
 
 // Represents the standard configuration of the application state
 pub type DefaultAppState = AppState<
-    GameTickProcessor<ValkeyStore, PostgresUnitOfWork, PgUnitService, PgCorporationService>,
+    GameTickProcessor<
+        SimulationService,
+        ValkeyStore,
+        ValkeyStore,
+        ValkeyStore,
+        PostgresUnitOfWork,
+        PgGameTickService,
+        PgUnitService,
+        PgCorporationService,
+    >,
     CryptoService,
     CryptoService,
     ValkeyStore,
@@ -59,20 +71,24 @@ pub type DefaultAppState = AppState<
     PgUserService,
     PgUnitService,
     PgCorporationService,
+    ValkeyStore,
+    PgGameTickService,
 >;
 
-pub struct AppState<G, P, J, Q, R, L, UOW, USR, UNT, CRP>
+pub struct AppState<G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR>
 where
     G: GameTickProcessable + 'static,
     P: PasswordHandler + 'static,
     J: JwtHandler + 'static,
-    Q: ActionQueuer + 'static,
+    Q: ActionQueueable + 'static,
     R: RateLimitEnforcer + 'static,
     L: LeaderElector + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
     UNT: UnitRepository + 'static,
     CRP: CorporationRepository + 'static,
+    RSR: ResultStoreReader + 'static,
+    GTR: GameTickRepository + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
@@ -87,7 +103,7 @@ where
     pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
     pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
-    pub game_presenter: GamePresenter<R, Q, UNT, CRP>,
+    pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR>,
     pub admin_presenter: AdminPresenter<R, P, UOW, USR>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR>,
 }
@@ -107,6 +123,7 @@ impl DefaultAppState {
         let uow = Arc::new(PostgresUnitOfWork::new(Arc::clone(&pg_pool)));
 
         // Database Services
+        let game_tick_service = Arc::new(PgGameTickService::new(pg_pool.clone()));
         let user_service = Arc::new(PgUserService::new(Arc::clone(&pg_pool), PgUserRepository));
         let unit_service = Arc::new(PgUnitService::new(Arc::clone(&pg_pool)));
         let corporation_service = Arc::new(PgCorporationService::new(Arc::clone(&pg_pool)));
@@ -130,8 +147,17 @@ impl DefaultAppState {
 
         // Warfare use cases
         let list_units_uc = Arc::new(ListUnitsUseCase::new(Arc::clone(&unit_service)));
-        let list_units_by_user_uc = Arc::new(ListUnitsByUserUseCase::new(unit_service.clone()));
-        let spawn_unit_uc = Arc::new(SpawnUnitUseCase::new(valkey.clone()));
+        let list_units_by_user_uc = Arc::new(
+            ListUnitsByUserUseCase::builder()
+                .unit_repository(unit_service.clone())
+                .build(),
+        );
+        let spawn_unit_uc = Arc::new(
+            SpawnUnitUseCase::builder()
+                .action_queuer(valkey.clone())
+                .game_tick_repo(game_tick_service.clone())
+                .build(),
+        );
 
         // Economy use cases
         let get_corporation_uc =
@@ -139,22 +165,31 @@ impl DefaultAppState {
         let list_corporations_uc =
             Arc::new(ListCorporationsUseCase::new(corporation_service.clone()));
 
-        let game_tick_processor = Arc::new(GameTickProcessor::new(
-            valkey.clone(),
-            uow.clone(),
-            list_units_uc.clone(),
-            list_corporations_uc.clone(),
-        ));
+        let simulation = Arc::new(SimulationService);
+        let game_tick_processor = Arc::new(
+            GameTickProcessor::builder()
+                .action_puller(valkey.clone())
+                .result_notifier(valkey.clone())
+                .result_store_writer(valkey.clone())
+                .simulation(simulation.clone())
+                .game_tick_repo(game_tick_service.clone())
+                .list_corporations_uc(list_corporations_uc.clone())
+                .list_units_uc(list_units_uc.clone())
+                .uow(uow.clone())
+                .build(),
+        );
 
         // Presenter
-        let game_presenter = GamePresenter {
-            config: Arc::clone(&config),
-            limit: valkey.clone(),
-            user_channels: Arc::clone(&user_channels),
-            list_units_by_user_uc: list_units_by_user_uc.clone(),
-            spawn_unit_uc: spawn_unit_uc.clone(),
-            get_corporation_uc: Arc::clone(&get_corporation_uc),
-        };
+        let game_presenter = GamePresenter::builder()
+            .config(config.clone())
+            .limit(valkey.clone())
+            .user_channels(user_channels.clone())
+            .list_units_by_user_uc(list_units_by_user_uc.clone())
+            .result_store_reader(valkey.clone())
+            .spawn_unit_uc(spawn_unit_uc.clone())
+            .get_corporation_uc(get_corporation_uc.clone())
+            .valkey_client(valkey.get_client())
+            .build();
 
         let admin_presenter = AdminPresenter {
             config: config.clone(),

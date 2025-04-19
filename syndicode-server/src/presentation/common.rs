@@ -34,6 +34,7 @@ pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
         ApplicationError::Limitation(_)
         | ApplicationError::Database(_)
         | ApplicationError::Queue(_)
+        | ApplicationError::Pull(_)
         | ApplicationError::Other(_) => Status::internal(err.to_string()),
     }
 }
