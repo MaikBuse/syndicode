@@ -177,9 +177,11 @@ Use the official public server:
 
 ```txt
 https://api.syndicode.dev
+or
+api.syndicode.dev:443
 ```
 
-Register using grpcurl or any other grpc capable caller
+Register using [grpcurl](https://github.com/fullstorydev/grpcurl) or any other gRPC capable caller
 
 ```
 grpcurl \
