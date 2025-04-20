@@ -20,6 +20,9 @@ impl PgUserRepository {
         user: &User,
     ) -> RepositoryResult<()> {
         let user_role: i16 = user.role.clone().into();
+        let user_name = user.name.clone().into_inner();
+        let user_email = user.email.clone().into_inner();
+        let user_status = user.status.to_string();
 
         if let Err(err) = sqlx::query_as!(
             User,
@@ -28,14 +31,18 @@ impl PgUserRepository {
                 uuid,
                 name,
                 password_hash,
-                role
+                email,
+                role,
+                status
             )
-            VALUES ( $1, $2, $3, $4 )
+            VALUES ( $1, $2, $3, $4, $5, $6 )
             "#,
             user.uuid,
-            user.name,
+            user_name,
             user.password_hash,
-            user_role
+            user_email,
+            user_role,
+            user_status
         )
         .execute(executor)
         .await
@@ -65,7 +72,9 @@ impl PgUserRepository {
                 uuid,
                 name,
                 password_hash,
-                role
+                email,
+                role,
+                status
             FROM users
             WHERE
                 uuid = $1
@@ -90,7 +99,9 @@ impl PgUserRepository {
                 uuid,
                 name,
                 password_hash,
-                role
+                email,
+                role,
+                status
             FROM users
             WHERE
                 name = $1
@@ -101,6 +112,42 @@ impl PgUserRepository {
         .await?;
 
         Ok(user)
+    }
+
+    pub async fn update_user(
+        &self,
+        executor: impl sqlx::Executor<'_, Database = Postgres>,
+        user: &User,
+    ) -> RepositoryResult<()> {
+        let user_role: i16 = user.role.clone().into();
+        let user_name = user.name.clone().into_inner();
+        let user_email = user.email.clone().into_inner();
+        let user_status = user.status.to_string();
+
+        sqlx::query_as!(
+            User,
+            r#"
+            UPDATE users
+            SET
+                name=$2,
+                password_hash=$3,
+                email=$4,
+                role=$5,
+                status=$6
+            WHERE
+                uuid=$1
+            "#,
+            user.uuid,
+            user_name,
+            user.password_hash,
+            user_email,
+            user_role,
+            user_status
+        )
+        .execute(executor)
+        .await?;
+
+        Ok(())
     }
 
     pub async fn delete_user(
@@ -156,6 +203,10 @@ impl UserRepository for PgUserService {
 
 #[tonic::async_trait]
 impl UserTxRepository for PgTransactionContext<'_, '_> {
+    async fn create_user(&mut self, user: &User) -> RepositoryResult<()> {
+        self.user_repo.create_user(&mut **self.tx, user).await
+    }
+
     async fn get_user(&mut self, user_uuid: Uuid) -> RepositoryResult<User> {
         self.user_repo.get_user(&mut **self.tx, user_uuid).await
     }
@@ -166,8 +217,8 @@ impl UserTxRepository for PgTransactionContext<'_, '_> {
             .await
     }
 
-    async fn create_user(&mut self, user: &User) -> RepositoryResult<()> {
-        self.user_repo.create_user(&mut **self.tx, user).await
+    async fn update_user(&mut self, user: &User) -> RepositoryResult<()> {
+        self.user_repo.update_user(&mut **self.tx, user).await
     }
 
     async fn delete_user(&mut self, user_uuid: Uuid) -> RepositoryResult<()> {

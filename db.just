@@ -1,3 +1,7 @@
+help:
+  @echo "[db]"
+  @just --list db --list-heading ""
+
 # Add a new database migration
 [group('migration')]
 add name:

@@ -179,6 +179,32 @@ Use the official public server:
 https://api.syndicode.dev
 ```
 
+Register using grpcurl or any other grpc cabable caller
+
+```
+grpcurl \
+  -d '{
+    "user_name": "some-username",
+    "user_password": "super-secret-password",
+    "email": "player@syndicode.dev",
+    "corporation_name": "Your Syndicode Corp"
+  }' \
+  https://api.syndicode.dev \
+  syndicode_interface_v1.AuthService/Register
+```
+
+Retrieve the validation code from your email and verify yourself
+
+```
+grpcurl \
+  -d '{
+    "user_name": "some-username",
+    "code": "AhxJ8zZ0YN",
+  }' \
+  https://api.syndicode.dev \
+  syndicode_interface_v1.AuthService/VerifyUser
+```
+
 <br>
 
 ### Step 3: Get the API Definition

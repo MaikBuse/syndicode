@@ -20,8 +20,10 @@ lazy_static::lazy_static! {
     static ref AUTH_EXCEPTED_PATHS: HashSet<&'static str> = [
         "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
         HEALTH_CHECK_PATH,
-        "/control.Control/Register",
-        "/control.Control/Login",
+        "/syndicode_interface_v1.AuthService/Register",
+        "/syndicode_interface_v1.AuthService/VerifyUser",
+        "/syndicode_interface_v1.AuthService/ResendVerificationEmail",
+        "/syndicode_interface_v1.AuthService/Login",
     ]
     .iter()
     .cloned()
@@ -128,7 +130,7 @@ where
             let is_health_check = path == HEALTH_CHECK_PATH;
 
             if !is_health_check {
-                // IP Address Extraction ---
+                // IP Address Extraction
                 let ip_address = req
                     .headers()
                     .get(ip_header_name.as_str())

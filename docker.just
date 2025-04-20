@@ -1,3 +1,7 @@
+help:
+  @echo "[docker]"
+  @just --list docker --list-heading ""
+
 # Start the database
 [group('docker')]
 start:

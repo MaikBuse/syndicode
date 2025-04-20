@@ -2,9 +2,11 @@ use crate::{
     application::error::{ApplicationError, ApplicationResult},
     domain::{user::model::role::UserRole, user::repository::UserRepository},
 };
+use bon::Builder;
 use std::sync::Arc;
 use uuid::Uuid;
 
+#[derive(Builder)]
 pub struct DeleteUserUseCase<USR>
 where
     USR: UserRepository,
@@ -16,10 +18,6 @@ impl<USR> DeleteUserUseCase<USR>
 where
     USR: UserRepository,
 {
-    pub fn new(user_repo: Arc<USR>) -> Self {
-        Self { user_repo }
-    }
-
     pub async fn execute(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ApplicationResult<()> {
         if req_user_uuid != user_uuid {
             let req_user = self.user_repo.get_user(req_user_uuid).await?;

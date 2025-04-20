@@ -5,9 +5,11 @@ use crate::{
         user::{model::role::UserRole, model::User},
     },
 };
+use bon::Builder;
 use std::sync::Arc;
 use uuid::Uuid;
 
+#[derive(Builder)]
 pub struct GetUserUseCase<USR>
 where
     USR: UserRepository,
@@ -19,10 +21,6 @@ impl<USR> GetUserUseCase<USR>
 where
     USR: UserRepository,
 {
-    pub fn new(user_repo: Arc<USR>) -> Self {
-        Self { user_repo }
-    }
-
     pub async fn execute(&self, req_user_uuid: Uuid, user_uuid: Uuid) -> ApplicationResult<User> {
         if req_user_uuid != user_uuid {
             let req_user = self.user_repo.get_user(req_user_uuid).await?;

@@ -21,20 +21,27 @@ pub(crate) fn parse_uuid(uuid_str: &str) -> Result<Uuid, Status> {
 
 pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
     match err {
+        ApplicationError::UserNotPending => Status::failed_precondition(err.to_string()),
+        ApplicationError::VerificationCodeExpired => Status::deadline_exceeded(err.to_string()),
         ApplicationError::PasswordTooShort(_)
         | ApplicationError::PasswordTooLong(_)
+        | ApplicationError::EmailInvalid(_)
+        | ApplicationError::UserNameTooLong(_)
+        | ApplicationError::UserNameTooShort(_)
         | ApplicationError::CorporationNameTooShort(_)
         | ApplicationError::CorporationNameTooLong(_)
-        | ApplicationError::UsernameInvalid
+        | ApplicationError::VerificationCodeFalse
         | ApplicationError::UniqueConstraint => Status::invalid_argument(err.to_string()),
-        ApplicationError::WrongUserCredentials | ApplicationError::MissingAuthentication => {
-            Status::unauthenticated(err.to_string())
-        }
+        ApplicationError::WrongUserCredentials
+        | ApplicationError::MissingAuthentication
+        | ApplicationError::UserInactive => Status::unauthenticated(err.to_string()),
         ApplicationError::Unauthorized => Status::permission_denied(err.to_string()),
         ApplicationError::Limitation(_)
         | ApplicationError::Database(_)
         | ApplicationError::Queue(_)
         | ApplicationError::Pull(_)
+        | ApplicationError::VerificationSendable(_)
+        | ApplicationError::Sqlx(_)
         | ApplicationError::Other(_) => Status::internal(err.to_string()),
     }
 }

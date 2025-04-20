@@ -1,3 +1,7 @@
+help:
+  @echo "[server]"
+  @just --list server --list-heading ""
+
 # Build the server crate
 [group('cargo')]
 build:

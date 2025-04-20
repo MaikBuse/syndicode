@@ -6,11 +6,13 @@ use crate::{
             crypto::PasswordHandler,
             limiter::{LimiterCategory, RateLimitEnforcer},
             uow::UnitOfWork,
+            verification::VerificationSendable,
         },
     },
     config::Config,
     domain::user::{model::role::UserRole, repository::UserRepository},
 };
+use bon::Builder;
 use std::{result::Result, sync::Arc};
 use syndicode_proto::syndicode_interface_v1::{
     admin_service_server::AdminService, CreateUserRequest, CreateUserResponse, DeleteUserRequest,
@@ -19,26 +21,29 @@ use syndicode_proto::syndicode_interface_v1::{
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
-pub struct AdminPresenter<R, P, UOW, USR>
+#[derive(Builder)]
+pub struct AdminPresenter<R, P, UOW, USR, VS>
 where
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
+    VS: VerificationSendable + 'static,
 {
-    pub config: Arc<Config>,
-    pub limit: Arc<R>,
-    pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
-    pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
+    config: Arc<Config>,
+    limit: Arc<R>,
+    create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
+    delete_user_uc: Arc<DeleteUserUseCase<USR>>,
 }
 
 #[async_trait]
-impl<R, P, UOW, USR> AdminService for AdminPresenter<R, P, UOW, USR>
+impl<R, P, UOW, USR, VS> AdminService for AdminPresenter<R, P, UOW, USR, VS>
 where
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
+    VS: VerificationSendable + 'static,
 {
     async fn create_user(
         &self,
@@ -71,13 +76,14 @@ where
 
         match self
             .create_user_uc
-            .execute(
-                Some(req_user_uuid),
-                request.user_name,
-                request.user_password,
-                user_role.clone(),
-                request.corporation_name,
-            )
+            .execute()
+            .maybe_req_user_uuid(req_user_uuid)
+            .user_name(request.user_name)
+            .password(request.user_password)
+            .user_email(request.user_email)
+            .user_role(user_role.clone())
+            .corporation_name(request.corporation_name)
+            .call()
             .await
         {
             Ok(user) => {
@@ -88,7 +94,7 @@ where
 
                 Ok(Response::new(CreateUserResponse {
                     user_uuid: user.uuid.to_string(),
-                    user_name: user.name,
+                    user_name: user.name.into_inner(),
                     user_role,
                 }))
             }

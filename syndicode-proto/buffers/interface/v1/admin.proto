@@ -21,11 +21,14 @@ message CreateUserRequest {
   //Password for the new user.
   string user_password = 2;
 
+  // The email address used to contact the user.
+  string user_email = 3;
+
   //Role to assign to the new user.
-  syndicode_interface_v1.UserRole user_role = 3;
+  syndicode_interface_v1.UserRole user_role = 4;
 
   //Name of the user's corporation.
-  string corporation_name = 4;
+  string corporation_name = 5;
 }
 
 //Response after a user account is created.

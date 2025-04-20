@@ -4,7 +4,10 @@ use crate::{
             bootstrap_admin::BootstrapAdminUseCase, create_user::CreateUserUseCase,
             delete_user::DeleteUserUseCase,
         },
-        auth::login::LoginUseCase,
+        auth::{
+            login::LoginUseCase, resend_verification::ResendVerificationUseCase,
+            verify_user::VerifyUserUseCase,
+        },
         economy::{
             get_corporation::GetCorporationUseCase, list_corporations::ListCorporationsUseCase,
         },
@@ -17,6 +20,7 @@ use crate::{
             queuer::ActionQueueable,
             results::ResultStoreReader,
             uow::UnitOfWork,
+            verification::VerificationSendable,
         },
         processor::GameTickProcessor,
         warfare::{
@@ -31,6 +35,7 @@ use crate::{
     },
     infrastructure::{
         crypto::CryptoService,
+        email::EmailHandler,
         postgres::{
             corporation::PgCorporationService,
             game_tick::PgGameTickService,
@@ -73,9 +78,10 @@ pub type DefaultAppState = AppState<
     PgCorporationService,
     ValkeyStore,
     PgGameTickService,
+    EmailHandler,
 >;
 
-pub struct AppState<G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR>
+pub struct AppState<G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS>
 where
     G: GameTickProcessable + 'static,
     P: PasswordHandler + 'static,
@@ -89,6 +95,7 @@ where
     CRP: CorporationRepository + 'static,
     RSR: ResultStoreReader + 'static,
     GTR: GameTickRepository + 'static,
+    VS: VerificationSendable + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
@@ -99,13 +106,13 @@ where
     pub corporation_service: Arc<CRP>,
     pub login_uc: Arc<LoginUseCase<P, J, USR>>,
     pub bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
-    pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
+    pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
     pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
     pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR>,
-    pub admin_presenter: AdminPresenter<R, P, UOW, USR>,
-    pub auth_presenter: AuthPresenter<R, P, J, UOW, USR>,
+    pub admin_presenter: AdminPresenter<R, P, UOW, USR, VS>,
+    pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS>,
 }
 
 impl DefaultAppState {
@@ -122,6 +129,9 @@ impl DefaultAppState {
         // Unit of Work
         let uow = Arc::new(PostgresUnitOfWork::new(Arc::clone(&pg_pool)));
 
+        // Email Handler
+        let sendable = Arc::new(EmailHandler::new());
+
         // Database Services
         let game_tick_service = Arc::new(PgGameTickService::new(pg_pool.clone()));
         let user_service = Arc::new(PgUserService::new(Arc::clone(&pg_pool), PgUserRepository));
@@ -136,17 +146,32 @@ impl DefaultAppState {
         ));
 
         // Admin use cases
-        let bootstrap_admin_uc =
-            Arc::new(BootstrapAdminUseCase::new(crypto.clone(), Arc::clone(&uow)));
-        let create_user_uc = Arc::new(CreateUserUseCase::new(
-            crypto.clone(),
-            Arc::clone(&uow),
-            Arc::clone(&user_service),
-        ));
-        let delete_user_uc = Arc::new(DeleteUserUseCase::new(Arc::clone(&user_service)));
+        let bootstrap_admin_uc = Arc::new(
+            BootstrapAdminUseCase::builder()
+                .uow(uow.clone())
+                .pw(crypto.clone())
+                .build(),
+        );
+        let create_user_uc = Arc::new(
+            CreateUserUseCase::builder()
+                .uow(uow.clone())
+                .pw(crypto.clone())
+                .verification(sendable.clone())
+                .user_repo(user_service.clone())
+                .build(),
+        );
+        let delete_user_uc = Arc::new(
+            DeleteUserUseCase::builder()
+                .user_repo(user_service.clone())
+                .build(),
+        );
 
         // Warfare use cases
-        let list_units_uc = Arc::new(ListUnitsUseCase::new(Arc::clone(&unit_service)));
+        let list_units_uc = Arc::new(
+            ListUnitsUseCase::builder()
+                .unit_repository(unit_service.clone())
+                .build(),
+        );
         let list_units_by_user_uc = Arc::new(
             ListUnitsByUserUseCase::builder()
                 .unit_repository(unit_service.clone())
@@ -158,12 +183,25 @@ impl DefaultAppState {
                 .game_tick_repo(game_tick_service.clone())
                 .build(),
         );
+        let verify_user_uc = Arc::new(VerifyUserUseCase::builder().uow(uow.clone()).build());
+        let resend_verification_uc = Arc::new(
+            ResendVerificationUseCase::builder()
+                .uow(uow.clone())
+                .verification(sendable.clone())
+                .build(),
+        );
 
         // Economy use cases
-        let get_corporation_uc =
-            Arc::new(GetCorporationUseCase::new(Arc::clone(&corporation_service)));
-        let list_corporations_uc =
-            Arc::new(ListCorporationsUseCase::new(corporation_service.clone()));
+        let get_corporation_uc = Arc::new(
+            GetCorporationUseCase::builder()
+                .corporation_repo(corporation_service.clone())
+                .build(),
+        );
+        let list_corporations_uc = Arc::new(
+            ListCorporationsUseCase::builder()
+                .corporation_repo(corporation_service.clone())
+                .build(),
+        );
 
         let simulation = Arc::new(SimulationService);
         let game_tick_processor = Arc::new(
@@ -191,19 +229,21 @@ impl DefaultAppState {
             .valkey_client(valkey.get_client())
             .build();
 
-        let admin_presenter = AdminPresenter {
-            config: config.clone(),
-            limit: valkey.clone(),
-            create_user_uc: Arc::clone(&create_user_uc),
-            delete_user_uc: Arc::clone(&delete_user_uc),
-        };
+        let admin_presenter = AdminPresenter::builder()
+            .config(config.clone())
+            .limit(valkey.clone())
+            .create_user_uc(create_user_uc.clone())
+            .delete_user_uc(delete_user_uc.clone())
+            .build();
 
-        let auth_presenter = AuthPresenter {
-            config: config.clone(),
-            limit: valkey.clone(),
-            create_user_uc: Arc::clone(&create_user_uc),
-            login_uc: Arc::clone(&login_uc),
-        };
+        let auth_presenter = AuthPresenter::builder()
+            .config(config.clone())
+            .limit(valkey.clone())
+            .create_user_uc(create_user_uc.clone())
+            .login_uc(login_uc.clone())
+            .verify_user_uc(verify_user_uc.clone())
+            .resend_verification_uc(resend_verification_uc.clone())
+            .build();
 
         Ok(AppState {
             leader_elector: valkey.clone(),

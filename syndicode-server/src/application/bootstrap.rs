@@ -36,16 +36,18 @@ where
         tracing::info!("Bootstrapping server...");
 
         let admin_password = read_env_var("ADMIN_PASSWORD")?;
+        let admin_email = read_env_var("ADMIN_EMAIL")?;
 
         self.migrator.run_migration().await?;
 
         if let Err(err) = self
             .bootstrap_admin_uc
-            .execute(
-                ADMIN_USERNAME.to_string(),
-                admin_password.to_string(),
-                ADMIN_CORPORATION_NAME.to_string(),
-            )
+            .execute()
+            .user_name(ADMIN_USERNAME.to_string())
+            .password(admin_password)
+            .corporation_name(ADMIN_CORPORATION_NAME.to_string())
+            .user_email(admin_email)
+            .call()
             .await
         {
             match err {

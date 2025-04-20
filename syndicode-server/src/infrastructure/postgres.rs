@@ -4,6 +4,7 @@ pub mod migration;
 pub mod unit;
 pub mod uow;
 pub mod user;
+pub mod user_verify;
 
 use crate::utils::read_env_var;
 use sqlx::{pool::PoolOptions, PgPool};

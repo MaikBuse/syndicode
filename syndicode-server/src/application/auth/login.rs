@@ -3,7 +3,7 @@ use crate::{
         error::{ApplicationError, ApplicationResult},
         ports::crypto::{JwtHandler, PasswordHandler},
     },
-    domain::user::repository::UserRepository,
+    domain::user::{model::status::UserStatus, repository::UserRepository},
 };
 use std::sync::Arc;
 
@@ -32,6 +32,10 @@ where
         let Ok(user) = self.user_repo.get_user_by_name(user_name).await else {
             return Err(ApplicationError::WrongUserCredentials);
         };
+
+        if user.status != UserStatus::Active {
+            return Err(ApplicationError::UserInactive);
+        }
 
         if self
             .pw

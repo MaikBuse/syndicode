@@ -2,8 +2,9 @@ use super::corporation::PgCorporationRepository;
 use super::game_tick::PgGameTickRepository;
 use super::unit::PgUnitRepository;
 use super::user::PgUserRepository;
+use super::user_verify::PgUserVerificationRepository;
+use crate::application::error::{ApplicationError, ApplicationResult};
 use crate::application::ports::uow::{TransactionalContext, UnitOfWork};
-use crate::domain::repository::RepositoryResult;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::future::Future;
 use std::pin::Pin;
@@ -16,6 +17,7 @@ where
     pub tx: &'a mut Transaction<'tx, Postgres>,
     pub game_tick_repo: &'a PgGameTickRepository,
     pub user_repo: &'a PgUserRepository,
+    pub user_verify_repo: &'a PgUserVerificationRepository,
     pub corporation_repo: &'a PgCorporationRepository,
     pub unit_repo: &'a PgUnitRepository,
 }
@@ -29,6 +31,7 @@ pub struct PostgresUnitOfWork {
     pool: Arc<PgPool>,
     game_tick: PgGameTickRepository,
     user_repo: PgUserRepository,
+    user_verify_repo: PgUserVerificationRepository,
     corporation_repo: PgCorporationRepository,
     unit_repo: PgUnitRepository,
 }
@@ -39,6 +42,7 @@ impl PostgresUnitOfWork {
             pool,
             game_tick: PgGameTickRepository,
             user_repo: PgUserRepository,
+            user_verify_repo: PgUserVerificationRepository,
             corporation_repo: PgCorporationRepository,
             unit_repo: PgUnitRepository,
         }
@@ -47,27 +51,29 @@ impl PostgresUnitOfWork {
 
 #[tonic::async_trait]
 impl UnitOfWork for PostgresUnitOfWork {
-    async fn execute<F, R>(&self, f: F) -> RepositoryResult<R>
+    async fn execute<F, R>(&self, f: F) -> ApplicationResult<R>
     where
         // The 'a lifetime here applies to the borrow of the TransactionContext
         F: for<'a> FnOnce(
                 &'a mut dyn TransactionalContext<'a>,
             )
-                -> Pin<Box<dyn Future<Output = RepositoryResult<R>> + Send + 'a>>
+                -> Pin<Box<dyn Future<Output = ApplicationResult<R>> + Send + 'a>>
             + Send,
         R: Send,
     {
         // 1. Begin Transaction - Keep it mutable and owned by this function
-        let mut tx: Transaction<'static, Postgres> = self.pool.begin().await?;
+        let mut tx: Transaction<'static, Postgres> =
+            self.pool.begin().await.map_err(ApplicationError::from)?;
 
         // 2. Introduce a scope for the context and its borrow of 'tx'
-        let result: RepositoryResult<R> = {
+        let result: ApplicationResult<R> = {
             // Create context borrowing `tx` mutably. The lifetime 'a for the closure
             // will be inferred from the lifetime of this borrow.
             let mut context = PgTransactionContext {
                 tx: &mut tx,
                 game_tick_repo: &self.game_tick,
                 user_repo: &self.user_repo,
+                user_verify_repo: &self.user_verify_repo,
                 corporation_repo: &self.corporation_repo,
                 unit_repo: &self.unit_repo,
             };

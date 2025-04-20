@@ -2,45 +2,81 @@ syntax = "proto3";
 
 package syndicode_interface_v1;
 
-/// Handles user authentication and registration.
+// Handles user authentication and registration.
 service AuthService {
-  /// Registers a new user and their corporation.
+  // Registers a new user and their corporation.
   rpc Register(RegisterRequest) returns (RegisterResponse);
 
-  /// Authenticates a user and returns a JWT token.
+  rpc VerifyUser(VerifyUserRequest) returns (VerifyUserResponse);
+
+  rpc ResendVerificationEmail(ResendVerificationEmailRequest) returns (ResendVerificationEmailResponse);
+
+  // Authenticates a user and returns a JWT token.
   rpc Login(LoginRequest) returns (LoginResponse);
 }
 
-/// Request to register a new user.
+// Request to register a new user.
 message RegisterRequest {
-  /// The desired username.
+  // The desired username.
   string user_name = 1;
 
-  /// The user's chosen password.
+  // The user's chosen password.
   string user_password = 2;
 
-  /// Name of the corporation to register under.
-  string corporation_name = 3;
+  // The email used to verify the user in the registration process.
+  string email = 3;
+
+  // Name of the corporation to register under.
+  string corporation_name = 4;
 }
 
-/// Response after successful registration.
+// Response after successful registration.
 message RegisterResponse {
-  /// UUID of the newly created user.
+  // UUID of the newly created user.
   string user_uuid = 1;
 }
 
-/// Request to log in with username and password.
-message LoginRequest {
-  /// Username of the player attempting to login.
+// Request to verify a user
+message VerifyUserRequest {
+  // The username chosen in the registration process
   string user_name = 1;
 
-  /// Password of the player attempting to login.
+  // The verification code send to the registration email address
+  string code = 2;
+}
+
+// Response returned when the user has been verified
+message VerifyUserResponse {
+  // UUID of the newly verified user.
+  string user_uuid = 1;
+}
+
+// Request to resend the verification email
+message ResendVerificationEmailRequest {
+  // The username chosen in the registration process
+  string user_name = 1;
+}
+
+message ResendVerificationEmailResponse {
+  // The username chosen in the registration process
+  string user_name = 1;
+
+  // The email used to verify the user in the registration process.
+  string email = 2;
+}
+
+// Request to log in with username and password.
+message LoginRequest {
+  // Username of the player attempting to login.
+  string user_name = 1;
+
+  // Password of the player attempting to login.
   string user_password = 2;
 }
 
-/// Response containing a JWT token after login.
+// Response containing a JWT token after login.
 message LoginResponse {
-  /// JWT token for authenticated access.
+  // JWT token for authenticated access.
   string jwt = 1;
 }
 

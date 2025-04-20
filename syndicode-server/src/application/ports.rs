@@ -8,3 +8,5 @@ pub mod puller;
 pub mod queuer;
 pub mod results;
 pub mod uow;
+pub mod verification;
+

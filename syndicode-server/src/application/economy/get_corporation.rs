@@ -2,9 +2,11 @@ use crate::{
     application::error::ApplicationResult,
     domain::corporation::repository::{CorporationRepository, GetCorporationOutcome},
 };
+use bon::Builder;
 use std::sync::Arc;
 use uuid::Uuid;
 
+#[derive(Builder)]
 pub struct GetCorporationUseCase<CRP>
 where
     CRP: CorporationRepository,
@@ -16,10 +18,6 @@ impl<CRP> GetCorporationUseCase<CRP>
 where
     CRP: CorporationRepository,
 {
-    pub fn new(corporation_repo: Arc<CRP>) -> Self {
-        Self { corporation_repo }
-    }
-
     pub async fn execute(&self, user_uuid: Uuid) -> ApplicationResult<GetCorporationOutcome> {
         Ok(self
             .corporation_repo

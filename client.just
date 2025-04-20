@@ -1,3 +1,7 @@
+help:
+  @echo "[client]"
+  @just --list client --list-heading ""
+
 # Build the client crate
 [group('cargo')]
 build:
