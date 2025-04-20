@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.0](https://github.com/MaikBuse/syndicode/compare/v0.7.0...v0.8.0) (2025-04-20)
+
+
+### Features
+
+* introducing complex responses ([87ae101](https://github.com/MaikBuse/syndicode/commit/87ae1013b0b1661aa6d180a313f86e3dad86bc8a))
+* introducing user verification on registration ([5626683](https://github.com/MaikBuse/syndicode/commit/56266837a53f0ff934c2029be71c5f0869939b34))
+* rate limit by category ([8377c96](https://github.com/MaikBuse/syndicode/commit/8377c9666a0c0bb0ff23124724d46ffb07f73f61))
+
+
+### Bug Fixes
+
+* github rust ci ([1d191c5](https://github.com/MaikBuse/syndicode/commit/1d191c513f93b0f0b32d88ca68a9a27dee96baa2))
+* stop rate limits for health checks ([3674f1c](https://github.com/MaikBuse/syndicode/commit/3674f1c104c8ba28258cf31a83f8333e5e861452))
+
 ## [0.7.0](https://github.com/MaikBuse/syndicode/compare/v0.6.0...v0.7.0) (2025-04-13)
 
 
