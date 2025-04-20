@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/MaikBuse/syndicode/compare/v0.8.0...v0.8.1) (2025-04-20)
+
+
+### Bug Fixes
+
+* update database preparation ([8cfcefd](https://github.com/MaikBuse/syndicode/commit/8cfcefd7262a559280fc60bc4dc47350906495ee))
+
 ## [0.8.0](https://github.com/MaikBuse/syndicode/compare/v0.7.0...v0.8.0) (2025-04-20)
 
 
