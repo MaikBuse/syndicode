@@ -189,7 +189,7 @@ grpcurl \
     "email": "player@syndicode.dev",
     "corporation_name": "Your Syndicode Corp"
   }' \
-  https://api.syndicode.dev \
+  api.syndicode.dev:443 \
   syndicode_interface_v1.AuthService/Register
 ```
 
@@ -201,7 +201,7 @@ grpcurl \
     "user_name": "some-username",
     "code": "AhxJ8zZ0YN",
   }' \
-  https://api.syndicode.dev \
+  api.syndicode.dev:443 \
   syndicode_interface_v1.AuthService/VerifyUser
 ```
 
