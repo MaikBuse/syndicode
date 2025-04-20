@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO user_verifications (\n                user_uuid,\n                code,\n                expires_at,\n                created_at\n            )\n            VALUES ( $1, $2, $3, $4 )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d462190200fa45c23b35adb5a26ac38848f5879daa93f15f0d1c6d57a33e2aca"
+}

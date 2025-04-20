@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n             UPDATE current_game_tick\n             SET current_game_tick = $1\n             WHERE singleton_key = TRUE\n             ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "33ec79d63974f562660a25c8ebccf5ca96928c7d880c72d78af988fe5dfc0e5b"
+}

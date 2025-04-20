@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE users\n            SET\n                name=$2,\n                password_hash=$3,\n                email=$4,\n                role=$5,\n                status=$6\n            WHERE\n                uuid=$1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "Int2",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4d3a71232e8570283a0814cb3a154d435667740736693252281ff3dd734796f7"
+}

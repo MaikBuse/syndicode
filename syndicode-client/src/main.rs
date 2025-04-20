@@ -3,13 +3,14 @@ use syndicode_proto::{
         auth_service_client::AuthServiceClient, game_service_client::GameServiceClient,
         game_update::Update, player_action::Action, LoginRequest, PlayerAction,
     },
-    syndicode_warfare_v1::{ListUnitsRequest, SpawnUnitRequest},
+    syndicode_warfare_v1::SpawnUnitRequest,
 };
 use tokio::sync::mpsc;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 use tonic::{metadata::MetadataValue, Request};
+use uuid::Uuid;
 
-pub const SOCKET_ADDR: &str = "[::]:50051";
+pub const SOCKET_ADDR: &str = "127.0.0.1:50051";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -42,6 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let create_user_request = PlayerAction {
         action: Some(Action::SpawnUnit(SpawnUnitRequest {})),
+        request_uuid: Uuid::now_v7().to_string(),
     };
 
     // Send initial CreateUser request

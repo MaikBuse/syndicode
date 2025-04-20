@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE user_verifications\n            SET\n                code=$2,\n                expires_at=$3,\n                created_at=$4\n            WHERE\n                user_uuid=$1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fff2b4b6a84448dcf0fdaaa2b2a0485ce8a0172626a87bed6741bac5422d694f"
+}
