@@ -201,10 +201,33 @@ Retrieve the validation code from your email and verify yourself
 grpcurl \
   -d '{
     "user_name": "some-username",
-    "code": "AhxJ8zZ0YN",
+    "code": "AhxJ8zZ0YN"
   }' \
   api.syndicode.dev:443 \
   syndicode_interface_v1.AuthService/VerifyUser
+```
+
+In case your verification code expires, ask for a refresh
+
+```
+grpcurl \
+  -d '{
+    "user_name": "some-username"
+  }' \
+  api.syndicode.dev:443 \
+  syndicode_interface_v1.AuthService/ResendVerificationEmail
+```
+
+Login to retrieve your [Bearer Authentication](https://swagger.io/docs/specification/v3_0/authentication/bearer-authentication/) Token
+
+```
+grpcurl \
+  -d '{
+    "user_name": "some-username",
+    "user_password": "super-secret-password"
+  }' \
+  api.syndicode.dev:443 \
+  syndicode_interface_v1.AuthService/Login
 ```
 
 <br>
@@ -215,7 +238,6 @@ Use gRPC server reflection for example using `grpcurl`:
 
 ```
 grpcurl -proto-out-dir ./proto api.syndicode.dev:443 describe list
-
 ```
 
 *or* clone the `.proto` files from this repository:
