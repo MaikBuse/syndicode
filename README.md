@@ -179,7 +179,7 @@ Use the official public server:
 https://api.syndicode.dev
 ```
 
-Register using grpcurl or any other grpc cabable caller
+Register using grpcurl or any other grpc capable caller
 
 ```
 grpcurl \
