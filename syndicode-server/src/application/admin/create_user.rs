@@ -157,6 +157,8 @@ mod tests {
             input_password: String,
             expected_hash: String,
             expected_user_output: User, // The user returned by UoW
+            receipient_email: String,
+            receipient_name: String,
         ) {
             let input_user_password = UserPassword::new(input_password).unwrap();
 
@@ -178,6 +180,16 @@ mod tests {
                     let user_to_return = expected_user_output.clone();
                     Ok(user_to_return)
                 });
+
+            self.mock_verification
+                .expect_send_verification_email()
+                .times(1)
+                .with(
+                    eq(receipient_email),
+                    eq(receipient_name),
+                    mockall::predicate::always(),
+                )
+                .return_once(move |_, _, _| Ok(()));
 
             // No user repo calls expected for standard user creation
             self.mock_user_repo.expect_get_user().never();
@@ -247,6 +259,8 @@ mod tests {
             input_password.clone(),
             expected_hashed_password,
             expected_user_output.clone(),
+            input_email.clone().into_inner(),
+            input_user_name.clone().into_inner(),
         );
 
         // Build the use case from the fixture
@@ -296,6 +310,7 @@ mod tests {
 
         let result = uc
             .execute()
+            .maybe_req_user_uuid(requesting_user_uuid)
             .user_name(input_user_name)
             .password(input_password.clone())
             .user_role(input_role.clone())

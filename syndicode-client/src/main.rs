@@ -1,4 +1,7 @@
+use std::time::Duration;
+
 use syndicode_proto::{
+    syndicode_economy_v1::GetCorporationRequest,
     syndicode_interface_v1::{
         auth_service_client::AuthServiceClient, game_service_client::GameServiceClient,
         game_update::Update, player_action::Action, LoginRequest, PlayerAction,
@@ -51,6 +54,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Clone tx for sending DeleteUser later
     let tx_clone = tx.clone();
+
+    tokio::spawn(async move {
+        if let Err(err) = tx_clone
+            .send(PlayerAction {
+                request_uuid: Uuid::now_v7().to_string(),
+                action: Some(Action::GetCorporation(GetCorporationRequest {})),
+            })
+            .await
+        {
+            eprint!("{}", err);
+        }
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    });
 
     // Read from the server
     while let Some(game_update) = stream.next().await {
