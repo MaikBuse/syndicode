@@ -1,5 +1,6 @@
-pub mod corporation;
+pub mod economy;
 pub mod game_tick;
+pub mod init;
 pub mod migration;
 pub mod unit;
 pub mod uow;

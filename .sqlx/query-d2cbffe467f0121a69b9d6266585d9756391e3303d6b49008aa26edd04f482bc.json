@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO markets (\n                game_tick,\n                uuid,\n                name,\n                volume\n            )\n            SELECT\n                $1 as game_tick,\n                unnest($2::UUID[]) as uuid,\n                unnest($3::SMALLINT[]) as name,\n                unnest($4::BIGINT[]) as volume\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "UuidArray",
+        "Int2Array",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d2cbffe467f0121a69b9d6266585d9756391e3303d6b49008aa26edd04f482bc"
+}

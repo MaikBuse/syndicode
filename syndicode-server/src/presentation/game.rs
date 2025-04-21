@@ -15,7 +15,7 @@ use crate::{
     },
     config::Config,
     domain::{
-        corporation::repository::CorporationRepository, outcome::DomainActionOutcome,
+        economy::corporation::repository::CorporationRepository, outcome::DomainActionOutcome,
         unit::repository::UnitRepository,
     },
     infrastructure::valkey::results::create_notification_channel,

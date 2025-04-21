@@ -1,4 +1,4 @@
-pub mod corporation;
+pub mod economy;
 pub mod outcome;
 pub mod ports;
 pub mod repository;

@@ -1,10 +1,12 @@
-use super::{game_tick::PgGameTickRepository, uow::PgTransactionContext};
-use crate::domain::{
-    corporation::{
-        model::Corporation,
-        repository::{CorporationRepository, CorporationTxRepository, GetCorporationOutcome},
+use crate::{
+    domain::{
+        economy::corporation::{
+            model::Corporation,
+            repository::{CorporationRepository, CorporationTxRepository, GetCorporationOutcome},
+        },
+        repository::RepositoryResult,
     },
-    repository::RepositoryResult,
+    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
 };
 use sqlx::{PgPool, Postgres};
 use std::sync::Arc;
@@ -30,7 +32,7 @@ impl PgCorporationRepository {
                 uuid,
                 user_uuid,
                 name,
-                balance
+                cash_balance
             )
             VALUES ($1, $2, $3, $4, $5)
             "#,
@@ -38,7 +40,7 @@ impl PgCorporationRepository {
             corporation.uuid,
             corporation.user_uuid,
             corporation.name.to_string(),
-            corporation.balance
+            corporation.cash_balance
         )
         .execute(executor)
         .await?;
@@ -64,13 +66,13 @@ impl PgCorporationRepository {
         let mut uuids = Vec::with_capacity(count);
         let mut user_uuids = Vec::with_capacity(count);
         let mut names = Vec::with_capacity(count);
-        let mut balances = Vec::with_capacity(count);
+        let mut cash_balances = Vec::with_capacity(count);
 
         for corp in corporations {
             uuids.push(corp.uuid);
             user_uuids.push(corp.user_uuid);
             names.push(corp.name.to_string());
-            balances.push(corp.balance);
+            cash_balances.push(corp.cash_balance);
         }
 
         // Execute the bulk insert query using UNNEST
@@ -81,20 +83,20 @@ impl PgCorporationRepository {
                 uuid,
                 user_uuid,
                 name,
-                balance
+                cash_balance
             )
             SELECT
                 $1 as game_tick,
                 unnest($2::UUID[]) as uuid,
                 unnest($3::UUID[]) as user_uuid,
                 unnest($4::TEXT[]) as name,
-                unnest($5::BIGINT[]) as balance
+                unnest($5::BIGINT[]) as cash_balance
             "#,
             game_tick,
             &uuids,
             &user_uuids,
             &names,
-            &balances
+            &cash_balances
         )
         .execute(executor)
         .await?;
@@ -117,7 +119,7 @@ impl PgCorporationRepository {
                 uuid,
                 user_uuid,
                 name,
-                balance
+                cash_balance
             FROM corporations
             WHERE
                 user_uuid = $1
@@ -144,7 +146,10 @@ impl PgCorporationRepository {
             Corporation,
             r#"
             SELECT
-                uuid, user_uuid, name, balance
+                uuid,
+                user_uuid,
+                name,
+                cash_balance
             FROM corporations
             WHERE
                 uuid = $1
@@ -168,7 +173,10 @@ impl PgCorporationRepository {
             Corporation,
             r#"
             SELECT
-                uuid, user_uuid, name, balance
+                uuid,
+                user_uuid,
+                name,
+                cash_balance
             FROM corporations
             WHERE
                 game_tick = $1

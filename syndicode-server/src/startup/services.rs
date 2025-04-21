@@ -9,11 +9,13 @@ use crate::{
             verify_user::VerifyUserUseCase,
         },
         economy::{
-            get_corporation::GetCorporationUseCase, list_corporations::ListCorporationsUseCase,
+            bootstrap_economy::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
+            list_corporations::ListCorporationsUseCase,
         },
         ports::{
             crypto::{JwtHandler, PasswordHandler},
             game_tick::GameTickRepository,
+            init::InitializationRepository,
             leader::LeaderElector,
             limiter::RateLimitEnforcer,
             processor::GameTickProcessable,
@@ -30,15 +32,16 @@ use crate::{
     },
     config::Config,
     domain::{
-        corporation::repository::CorporationRepository, simulation::SimulationService,
+        economy::corporation::repository::CorporationRepository, simulation::SimulationService,
         unit::repository::UnitRepository, user::repository::UserRepository,
     },
     infrastructure::{
         crypto::CryptoService,
         email::EmailHandler,
         postgres::{
-            corporation::PgCorporationService,
+            economy::corporation::PgCorporationService,
             game_tick::PgGameTickService,
+            init::PgInitializationService,
             unit::PgUnitService,
             uow::PostgresUnitOfWork,
             user::{PgUserRepository, PgUserService},
@@ -51,13 +54,15 @@ use dashmap::DashMap;
 use sqlx::PgPool;
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::GameUpdate;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::{mpsc::Sender, OnceCell};
 use tonic::Status;
 use uuid::Uuid;
 
 // Represents the standard configuration of the application state
 pub type DefaultAppState = AppState<
+    PgInitializationService,
     GameTickProcessor<
+        PgInitializationService,
         SimulationService,
         ValkeyStore,
         ValkeyStore,
@@ -81,8 +86,9 @@ pub type DefaultAppState = AppState<
     EmailHandler,
 >;
 
-pub struct AppState<G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS>
+pub struct AppState<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS>
 where
+    INI: InitializationRepository + 'static,
     G: GameTickProcessable + 'static,
     P: PasswordHandler + 'static,
     J: JwtHandler + 'static,
@@ -101,11 +107,13 @@ where
     pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
     pub leader_elector: Arc<L>,
     pub crypto: Arc<CryptoService>,
+    pub init_service: Arc<INI>,
     pub user_service: Arc<USR>,
     pub unit_service: Arc<UNT>,
     pub corporation_service: Arc<CRP>,
     pub login_uc: Arc<LoginUseCase<P, J, USR>>,
     pub bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
+    pub bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
     pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
     pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
     pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
@@ -133,6 +141,7 @@ impl DefaultAppState {
         let sendable = Arc::new(EmailHandler::new());
 
         // Database Services
+        let init_service = Arc::new(PgInitializationService::new(pg_pool.clone()));
         let game_tick_service = Arc::new(PgGameTickService::new(pg_pool.clone()));
         let user_service = Arc::new(PgUserService::new(Arc::clone(&pg_pool), PgUserRepository));
         let unit_service = Arc::new(PgUnitService::new(Arc::clone(&pg_pool)));
@@ -192,6 +201,12 @@ impl DefaultAppState {
         );
 
         // Economy use cases
+        let bootstrap_economy_uc = Arc::new(
+            BootstrapEconomyUseCase::builder()
+                .uow(uow.clone())
+                .init_repo(init_service.clone())
+                .build(),
+        );
         let get_corporation_uc = Arc::new(
             GetCorporationUseCase::builder()
                 .corporation_repo(corporation_service.clone())
@@ -214,6 +229,8 @@ impl DefaultAppState {
                 .list_corporations_uc(list_corporations_uc.clone())
                 .list_units_uc(list_units_uc.clone())
                 .uow(uow.clone())
+                .init_repo(init_service.clone())
+                .init_check_cell(OnceCell::new())
                 .build(),
         );
 
@@ -246,6 +263,7 @@ impl DefaultAppState {
             .build();
 
         Ok(AppState {
+            init_service,
             leader_elector: valkey.clone(),
             user_channels,
             crypto,
@@ -254,6 +272,7 @@ impl DefaultAppState {
             corporation_service,
             login_uc,
             bootstrap_admin_uc,
+            bootstrap_economy_uc,
             create_user_uc,
             delete_user_uc,
             list_units_uc,

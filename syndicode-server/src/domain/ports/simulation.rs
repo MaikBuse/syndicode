@@ -1,6 +1,8 @@
 use crate::{
     application::action::QueuedActionPayload,
-    domain::{corporation::model::Corporation, outcome::DomainActionOutcome, unit::model::Unit},
+    domain::{
+        economy::corporation::model::Corporation, outcome::DomainActionOutcome, unit::model::Unit,
+    },
 };
 
 pub trait Simulationable: Send + Sync {

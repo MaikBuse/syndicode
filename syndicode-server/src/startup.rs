@@ -43,7 +43,12 @@ pub async fn start_server() -> anyhow::Result<()> {
         AppState::build_services(config.clone(), pg_pool.clone(), valkey_store.clone()).await?;
 
     // Bootstrap
-    bootstrap::run(pg_pool, state.bootstrap_admin_uc.clone()).await?;
+    bootstrap::run()
+        .pool(pg_pool)
+        .bootstrap_admin_uc(state.bootstrap_admin_uc.clone())
+        .bootstrap_economy_uc(state.bootstrap_economy_uc.clone())
+        .call()
+        .await?;
 
     // Spawn leader loop
     let leader_loop_manager = LeaderLoopManager::new(

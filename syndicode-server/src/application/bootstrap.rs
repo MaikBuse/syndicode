@@ -1,7 +1,13 @@
+use bon::Builder;
+
 use super::{
     admin::bootstrap_admin::BootstrapAdminUseCase,
+    economy::bootstrap_economy::BootstrapEconomyUseCase,
     error::{ApplicationError, ApplicationResult},
-    ports::{crypto::PasswordHandler, migration::MigrationRunner, uow::UnitOfWork},
+    ports::{
+        crypto::PasswordHandler, init::InitializationRepository, migration::MigrationRunner,
+        uow::UnitOfWork,
+    },
 };
 use crate::utils::read_env_var;
 use std::sync::Arc;
@@ -9,29 +15,26 @@ use std::sync::Arc;
 const ADMIN_CORPORATION_NAME: &str = "Shinkai Heavyworks";
 const ADMIN_USERNAME: &str = "admin";
 
-pub struct Bootstrap<UOW, P, M>
+#[derive(Builder)]
+pub struct Bootstrap<UOW, INI, P, M>
 where
     UOW: UnitOfWork,
+    INI: InitializationRepository,
     P: PasswordHandler,
     M: MigrationRunner,
 {
-    pub migrator: Arc<M>,
+    migrator: Arc<M>,
     bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
+    bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
 }
 
-impl<UOW, P, M> Bootstrap<UOW, P, M>
+impl<UOW, INI, P, M> Bootstrap<UOW, INI, P, M>
 where
     UOW: UnitOfWork,
+    INI: InitializationRepository,
     P: PasswordHandler,
     M: MigrationRunner,
 {
-    pub fn new(migrator: Arc<M>, bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>) -> Self {
-        Self {
-            migrator,
-            bootstrap_admin_uc,
-        }
-    }
-
     pub async fn run(&self) -> ApplicationResult<()> {
         tracing::info!("Bootstrapping server...");
 
@@ -55,6 +58,8 @@ where
                 _ => return Err(err),
             };
         };
+
+        self.bootstrap_economy_uc.execute().await?;
 
         Ok(())
     }

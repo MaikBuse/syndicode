@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO corporations (\n                game_tick,\n                uuid,\n                user_uuid,\n                name,\n                cash_balance\n            )\n            VALUES ($1, $2, $3, $4, $5)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f2bdd8133f5d2462dbbfdf3dbd2e2ea2d6a0494a23f4c5e87c8050fd24348f60"
+}

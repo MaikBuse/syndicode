@@ -1,6 +1,6 @@
 use crate::{
     application::error::ApplicationResult,
-    domain::corporation::{model::Corporation, repository::CorporationRepository},
+    domain::economy::corporation::{model::Corporation, repository::CorporationRepository},
 };
 use bon::Builder;
 use std::sync::Arc;

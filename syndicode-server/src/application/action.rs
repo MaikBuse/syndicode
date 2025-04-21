@@ -1,4 +1,4 @@
-use crate::domain::corporation::model::Corporation;
+use crate::domain::economy::corporation::model::Corporation;
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

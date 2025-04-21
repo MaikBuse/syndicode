@@ -1,5 +1,5 @@
 use super::{
-    corporation::model::Corporation, outcome::DomainActionOutcome,
+    economy::corporation::model::Corporation, outcome::DomainActionOutcome,
     ports::simulation::Simulationable, unit::model::Unit,
 };
 use crate::application::action::{ActionDetails, QueuedActionPayload};

@@ -4,7 +4,7 @@ use crate::{
         ports::{crypto::PasswordHandler, uow::UnitOfWork},
     },
     domain::{
-        corporation::model::{name::CorporationName, Corporation},
+        economy::corporation::model::{name::CorporationName, Corporation},
         repository::RepositoryError,
         user::model::{
             email::UserEmail, name::UserName, password::UserPassword, role::UserRole,

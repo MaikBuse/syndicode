@@ -1,5 +1,5 @@
 use crate::application::ports::leader::{LeaderElectionError, LeaderElector}; // Assume these are defined
-use crate::application::ports::processor::GameTickProcessable; // Assume this is defined
+use crate::application::ports::processor::{GameTickProcessable, ProcessorError};
 use std::{sync::Arc, time::Duration};
 use tokio::time::{self, Instant};
 
@@ -121,22 +121,39 @@ where
                                             break;
                                         }
                                     }
+                                    // --- Start of modified section ---
                                     Err(err) => {
-                                        // Critical processing error: Relinquish leadership
-                                        tracing::error!("Game tick processing failed: {:#}. Relinquishing leadership.", err);
-                                        // Attempt to release the lock gracefully
-                                        if let Err(release_err) =
-                                            self.leader_elector.release().await
-                                        {
-                                            tracing::error!(error = %release_err,"Failed to release leader lock after processing error.");
+                                        // Attempt to downcast the generic error (likely anyhow::Error)
+                                        // to our specific ProcessorError type.
+                                        match err {
+                                            // Check if it's the specific NotInitialized error
+                                            ProcessorError::NotInitialized => {
+                                                tracing::warn!("Tick processing skipped: Database not initialized yet. Will retry on next cycle.");
+                                                // *** IMPORTANT: Do NOT relinquish leadership ***
+                                                // Allow the outer loop's sleep logic to handle the retry timing.
+                                                // We break the inner loop because we can't proceed *this* tick.
+                                                break; // Break inner loop, go to outer loop sleep/refresh check
+                                            }
+                                            // Handle other known critical ProcessorErrors if desired
+                                            _ => {
+                                                tracing::error!("Game tick processing failed (ProcessorError: {}). Relinquishing leadership.", err);
+                                                // Treat other ProcessorErrors as critical: Relinquish leadership
+                                                if let Err(release_err) =
+                                                    self.leader_elector.release().await
+                                                {
+                                                    tracing::error!(error = %release_err, "Failed to release leader lock after critical processing error.");
+                                                }
+                                                is_leader = false;
+                                                next_tick_time = None;
+                                                // Wait before trying acquire again for critical errors
+                                                time::sleep(
+                                                    self.non_leader_acquisition_retry_interval,
+                                                )
+                                                .await;
+                                                break; // Break inner tick loop, go to outer acquire loop
+                                            }
                                         }
-                                        is_leader = false;
-                                        next_tick_time = None; // Reset timer state
-                                                               // Wait before trying acquire again to avoid tight loop on persistent processing errors
-                                        time::sleep(self.non_leader_acquisition_retry_interval)
-                                            .await;
-                                        break; // Break inner tick loop, go to outer acquire loop
-                                    }
+                                    } // --- End of modified section ---
                                 } // End match process_next_tick
                             } else {
                                 // Not time for the current target tick yet. Break inner loop to sleep.
@@ -144,14 +161,15 @@ where
                             }
                         } // --- End of inner tick processing loop ---
 
-                        // If we are still leader after the inner loop (i.e., no processing error occurred)...
+                        // If we are still leader after the inner loop (i.e., no critical processing error occurred)...
                         if is_leader {
                             // Calculate sleep duration. We need to wake up for the *earlier* of:
                             // 1. The next scheduled game tick (`next_tick_time`).
                             // 2. The next required lock refresh time.
                             let now = Instant::now();
                             // next_tick_time should be Some here, as it's set after successful processing
-                            // or initialization. If it somehow became None, default to now to avoid panic.
+                            // or initialization, or we broke inner loop due to NotInitialized.
+                            // If it somehow became None (e.g., critical error path, but is_leader is true?), default to now.
                             let next_tick_due_at = next_tick_time.unwrap_or(now);
 
                             let time_until_next_tick = if next_tick_due_at > now {
@@ -184,7 +202,7 @@ where
                                 tokio::task::yield_now().await;
                             }
                         }
-                        // If !is_leader (due to processing error), the outer loop will handle the transition.
+                        // If !is_leader (due to critical processing error), the outer loop will handle the transition.
                     } // End Ok(()) refresh case
                     Err(LeaderElectionError::NotHoldingLock { key, instance_id }) => {
                         // This can happen if the lock expired between the last refresh and this one,
@@ -236,6 +254,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::application::ports::processor::ProcessorResult;
+
     use super::*;
     use anyhow::anyhow;
     use std::collections::VecDeque;
@@ -506,7 +526,7 @@ mod tests {
 
     #[tonic::async_trait]
     impl GameTickProcessable for MockGameTickProcessor {
-        async fn process_next_tick(&self) -> anyhow::Result<i64> {
+        async fn process_next_tick(&self) -> ProcessorResult<i64> {
             // --- Start Lock ---
             let mut state = self.state.lock().unwrap();
             state.call_count += 1;
@@ -519,7 +539,7 @@ mod tests {
 
             // Prepare the value to be returned *after* the lock is dropped
             #[allow(clippy::needless_late_init)]
-            let outcome: anyhow::Result<i64>;
+            let outcome: ProcessorResult<i64>;
 
             // Process the result *inside* the lock to update state
             match result {
@@ -534,7 +554,8 @@ mod tests {
                     // Prepare an Err outcome. We cannot return the original 'e',
                     // so we create a new, simple error. The LeaderLoopManager
                     // only cares *that* an error happened, not the specifics here.
-                    outcome = Err(anyhow!("Mock tick processing failed")); // Generic error
+                    outcome = Err(anyhow!("Mock tick processing failed").into());
+                    // Generic error
                 }
             };
 

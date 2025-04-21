@@ -1,6 +1,6 @@
 use crate::{
     application::economy::get_corporation::GetCorporationUseCase,
-    domain::corporation::repository::CorporationRepository,
+    domain::economy::corporation::repository::CorporationRepository,
 };
 use bon::builder;
 use std::sync::Arc;
@@ -29,7 +29,7 @@ where
                     uuid: outcome.corporation.uuid.to_string(),
                     user_uuid: outcome.corporation.user_uuid.to_string(),
                     name: outcome.corporation.name.to_string(),
-                    balance: outcome.corporation.balance,
+                    balance: outcome.corporation.cash_balance,
                 }),
             })),
         }),

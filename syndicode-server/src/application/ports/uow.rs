@@ -1,12 +1,18 @@
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use super::game_tick::GameTickTxRepository;
+use super::{game_tick::GameTickTxRepository, init::InitializationTxRepository};
 use crate::{
     application::error::ApplicationResult,
     domain::{
-        corporation::repository::CorporationTxRepository, unit::repository::UnitTxRespository,
-        user::repository::UserTxRepository, user_verify::repository::UserVerificationTxRepository,
+        economy::{
+            business::repository::BusinessTxRepository,
+            corporation::repository::CorporationTxRepository,
+            market::repository::MarketTxRepository,
+        },
+        unit::repository::UnitTxRespository,
+        user::repository::UserTxRepository,
+        user_verify::repository::UserVerificationTxRepository,
     },
 };
 use std::{future::Future, pin::Pin};
@@ -17,9 +23,12 @@ use tonic::async_trait;
 // The 'a lifetime ensures it cannot outlive the transaction scope.
 pub trait TransactionalContext<'a>:
     GameTickTxRepository
+    + InitializationTxRepository
     + UserTxRepository
     + UserVerificationTxRepository
     + CorporationTxRepository
+    + MarketTxRepository
+    + BusinessTxRepository
     + UnitTxRespository
     + Send
     + Sync

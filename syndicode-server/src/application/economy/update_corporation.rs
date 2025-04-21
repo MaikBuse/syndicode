@@ -4,7 +4,9 @@ use crate::{
         error::ApplicationResult,
         ports::queuer::ActionQueueable,
     },
-    domain::corporation::{model::name::CorporationName, repository::CorporationRepository},
+    domain::economy::corporation::{
+        model::name::CorporationName, repository::CorporationRepository,
+    },
 };
 use bon::bon;
 use std::sync::Arc;

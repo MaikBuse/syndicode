@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                uuid, user_uuid, name, balance\n            FROM corporations\n            WHERE\n                game_tick = $1\n            ",
+  "query": "\n            SELECT\n                uuid,\n                user_uuid,\n                name,\n                cash_balance\n            FROM corporations\n            WHERE\n                user_uuid = $1\n                AND game_tick = $2\n            ",
   "describe": {
     "columns": [
       {
@@ -20,12 +20,13 @@
       },
       {
         "ordinal": 3,
-        "name": "balance",
+        "name": "cash_balance",
         "type_info": "Int8"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Int8"
       ]
     },
@@ -36,5 +37,5 @@
       false
     ]
   },
-  "hash": "558ef8c30a53872f572fc2c2a45f5eb2f8b31358698bf514a5971fed12b745c3"
+  "hash": "76bb872dce1ef3e4fd020c503bb332ad6a3def0ffc445bb1c01cf667b5d0149e"
 }

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE system_flags SET is_set = TRUE, updated_at = NOW() WHERE flag_key = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ac793c6c3f3dd4de8a645818e4fe6a3a939bcf57e46b5e0dc297d8c32000d417"
+}

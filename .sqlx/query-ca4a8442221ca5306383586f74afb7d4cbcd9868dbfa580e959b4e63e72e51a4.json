@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM markets\n            WHERE\n                game_tick < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ca4a8442221ca5306383586f74afb7d4cbcd9868dbfa580e959b4e63e72e51a4"
+}

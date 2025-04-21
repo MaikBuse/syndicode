@@ -1,3 +1,4 @@
+use bon::builder;
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -5,22 +6,30 @@ use crate::{
     application::{
         admin::bootstrap_admin::BootstrapAdminUseCase,
         bootstrap::Bootstrap,
-        ports::{crypto::PasswordHandler, uow::UnitOfWork},
+        economy::bootstrap_economy::BootstrapEconomyUseCase,
+        ports::{crypto::PasswordHandler, init::InitializationRepository, uow::UnitOfWork},
     },
     infrastructure::postgres::migration::PostgresMigrator,
 };
 
-pub async fn run<U, P>(
+#[builder]
+pub async fn run<UOW, INI, P>(
     pool: Arc<PgPool>,
-    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<U, P>>,
+    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
+    bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
 ) -> anyhow::Result<()>
 where
-    U: UnitOfWork,
+    UOW: UnitOfWork,
+    INI: InitializationRepository,
     P: PasswordHandler,
 {
     let migrator = Arc::new(PostgresMigrator::new(pool.clone()));
 
-    let bootstrapper = Bootstrap::new(migrator, bootstrap_admin_uc.clone());
+    let bootstrapper = Bootstrap::builder()
+        .migrator(migrator)
+        .bootstrap_admin_uc(bootstrap_admin_uc)
+        .bootstrap_economy_uc(bootstrap_economy_uc)
+        .build();
 
     bootstrapper
         .run()

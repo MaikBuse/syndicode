@@ -12,7 +12,7 @@ pub struct Corporation {
     pub uuid: Uuid,
     pub user_uuid: Uuid,
     pub name: CorporationName,
-    pub balance: i64,
+    pub cash_balance: i64,
 }
 
 impl Corporation {
@@ -21,7 +21,7 @@ impl Corporation {
             uuid: Uuid::now_v7(),
             user_uuid,
             name,
-            balance: DEFAULT_BALANCE,
+            cash_balance: DEFAULT_BALANCE,
         }
     }
 }
