@@ -2,6 +2,13 @@ syntax = "proto3";
 
 package syndicode_interface_v1;
 
+// Enum for sorting direction
+enum SortDirection {
+  SORT_DIRECTION_UNSPECIFIED = 0;
+  ASCENDING = 1;
+  DESCENDING = 2;
+}
+
 /// The role assigned to a user account.
 enum UserRole {
   /// Default unspecified role.

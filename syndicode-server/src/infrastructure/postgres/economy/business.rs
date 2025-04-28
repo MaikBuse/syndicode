@@ -1,11 +1,16 @@
+use std::sync::Arc;
+
 use crate::{
     domain::{
-        economy::business::{model::Business, repository::BusinessTxRepository},
+        economy::business::{
+            model::Business,
+            repository::{BusinessRepository, BusinessTxRepository},
+        },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::uow::PgTransactionContext,
+    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
 };
-use sqlx::Postgres;
+use sqlx::{PgPool, Postgres};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -161,7 +166,7 @@ impl PgBusinessRepository {
         Ok(business)
     }
 
-    pub async fn list_businesses_at_tick(
+    pub async fn list_businesses_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         game_tick: i64,
@@ -207,6 +212,31 @@ impl PgBusinessRepository {
     }
 }
 
+pub struct PgBusinessService {
+    pool: Arc<PgPool>,
+    game_tick_repo: PgGameTickRepository,
+    business_repo: PgBusinessRepository,
+}
+
+impl PgBusinessService {
+    pub fn new(pool: Arc<PgPool>) -> Self {
+        Self {
+            pool,
+            game_tick_repo: PgGameTickRepository,
+            business_repo: PgBusinessRepository,
+        }
+    }
+}
+
+#[tonic::async_trait]
+impl BusinessRepository for PgBusinessService {
+    async fn list_businesses_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Business>> {
+        self.business_repo
+            .list_businesses_in_tick(&*self.pool, game_tick)
+            .await
+    }
+}
+
 #[tonic::async_trait]
 impl BusinessTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_businesses_in_tick(
@@ -216,6 +246,12 @@ impl BusinessTxRepository for PgTransactionContext<'_, '_> {
     ) -> RepositoryResult<()> {
         self.business_repo
             .insert_businesses_in_tick(&mut **self.tx, businesses, game_tick)
+            .await
+    }
+
+    async fn delete_businesses_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64> {
+        self.business_repo
+            .delete_businesses_before_tick(&mut **self.tx, game_tick)
             .await
     }
 }

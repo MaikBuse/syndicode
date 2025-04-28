@@ -1,8 +1,8 @@
 pub mod leader;
 pub mod limiter;
+pub mod outcome;
 pub mod puller;
 pub mod queuer;
-pub mod results;
 
 use crate::{application::ports::limiter::LimiterCategory, utils::read_env_var};
 use anyhow::Context;

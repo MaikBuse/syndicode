@@ -7,6 +7,8 @@ use crate::{
     domain::{
         economy::{
             business::repository::BusinessTxRepository,
+            business_listing::repository::BusinessListingTxRepository,
+            business_offer::repository::BusinessOfferTxRepository,
             corporation::repository::CorporationTxRepository,
             market::repository::MarketTxRepository,
         },
@@ -29,6 +31,8 @@ pub trait TransactionalContext<'a>:
     + CorporationTxRepository
     + MarketTxRepository
     + BusinessTxRepository
+    + BusinessListingTxRepository
+    + BusinessOfferTxRepository
     + UnitTxRespository
     + Send
     + Sync

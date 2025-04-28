@@ -28,14 +28,15 @@ impl From<i16> for MarketName {
             7 => Self::VirtualSimSense,
             8 => Self::StreetPharm,
             9 => Self::ZeroDayExploit,
-            _ => Self::RestrictedTech,
+            10 => Self::RestrictedTech,
+            _ => Self::Generic,
         }
     }
 }
 
-impl Into<i16> for MarketName {
-    fn into(self) -> i16 {
-        match self {
+impl From<MarketName> for i16 {
+    fn from(value: MarketName) -> Self {
+        match value {
             MarketName::AugmentationCybernetics => 1,
             MarketName::WetwareNeural => 2,
             MarketName::SyndicateData => 3,
@@ -45,7 +46,8 @@ impl Into<i16> for MarketName {
             MarketName::VirtualSimSense => 7,
             MarketName::StreetPharm => 8,
             MarketName::ZeroDayExploit => 9,
-            _ => 10,
+            MarketName::RestrictedTech => 10,
+            MarketName::Generic => 11,
         }
     }
 }

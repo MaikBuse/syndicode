@@ -1,4 +1,5 @@
-use crate::domain::economy::corporation::model::Corporation;
+use std::fmt::Display;
+
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -12,6 +13,15 @@ pub struct QueuedActionPayload {
 
 #[derive(Serialize, Deserialize)]
 pub enum ActionDetails {
-    SpawnUnit { req_user_uuid: Uuid },
-    UpdateCorporation { corporation: Corporation },
+    SpawnUnit,
+    AcquireListedBusiness { business_uuid: Uuid },
+}
+
+impl Display for ActionDetails {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ActionDetails::SpawnUnit => write!(f, "SpawnUnit"),
+            ActionDetails::AcquireListedBusiness { .. } => write!(f, "AcquireListedBusiness"),
+        }
+    }
 }

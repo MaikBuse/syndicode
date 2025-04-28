@@ -25,6 +25,12 @@ message PlayerAction {
 
     // Request to list currently active units.
     syndicode_warfare_v1.ListUnitsRequest list_unit = 4;
+
+    // Acquire a business that has been listed for sale.
+    syndicode_economy_v1.AcquireListedBusinessRequest acquire_listed_business = 5;
+
+    // Request to query business listings.
+    syndicode_economy_v1.QueryBusinessListingsRequest query_business_listings = 6;
   }
 }
 
@@ -51,17 +57,17 @@ message GameUpdate {
 
     // Response with the data of the newly spawned unit.
     syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 8;
+
+    // Response with the data of the newly acquired business.
+    syndicode_economy_v1.AcquireListedBusinessResponse acquire_listed_business = 9;
+
+    // Response containing queried business listings.
+    syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 10; 
   }
 }
 
 // Acknowledges receipt and queuing of a player command.
-message ActionInitResponse {
-  // Simple confirmation message.
-  string confirmation_message = 1;
-
-  // Timestamp when the server acknowledged the command.
-  google.protobuf.Timestamp initiated_at = 2;
-}
+message ActionInitResponse {}
 
 // Response returned for actions that failed to process.
 message ActionFailedResponse {

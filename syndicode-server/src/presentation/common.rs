@@ -1,11 +1,10 @@
-use std::sync::Arc;
-
 use super::middleware::USER_UUID_KEY;
 use crate::application::{
     error::ApplicationError,
     ports::limiter::{LimitationError, LimiterCategory, RateLimitEnforcer},
 };
 use anyhow::Result;
+use std::{str::FromStr, sync::Arc};
 use tonic::{metadata::MetadataMap, Code, Status};
 use uuid::Uuid;
 
@@ -17,6 +16,21 @@ pub(crate) fn parse_uuid(uuid_str: &str) -> Result<Uuid, Status> {
             format!("Failed to parse uuid from string: {}", err),
         )),
     }
+}
+
+pub fn parse_maybe_uuid(maybe_uuid: Option<String>, context: &str) -> Result<Option<Uuid>, Status> {
+    if let Some(uuid_string) = maybe_uuid {
+        let Ok(uuid) = Uuid::from_str(uuid_string.as_str()) else {
+            return Err(Status::invalid_argument(format!(
+                "Failed to parse {} as uuid",
+                context
+            )));
+        };
+
+        return Ok(Some(uuid));
+    }
+
+    Ok(None)
 }
 
 pub(super) fn application_error_into_status(err: ApplicationError) -> Status {

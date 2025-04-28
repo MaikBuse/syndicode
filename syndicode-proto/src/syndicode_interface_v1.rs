@@ -612,6 +612,36 @@ pub mod auth_service_server {
         const NAME: &'static str = SERVICE_NAME;
     }
 }
+/// Enum for sorting direction
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum SortDirection {
+    Unspecified = 0,
+    Ascending = 1,
+    Descending = 2,
+}
+impl SortDirection {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "SORT_DIRECTION_UNSPECIFIED",
+            Self::Ascending => "ASCENDING",
+            Self::Descending => "DESCENDING",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "SORT_DIRECTION_UNSPECIFIED" => Some(Self::Unspecified),
+            "ASCENDING" => Some(Self::Ascending),
+            "DESCENDING" => Some(Self::Descending),
+            _ => None,
+        }
+    }
+}
 /// / The role assigned to a user account.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -1078,12 +1108,12 @@ pub struct PlayerAction {
     /// UUID generated on the client to make the request trackable.
     #[prost(string, tag = "1")]
     pub request_uuid: ::prost::alloc::string::String,
-    #[prost(oneof = "player_action::Action", tags = "2, 3, 4")]
+    #[prost(oneof = "player_action::Action", tags = "2, 3, 4, 5, 6")]
     pub action: ::core::option::Option<player_action::Action>,
 }
 /// Nested message and enum types in `PlayerAction`.
 pub mod player_action {
-    #[derive(Clone, Copy, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Action {
         /// Request to fetch corporation data.
         #[prost(message, tag = "2")]
@@ -1094,6 +1124,16 @@ pub mod player_action {
         /// Request to list currently active units.
         #[prost(message, tag = "4")]
         ListUnit(super::super::syndicode_warfare_v1::ListUnitsRequest),
+        /// Acquire a business that has been listed for sale.
+        #[prost(message, tag = "5")]
+        AcquireListedBusiness(
+            super::super::syndicode_economy_v1::AcquireListedBusinessRequest,
+        ),
+        /// Request to query business listings.
+        #[prost(message, tag = "6")]
+        QueryBusinessListings(
+            super::super::syndicode_economy_v1::QueryBusinessListingsRequest,
+        ),
     }
 }
 /// Represents an update sent to the client in response to a player action.
@@ -1105,7 +1145,7 @@ pub struct GameUpdate {
     /// The tick for which the update is relevant.
     #[prost(int64, tag = "2")]
     pub game_tick: i64,
-    #[prost(oneof = "game_update::Update", tags = "3, 4, 5, 6, 7, 8")]
+    #[prost(oneof = "game_update::Update", tags = "3, 4, 5, 6, 7, 8, 9, 10")]
     pub update: ::core::option::Option<game_update::Update>,
 }
 /// Nested message and enum types in `GameUpdate`.
@@ -1129,18 +1169,21 @@ pub mod game_update {
         /// Response with the data of the newly spawned unit.
         #[prost(message, tag = "8")]
         SpawnUnit(super::super::syndicode_warfare_v1::SpawnUnitResponse),
+        /// Response with the data of the newly acquired business.
+        #[prost(message, tag = "9")]
+        AcquireListedBusiness(
+            super::super::syndicode_economy_v1::AcquireListedBusinessResponse,
+        ),
+        /// Response containing queried business listings.
+        #[prost(message, tag = "10")]
+        QueryBusinessListings(
+            super::super::syndicode_economy_v1::QueryBusinessListingsResponse,
+        ),
     }
 }
 /// Acknowledges receipt and queuing of a player command.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ActionInitResponse {
-    /// Simple confirmation message.
-    #[prost(string, tag = "1")]
-    pub confirmation_message: ::prost::alloc::string::String,
-    /// Timestamp when the server acknowledged the command.
-    #[prost(message, optional, tag = "2")]
-    pub initiated_at: ::core::option::Option<::prost_types::Timestamp>,
-}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct ActionInitResponse {}
 /// Response returned for actions that failed to process.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionFailedResponse {

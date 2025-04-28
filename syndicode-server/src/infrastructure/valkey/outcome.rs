@@ -1,6 +1,6 @@
 use super::ValkeyStore;
-use crate::application::ports::results::{
-    ResultNotifier, ResultResult, ResultStoreReader, ResultStoreWriter,
+use crate::application::ports::outcome::{
+    OutcomeNotifier, OutcomeResult, OutcomeStoreReader, OutcomeStoreWriter,
 };
 use redis::AsyncCommands;
 use std::time::Duration;
@@ -12,8 +12,8 @@ const CLIENT_KEY: &str = "syndicode:results:client";
 const OUTCOME_TTL: Duration = Duration::from_secs(300);
 
 #[tonic::async_trait]
-impl ResultStoreWriter for ValkeyStore {
-    async fn store_result(&self, request_uuid: Uuid, payload: &[u8]) -> ResultResult<()> {
+impl OutcomeStoreWriter for ValkeyStore {
+    async fn store_outcome(&self, request_uuid: Uuid, payload: &[u8]) -> OutcomeResult<()> {
         let key = format!("{PAYLOAD_KEY}:{}", request_uuid);
 
         let mut conn = self.conn.clone();
@@ -29,8 +29,8 @@ impl ResultStoreWriter for ValkeyStore {
 }
 
 #[tonic::async_trait]
-impl ResultStoreReader for ValkeyStore {
-    async fn retrieve_result(&self, request_uuid: Uuid) -> ResultResult<Option<Vec<u8>>> {
+impl OutcomeStoreReader for ValkeyStore {
+    async fn retrieve_outcome(&self, request_uuid: Uuid) -> OutcomeResult<Option<Vec<u8>>> {
         let key = format!("{PAYLOAD_KEY}:{}", request_uuid);
 
         let mut conn = self.conn.clone();
@@ -40,7 +40,7 @@ impl ResultStoreReader for ValkeyStore {
         Ok(result)
     }
 
-    async fn delete_result(&self, request_uuid: Uuid) -> ResultResult<()> {
+    async fn delete_outcome(&self, request_uuid: Uuid) -> OutcomeResult<()> {
         let key = format!("{PAYLOAD_KEY}:{}", request_uuid);
 
         let mut conn = self.conn.clone();
@@ -54,8 +54,8 @@ impl ResultStoreReader for ValkeyStore {
 }
 
 #[tonic::async_trait]
-impl ResultNotifier for ValkeyStore {
-    async fn notify_result_ready(&self, user_uuid: Uuid, request_uuid: Uuid) -> ResultResult<()> {
+impl OutcomeNotifier for ValkeyStore {
+    async fn notify_outcome_ready(&self, user_uuid: Uuid, request_uuid: Uuid) -> OutcomeResult<()> {
         let channel_name = create_notification_channel(user_uuid);
 
         let mut conn = self.conn.clone();

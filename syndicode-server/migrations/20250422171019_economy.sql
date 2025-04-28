@@ -1,55 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS citext;
-
--- Create the system_flags table
-CREATE TABLE IF NOT EXISTS system_flags (
-    flag_key VARCHAR(100) PRIMARY KEY,
-    is_set BOOLEAN NOT NULL DEFAULT FALSE,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Insert the specific flag row we'll check, ensuring it exists
-INSERT INTO system_flags (flag_key, is_set)
-VALUES ('database_initialized', FALSE)
-ON CONFLICT (flag_key) DO NOTHING;
-
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-    uuid UUID PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    email CITEXT NOT NULL UNIQUE,
-    role SMALLINT NOT NULL DEFAULT 2,
-    status TEXT NOT NULL DEFAULT 'pending'
-);
-
--- User table for verification codes
-CREATE TABLE user_verifications (
-    user_uuid UUID PRIMARY KEY, -- Ensures one verification attempt per user at a time
-    code TEXT NOT NULL,
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-
-    -- Link back to the users table and ensure cleanup if a user is deleted
-    CONSTRAINT fk_user
-        FOREIGN KEY(user_uuid)
-        REFERENCES users(uuid)
-        ON DELETE CASCADE
-);
-
--- Current Game Tick table (Singleton - Tracks the latest published state)
--- Stores the single source of truth for the current game tick available for reads.
-CREATE TABLE IF NOT EXISTS current_game_tick (
-    -- Using a fixed key ensures only one row can exist, enforcing the singleton nature.
-    singleton_key BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton_key = TRUE),
-    current_game_tick BIGINT NOT NULL DEFAULT 0
-);
-
--- Initialize the current_game_tick table with a starting value (if it's empty)
-INSERT INTO current_game_tick (singleton_key, current_game_tick)
-VALUES (TRUE, 0)
-ON CONFLICT (singleton_key) DO NOTHING;
-
-
 -- Corporations table (Represents player-controlled entities in the game)
 -- Stores the state of each corporation at each tick.
 CREATE TABLE IF NOT EXISTS corporations (
@@ -105,17 +53,32 @@ CREATE INDEX IF NOT EXISTS idx_businesses_market_uuid_game_tick ON businesses (m
 -- Index for finding all businesses owned by a specific corporation at a specific tick
 CREATE INDEX IF NOT EXISTS idx_businesses_owner_uuid_game_tick ON businesses (owning_corporation_uuid, game_tick);
 
--- Units table
-CREATE TABLE IF NOT EXISTS units (
+-- Business Listing Table
+CREATE TABLE IF NOT EXISTS business_listings (
     game_tick BIGINT NOT NULL,
     uuid UUID NOT NULL,
-    user_uuid UUID NOT NULL,
+    business_uuid UUID NOT NULL,
+    seller_corporation_uuid UUID,
+    asking_price BIGINT NOT NULL CHECK (asking_price > 0),
 
-    PRIMARY KEY (game_tick, uuid),
-    FOREIGN KEY (user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+    PRIMARY KEY (game_tick, uuid)
 );
 
--- Index to potentially quickly find all units owned by a user at a specific tick
-CREATE INDEX IF NOT EXISTS idx_units_game_tick_user ON units (game_tick, user_uuid);
--- Index to potentially find the history of a specific unit (PK might cover this)
-CREATE INDEX IF NOT EXISTS idx_units_uuid ON units (uuid);
+CREATE INDEX IF NOT EXISTS idx_business_uuid_game_tick ON business_listings (business_uuid, game_tick);
+CREATE INDEX IF NOT EXISTS idx_seller_corporation_uuid_game_tick ON business_listings (seller_corporation_uuid, game_tick);
+
+-- Business Offers Table
+CREATE TABLE IF NOT EXISTS business_offers (
+    game_tick BIGINT NOT NULL,
+    uuid UUID NOT NULL,
+    business_uuid UUID NOT NULL,
+    offering_corporation_uuid UUID NOT NULL,
+    target_corporation_uuid UUID,
+    offer_price BIGINT NOT NULL CHECK (offer_price > 0),
+
+    PRIMARY KEY (game_tick, uuid)
+);
+
+CREATE INDEX IF NOT EXISTS idx_business_uuid_game_tick ON business_offers (business_uuid, game_tick);
+CREATE INDEX IF NOT EXISTS idx_offering_corporation_uuid ON business_offers (offering_corporation_uuid, game_tick);
+CREATE INDEX IF NOT EXISTS idx_target_corporation_uuid ON business_offers (target_corporation_uuid, game_tick);

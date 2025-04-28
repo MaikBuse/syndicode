@@ -1,11 +1,14 @@
 use super::{
-    economy::list_corporations::ListCorporationsUseCase,
+    economy::{
+        list_business_listings::ListBusinessListingUseCase, list_businesses::ListBusinessesUseCase,
+        list_corporations::ListCorporationsUseCase, list_markets::ListMarketsUseCase,
+    },
     ports::{
         game_tick::GameTickRepository,
         init::InitializationRepository,
+        outcome::{OutcomeNotifier, OutcomeStoreWriter},
         processor::{GameTickProcessable, ProcessorResult},
         puller::ActionPullable,
-        results::{ResultNotifier, ResultStoreWriter},
         uow::UnitOfWork,
     },
     warfare::list_units::ListUnitsUseCase,
@@ -13,8 +16,16 @@ use super::{
 use crate::{
     application::ports::processor::ProcessorError,
     domain::{
-        economy::corporation::repository::CorporationRepository, outcome::DomainActionOutcome,
-        ports::simulation::Simulationable, unit::repository::UnitRepository,
+        economy::{
+            business::{model::Business, repository::BusinessRepository},
+            business_listing::{model::BusinessListing, repository::BusinessListingRepository},
+            corporation::{model::Corporation, repository::CorporationRepository},
+            market::{model::Market, repository::MarketRepository},
+        },
+        outcome::DomainActionOutcome,
+        ports::simulation::Simulationable,
+        simulation::game_state::GameState,
+        unit::{model::Unit, repository::UnitRepository},
     },
 };
 use anyhow::Context;
@@ -23,17 +34,20 @@ use std::sync::Arc;
 use tokio::sync::OnceCell;
 
 #[derive(Builder)]
-pub struct GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP>
+pub struct GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
 where
     INI: InitializationRepository,
     S: Simulationable,
     P: ActionPullable,
-    RSW: ResultStoreWriter,
-    RN: ResultNotifier,
+    RSW: OutcomeStoreWriter,
+    RN: OutcomeNotifier,
     UOW: UnitOfWork,
     GTR: GameTickRepository,
     UNT: UnitRepository,
     CRP: CorporationRepository,
+    MRK: MarketRepository,
+    BSN: BusinessRepository,
+    BL: BusinessListingRepository,
 {
     init_check_cell: OnceCell<()>, // Stores Ok(()) on successful check
     init_repo: Arc<INI>,
@@ -45,20 +59,26 @@ where
     game_tick_repo: Arc<GTR>,
     list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     list_corporations_uc: Arc<ListCorporationsUseCase<CRP>>,
+    list_markets_uc: Arc<ListMarketsUseCase<MRK>>,
+    list_businesses_uc: Arc<ListBusinessesUseCase<BSN>>,
+    list_business_listings_uc: Arc<ListBusinessListingUseCase<BL>>,
 }
 
-impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP>
-    GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP>
+impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
+    GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
 where
     INI: InitializationRepository,
     S: Simulationable,
     P: ActionPullable,
-    RSW: ResultStoreWriter,
-    RN: ResultNotifier,
+    RSW: OutcomeStoreWriter,
+    RN: OutcomeNotifier,
     UOW: UnitOfWork,
     GTR: GameTickRepository,
     UNT: UnitRepository,
     CRP: CorporationRepository,
+    MRK: MarketRepository,
+    BSN: BusinessRepository,
+    BL: BusinessListingRepository,
 {
     // Helper to serialize the outcome into bytes for storage
     fn serialize_outcome_for_delivery(
@@ -87,18 +107,21 @@ where
 }
 
 #[tonic::async_trait]
-impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP> GameTickProcessable
-    for GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP>
+impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL> GameTickProcessable
+    for GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
 where
     INI: InitializationRepository,
     S: Simulationable,
     P: ActionPullable,
-    RSW: ResultStoreWriter,
-    RN: ResultNotifier,
+    RSW: OutcomeStoreWriter,
+    RN: OutcomeNotifier,
     UOW: UnitOfWork,
     GTR: GameTickRepository,
     UNT: UnitRepository,
     CRP: CorporationRepository,
+    MRK: MarketRepository,
+    BSN: BusinessRepository,
+    BL: BusinessListingRepository,
 {
     async fn process_next_tick(&self) -> ProcessorResult<i64> {
         // 0. CHECK DATABASE INITIALIZATION
@@ -110,29 +133,49 @@ where
         let current_game_tick = self.game_tick_repo.get_current_game_tick().await?;
         let next_game_tick = current_game_tick + 1;
 
-        let mut units = self.list_units_uc.execute().await?;
-        let mut corporations = self.list_corporations_uc.execute().await?;
+        let units_vec = self.list_units_uc.execute(current_game_tick).await?;
+        let corporations_vec = self.list_corporations_uc.execute(current_game_tick).await?;
+        let markets_vec = self.list_markets_uc.execute(current_game_tick).await?;
+        let businesses_vec = self.list_businesses_uc.execute(current_game_tick).await?;
+        let business_listings_vec = self
+            .list_business_listings_uc
+            .execute(current_game_tick)
+            .await?;
+
+        let mut game_state = GameState::build(
+            units_vec,
+            corporations_vec,
+            markets_vec,
+            businesses_vec,
+            business_listings_vec,
+        );
 
         // 2. Pull Actions
-        let act_msg_slice = self.action_puller.pull_all_available_actions().await?;
-        let act_msg_count = act_msg_slice.len();
+        let msg_act_slice = self.action_puller.pull_all_available_actions().await?;
+        let act_msg_count = msg_act_slice.len();
 
-        tracing::debug!(num_actions = act_msg_slice.len(), "Pulled actions.");
+        tracing::debug!(num_actions = msg_act_slice.len(), "Pulled actions.");
 
         // 3. Calculate State N+1
-        let mut messages_ids: Vec<String> = Vec::with_capacity(act_msg_slice.len());
+        let mut messages_ids: Vec<String> = Vec::with_capacity(msg_act_slice.len());
 
         let action_outcomes = self.simulation.calculate_next_state(
             next_game_tick,
-            act_msg_slice,
+            msg_act_slice,
             &mut messages_ids,
-            &mut units,
-            &mut corporations,
+            &mut game_state,
         );
 
         tracing::debug!("Calculated next state.");
 
         // 4. Write State N+1 Atomically
+        let units: Vec<Unit> = game_state.units_map.into_values().collect();
+        let corporations: Vec<Corporation> = game_state.corporations_map.into_values().collect();
+        let markets: Vec<Market> = game_state.markets_map.into_values().collect();
+        let businesses: Vec<Business> = game_state.businesses_map.into_values().collect();
+        let business_listings: Vec<BusinessListing> =
+            game_state.business_listings_map.into_values().collect();
+
         self.uow
             .execute(move |ctx| {
                 Box::pin(async move {
@@ -144,6 +187,21 @@ where
                     ctx.insert_corporations_in_tick(next_game_tick, corporations)
                         .await?;
                     ctx.delete_corporations_before_tick(current_game_tick)
+                        .await?;
+
+                    // Markets
+                    ctx.insert_markets_in_tick(next_game_tick, markets).await?;
+                    ctx.delete_markets_before_tick(current_game_tick).await?;
+
+                    // Businesses
+                    ctx.insert_businesses_in_tick(next_game_tick, businesses)
+                        .await?;
+                    ctx.delete_businesses_before_tick(current_game_tick).await?;
+
+                    // Business Listings
+                    ctx.insert_business_listings_in_tick(next_game_tick, business_listings)
+                        .await?;
+                    ctx.delete_business_listings_before_tick(current_game_tick)
                         .await?;
 
                     // Update game tick state
@@ -186,6 +244,11 @@ where
                         user_uuid,
                         ..
                     } => (*request_uuid, *user_uuid),
+                    DomainActionOutcome::ListedBusinessAcquired {
+                        request_uuid,
+                        user_uuid,
+                        ..
+                    } => (*request_uuid, *user_uuid),
                     DomainActionOutcome::ActionFailed {
                         request_uuid,
                         user_uuid,
@@ -198,12 +261,12 @@ where
                 let result_payload = self.serialize_outcome_for_delivery(&outcome)?; // Helper needed
 
                 self.result_store_writer
-                    .store_result(request_uuid, &result_payload)
+                    .store_outcome(request_uuid, &result_payload)
                     .await?; // Handle store error
 
                 // b. Publish notification
                 self.result_notifier
-                    .notify_result_ready(user_uuid, request_uuid)
+                    .notify_outcome_ready(user_uuid, request_uuid)
                     .await?; // Handle notify error
             }
         }

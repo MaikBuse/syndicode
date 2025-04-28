@@ -59,7 +59,7 @@ impl PgUnitRepository {
         Ok(())
     }
 
-    pub async fn list_units_at_tick(
+    pub async fn list_units_in_tick(
         &self,
         executor: impl Executor<'_, Database = Postgres>,
         game_tick: i64,
@@ -178,14 +178,9 @@ impl PgUnitService {
 
 #[tonic::async_trait]
 impl UnitRepository for PgUnitService {
-    async fn list_units(&self) -> RepositoryResult<Vec<Unit>> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&*self.pool)
-            .await?;
-
+    async fn list_units_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Unit>> {
         self.unit_repo
-            .list_units_at_tick(&*self.pool, game_tick)
+            .list_units_in_tick(&*self.pool, game_tick)
             .await
     }
 
@@ -213,7 +208,7 @@ impl UnitTxRespository for PgTransactionContext<'_, '_> {
             .await?;
 
         self.unit_repo
-            .list_units_at_tick(&mut **self.tx, game_tick)
+            .list_units_in_tick(&mut **self.tx, game_tick)
             .await
     }
 

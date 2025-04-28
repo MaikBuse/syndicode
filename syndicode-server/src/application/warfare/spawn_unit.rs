@@ -28,7 +28,7 @@ where
         let action = QueuedActionPayload::builder()
             .request_uuid(request_uuid)
             .user_uuid(req_user_uuid)
-            .details(ActionDetails::SpawnUnit { req_user_uuid })
+            .details(ActionDetails::SpawnUnit)
             .build();
 
         match self.action_queuer.enqueue_action(action).await {

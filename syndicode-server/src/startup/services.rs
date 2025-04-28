@@ -9,8 +9,12 @@ use crate::{
             verify_user::VerifyUserUseCase,
         },
         economy::{
+            acquire_listed_business::AcquireListedBusinessUseCase,
             bootstrap_economy::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
-            list_corporations::ListCorporationsUseCase,
+            list_business_listings::ListBusinessListingUseCase,
+            list_businesses::ListBusinessesUseCase, list_corporations::ListCorporationsUseCase,
+            list_markets::ListMarketsUseCase,
+            query_business_listings::QueryBusinessListingsUseCase,
         },
         ports::{
             crypto::{JwtHandler, PasswordHandler},
@@ -18,9 +22,9 @@ use crate::{
             init::InitializationRepository,
             leader::LeaderElector,
             limiter::RateLimitEnforcer,
+            outcome::OutcomeStoreReader,
             processor::GameTickProcessable,
             queuer::ActionQueueable,
-            results::ResultStoreReader,
             uow::UnitOfWork,
             verification::VerificationSendable,
         },
@@ -32,14 +36,22 @@ use crate::{
     },
     config::Config,
     domain::{
-        economy::corporation::repository::CorporationRepository, simulation::SimulationService,
-        unit::repository::UnitRepository, user::repository::UserRepository,
+        economy::{
+            business_listing::repository::BusinessListingRepository,
+            corporation::repository::CorporationRepository,
+        },
+        simulation::SimulationService,
+        unit::repository::UnitRepository,
+        user::repository::UserRepository,
     },
     infrastructure::{
         crypto::CryptoService,
         email::EmailHandler,
         postgres::{
-            economy::corporation::PgCorporationService,
+            economy::{
+                business::PgBusinessService, business_listing::PgBusinessListingService,
+                corporation::PgCorporationService, market::PgMarketService,
+            },
             game_tick::PgGameTickService,
             init::PgInitializationService,
             unit::PgUnitService,
@@ -71,6 +83,9 @@ pub type DefaultAppState = AppState<
         PgGameTickService,
         PgUnitService,
         PgCorporationService,
+        PgMarketService,
+        PgBusinessService,
+        PgBusinessListingService,
     >,
     CryptoService,
     CryptoService,
@@ -84,9 +99,10 @@ pub type DefaultAppState = AppState<
     ValkeyStore,
     PgGameTickService,
     EmailHandler,
+    PgBusinessListingService,
 >;
 
-pub struct AppState<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS>
+pub struct AppState<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL>
 where
     INI: InitializationRepository + 'static,
     G: GameTickProcessable + 'static,
@@ -99,9 +115,10 @@ where
     USR: UserRepository + 'static,
     UNT: UnitRepository + 'static,
     CRP: CorporationRepository + 'static,
-    RSR: ResultStoreReader + 'static,
+    RSR: OutcomeStoreReader + 'static,
     GTR: GameTickRepository + 'static,
     VS: VerificationSendable + 'static,
+    BL: BusinessListingRepository + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
@@ -118,7 +135,7 @@ where
     pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
     pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
-    pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR>,
+    pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
     pub admin_presenter: AdminPresenter<R, P, UOW, USR, VS>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS>,
 }
@@ -146,6 +163,9 @@ impl DefaultAppState {
         let user_service = Arc::new(PgUserService::new(Arc::clone(&pg_pool), PgUserRepository));
         let unit_service = Arc::new(PgUnitService::new(Arc::clone(&pg_pool)));
         let corporation_service = Arc::new(PgCorporationService::new(Arc::clone(&pg_pool)));
+        let market_service = Arc::new(PgMarketService::new(pg_pool.clone()));
+        let business_service = Arc::new(PgBusinessService::new(pg_pool.clone()));
+        let business_listing_service = Arc::new(PgBusinessListingService::new(pg_pool.clone()));
 
         // Auth use cases
         let login_uc = Arc::new(LoginUseCase::new(
@@ -201,6 +221,12 @@ impl DefaultAppState {
         );
 
         // Economy use cases
+        let acquire_listed_business_uc = Arc::new(
+            AcquireListedBusinessUseCase::builder()
+                .action_queuer(valkey.clone())
+                .game_tick_repo(game_tick_service.clone())
+                .build(),
+        );
         let bootstrap_economy_uc = Arc::new(
             BootstrapEconomyUseCase::builder()
                 .uow(uow.clone())
@@ -217,6 +243,26 @@ impl DefaultAppState {
                 .corporation_repo(corporation_service.clone())
                 .build(),
         );
+        let list_markets_uc = Arc::new(
+            ListMarketsUseCase::builder()
+                .market_repo(market_service.clone())
+                .build(),
+        );
+        let list_businesses_uc = Arc::new(
+            ListBusinessesUseCase::builder()
+                .business_repo(business_service.clone())
+                .build(),
+        );
+        let list_business_listings_uc = Arc::new(
+            ListBusinessListingUseCase::builder()
+                .business_listing_repo(business_listing_service.clone())
+                .build(),
+        );
+        let query_business_listings_uc = Arc::new(
+            QueryBusinessListingsUseCase::builder()
+                .business_listing_repo(business_listing_service.clone())
+                .build(),
+        );
 
         let simulation = Arc::new(SimulationService);
         let game_tick_processor = Arc::new(
@@ -231,6 +277,9 @@ impl DefaultAppState {
                 .uow(uow.clone())
                 .init_repo(init_service.clone())
                 .init_check_cell(OnceCell::new())
+                .list_markets_uc(list_markets_uc.clone())
+                .list_businesses_uc(list_businesses_uc.clone())
+                .list_business_listings_uc(list_business_listings_uc.clone())
                 .build(),
         );
 
@@ -244,6 +293,8 @@ impl DefaultAppState {
             .spawn_unit_uc(spawn_unit_uc.clone())
             .get_corporation_uc(get_corporation_uc.clone())
             .valkey_client(valkey.get_client())
+            .acquire_listed_business_uc(acquire_listed_business_uc.clone())
+            .query_business_listings_uc(query_business_listings_uc.clone())
             .build();
 
         let admin_presenter = AdminPresenter::builder()

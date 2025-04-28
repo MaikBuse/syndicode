@@ -14,7 +14,7 @@ pub struct ListUnitsOutcome {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait UnitRepository: Send + Sync {
-    async fn list_units(&self) -> RepositoryResult<Vec<Unit>>;
+    async fn list_units_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Unit>>;
     async fn list_units_by_user(&self, user_uuid: Uuid) -> RepositoryResult<ListUnitsOutcome>;
 }
 

@@ -1,11 +1,16 @@
+use std::sync::Arc;
+
 use crate::{
     domain::{
-        economy::market::{model::Market, repository::MarketTxRepository},
+        economy::market::{
+            model::Market,
+            repository::{MarketRepository, MarketTxRepository},
+        },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::uow::PgTransactionContext,
+    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
 };
-use sqlx::Postgres;
+use sqlx::{PgPool, Postgres};
 
 #[derive(Clone)]
 pub struct PgMarketRepository;
@@ -18,7 +23,6 @@ impl PgMarketRepository {
         markets: Vec<Market>, // Take ownership for efficiency
         game_tick: i64,       // Use i64 to match insert_corporation and DB schema
     ) -> RepositoryResult<()> {
-        // If there are no corporations, we don't need to do anything.
         if markets.is_empty() {
             return Ok(());
         }
@@ -106,6 +110,31 @@ impl PgMarketRepository {
     }
 }
 
+pub struct PgMarketService {
+    pool: Arc<PgPool>,
+    game_tick_repo: PgGameTickRepository,
+    market_repo: PgMarketRepository,
+}
+
+impl PgMarketService {
+    pub fn new(pool: Arc<PgPool>) -> Self {
+        Self {
+            pool,
+            game_tick_repo: PgGameTickRepository,
+            market_repo: PgMarketRepository,
+        }
+    }
+}
+
+#[tonic::async_trait]
+impl MarketRepository for PgMarketService {
+    async fn list_markets_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Market>> {
+        self.market_repo
+            .list_markets_at_tick(&*self.pool, game_tick)
+            .await
+    }
+}
+
 #[tonic::async_trait]
 impl MarketTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_markets_in_tick(
@@ -115,6 +144,12 @@ impl MarketTxRepository for PgTransactionContext<'_, '_> {
     ) -> RepositoryResult<()> {
         self.market_repo
             .insert_markets_in_tick(&mut **self.tx, markets, game_tick)
+            .await
+    }
+
+    async fn delete_markets_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64> {
+        self.market_repo
+            .delete_markets_before_tick(&mut **self.tx, game_tick)
             .await
     }
 }

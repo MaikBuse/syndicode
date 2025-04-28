@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
+use super::uow::PgTransactionContext;
 use crate::{
     application::ports::game_tick::{GameTickRepository, GameTickTxRepository},
     domain::repository::RepositoryResult,
 };
 use sqlx::{PgPool, Postgres};
-
-use super::uow::PgTransactionContext;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct PgGameTickRepository;

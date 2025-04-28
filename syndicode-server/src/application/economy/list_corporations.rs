@@ -17,8 +17,11 @@ impl<CRP> ListCorporationsUseCase<CRP>
 where
     CRP: CorporationRepository,
 {
-    pub async fn execute(&self) -> ApplicationResult<Vec<Corporation>> {
-        let corporations = self.corporation_repo.list_corporations().await?;
+    pub async fn execute(&self, game_tick: i64) -> ApplicationResult<Vec<Corporation>> {
+        let corporations = self
+            .corporation_repo
+            .list_corporations_in_tick(game_tick)
+            .await?;
 
         Ok(corporations)
     }

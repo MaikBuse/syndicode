@@ -1,7 +1,6 @@
 use uuid::Uuid;
-
 #[derive(thiserror::Error, Debug)]
-pub enum ResultError {
+pub enum OutcomeError {
     #[error("Failed to establish a connection: {0}")]
     ConnectionError(String),
 
@@ -15,24 +14,24 @@ pub enum ResultError {
     Unexpected(#[from] anyhow::Error),
 }
 
-pub type ResultResult<T> = Result<T, ResultError>;
+pub type OutcomeResult<T> = Result<T, OutcomeError>;
 
 #[tonic::async_trait]
-pub trait ResultStoreWriter: Send + Sync {
-    async fn store_result(&self, request_uuid: Uuid, payload: &[u8]) -> ResultResult<()>;
+pub trait OutcomeStoreWriter: Send + Sync {
+    async fn store_outcome(&self, request_uuid: Uuid, payload: &[u8]) -> OutcomeResult<()>;
 }
 
 #[tonic::async_trait]
-pub trait ResultStoreReader: Send + Sync {
+pub trait OutcomeStoreReader: Send + Sync {
     /// Option if TTL expired / not found
-    async fn retrieve_result(&self, request_uuid: Uuid) -> ResultResult<Option<Vec<u8>>>;
+    async fn retrieve_outcome(&self, request_uuid: Uuid) -> OutcomeResult<Option<Vec<u8>>>;
 
     /// Optional cleanup
-    async fn delete_result(&self, request_uuid: Uuid) -> ResultResult<()>;
+    async fn delete_outcome(&self, request_uuid: Uuid) -> OutcomeResult<()>;
 }
 
 #[tonic::async_trait]
-pub trait ResultNotifier: Send + Sync {
+pub trait OutcomeNotifier: Send + Sync {
     /// Define specific error type
-    async fn notify_result_ready(&self, user_uuid: Uuid, request_uuid: Uuid) -> ResultResult<()>;
+    async fn notify_outcome_ready(&self, user_uuid: Uuid, request_uuid: Uuid) -> OutcomeResult<()>;
 }

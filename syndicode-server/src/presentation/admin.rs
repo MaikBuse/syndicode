@@ -81,7 +81,7 @@ where
             .user_name(request.user_name)
             .password(request.user_password)
             .user_email(request.user_email)
-            .user_role(user_role.clone())
+            .user_role(user_role)
             .corporation_name(request.corporation_name)
             .call()
             .await

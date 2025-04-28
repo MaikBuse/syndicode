@@ -1,14 +1,28 @@
 use crate::{
-    application::economy::get_corporation::GetCorporationUseCase,
-    domain::economy::corporation::repository::CorporationRepository,
+    application::{
+        economy::{
+            acquire_listed_business::AcquireListedBusinessUseCase,
+            get_corporation::GetCorporationUseCase,
+            query_business_listings::QueryBusinessListingsUseCase,
+        },
+        ports::{game_tick::GameTickRepository, queuer::ActionQueueable},
+    },
+    domain::economy::{
+        business_listing::repository::BusinessListingRepository,
+        corporation::repository::CorporationRepository,
+    },
+    presentation::common::{application_error_into_status, parse_maybe_uuid},
 };
 use bon::builder;
 use std::sync::Arc;
 use syndicode_proto::{
-    syndicode_economy_v1::{Corporation, GetCorporationResponse},
-    syndicode_interface_v1::{game_update::Update, GameUpdate},
+    syndicode_economy_v1::{
+        BusinessListingDetails, Corporation, GetCorporationResponse, QueryBusinessListingsRequest,
+        QueryBusinessListingsResponse,
+    },
+    syndicode_interface_v1::{game_update::Update, ActionInitResponse, GameUpdate},
 };
-use tonic::{Code, Status};
+use tonic::Status;
 use uuid::Uuid;
 
 #[builder]
@@ -33,6 +47,84 @@ where
                 }),
             })),
         }),
-        Err(err) => Err(Status::new(Code::Internal, err.to_string())),
+        Err(err) => Err(application_error_into_status(err)),
     }
+}
+
+#[builder]
+pub async fn acquire_listed_business<Q, GTR>(
+    acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
+    request_uuid: Uuid,
+    req_user_uuid: Uuid,
+    business_uuid: Uuid,
+) -> Result<GameUpdate, Status>
+where
+    Q: ActionQueueable,
+    GTR: GameTickRepository,
+{
+    match acquire_listed_business_uc
+        .execute()
+        .req_user_uuid(req_user_uuid)
+        .request_uuid(request_uuid)
+        .business_uuid(business_uuid)
+        .call()
+        .await
+    {
+        Ok(game_tick) => Ok(GameUpdate {
+            request_uuid: request_uuid.to_string(),
+            game_tick,
+            update: Some(Update::ActionInitResponse(ActionInitResponse {})),
+        }),
+        Err(err) => Err(application_error_into_status(err)),
+    }
+}
+
+#[builder]
+pub async fn query_business_listings<BL>(
+    query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
+    req: QueryBusinessListingsRequest,
+    request_uuid: Uuid,
+) -> Result<GameUpdate, Status>
+where
+    BL: BusinessListingRepository,
+{
+    let seller_corporation_uuid =
+        parse_maybe_uuid(req.seller_corporation_uuid, "seller corporation uuid")?;
+
+    let (game_tick, result) = query_business_listings_uc
+        .execute()
+        .maybe_min_operational_expenses(req.min_operational_expenses)
+        .maybe_max_operational_expenses(req.max_operational_expenses)
+        .maybe_min_asking_price(req.min_asking_price)
+        .maybe_max_asking_price(req.max_asking_price)
+        .maybe_seller_corporation_uuid(seller_corporation_uuid)
+        .call()
+        .await
+        .map_err(application_error_into_status)?;
+
+    let mut listings = Vec::with_capacity(result.listings.len());
+
+    for r in result.listings {
+        let listing = BusinessListingDetails {
+            listing_uuid: r.listing_uuid.to_string(),
+            business_uuid: r.business_uuid.to_string(),
+            business_name: r.business_name.to_string(),
+            seller_corporation_uuid: r.seller_corporation_uuid.map(|s| s.to_string()),
+            asking_price: r.asking_price,
+            operational_expenses: r.operational_expenses,
+        };
+
+        listings.push(listing);
+    }
+
+    Ok(GameUpdate {
+        request_uuid: request_uuid.to_string(),
+        game_tick,
+        update: Some(Update::QueryBusinessListings(
+            QueryBusinessListingsResponse {
+                listings,
+                total_count: result.total_count,
+            },
+        )),
+    })
 }

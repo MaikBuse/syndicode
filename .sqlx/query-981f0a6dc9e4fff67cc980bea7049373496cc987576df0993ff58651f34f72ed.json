@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                uuid,\n                business_uuid,\n                seller_corporation_uuid as \"seller_corporation_uuid?\",\n                asking_price\n            FROM business_listings\n            WHERE\n                game_tick = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "business_uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "seller_corporation_uuid?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "asking_price",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "981f0a6dc9e4fff67cc980bea7049373496cc987576df0993ff58651f34f72ed"
+}

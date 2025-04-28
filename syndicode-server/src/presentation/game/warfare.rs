@@ -5,7 +5,6 @@ use crate::{
     },
     domain::unit::repository::UnitRepository,
     presentation::common::application_error_into_status,
-    utils::timestamp_now,
 };
 use bon::builder;
 use std::sync::Arc;
@@ -34,18 +33,10 @@ where
         .await
         .map_err(application_error_into_status)?;
 
-    let now = timestamp_now().map_err(|err| {
-        tracing::error!("Failed to create timestamp now: {}", err);
-        Status::internal("Internal server error")
-    })?;
-
     Ok(GameUpdate {
         request_uuid: request_uuid.to_string(),
         game_tick,
-        update: Some(Update::ActionInitResponse(ActionInitResponse {
-            confirmation_message: "Successfully initiated action to spawn a unit".to_string(),
-            initiated_at: Some(now),
-        })),
+        update: Some(Update::ActionInitResponse(ActionInitResponse {})),
     })
 }
 

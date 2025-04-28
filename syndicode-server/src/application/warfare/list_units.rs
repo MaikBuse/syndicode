@@ -17,8 +17,8 @@ impl<UNT> ListUnitsUseCase<UNT>
 where
     UNT: UnitRepository,
 {
-    pub async fn execute(&self) -> ApplicationResult<Vec<Unit>> {
-        let units = self.unit_repository.list_units().await?;
+    pub async fn execute(&self, game_tick: i64) -> ApplicationResult<Vec<Unit>> {
+        let units = self.unit_repository.list_units_in_tick(game_tick).await?;
 
         Ok(units)
     }

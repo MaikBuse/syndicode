@@ -1,0 +1,62 @@
+use super::model::BusinessListing;
+use crate::domain::repository::{RepositoryResult, SortDirection};
+use bon::Builder;
+use tonic::async_trait;
+use uuid::Uuid;
+
+#[derive(Builder, Clone, PartialEq)]
+pub struct QueryBusinessListingsRequest {
+    pub market_uuid: Option<Uuid>,
+    pub min_asking_price: Option<i64>,
+    pub max_asking_price: Option<i64>,
+    pub seller_corporation_uuid: Option<Uuid>,
+    pub min_operational_expenses: Option<i64>,
+    pub max_operational_expenses: Option<i64>,
+    pub sort_by: Option<String>,
+    pub sort_direction: Option<SortDirection>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+#[derive(sqlx::FromRow, Debug)]
+pub struct BusinessListingQueryResult {
+    pub listing_uuid: Uuid,
+    pub market_uuid: Uuid,
+    pub business_uuid: Uuid,
+    pub business_name: String,
+    pub seller_corporation_uuid: Option<Uuid>,
+    pub asking_price: i64,
+    pub operational_expenses: i64,
+}
+
+// Structure to hold both results and total count
+pub struct QueryBusinessListingsResult {
+    pub listings: Vec<BusinessListingQueryResult>,
+    pub total_count: i64,
+}
+
+#[async_trait]
+pub trait BusinessListingRepository: Send + Sync {
+    async fn query_business_listings(
+        &self,
+        req: &QueryBusinessListingsRequest,
+    ) -> RepositoryResult<(i64, QueryBusinessListingsResult)>;
+    async fn list_business_listings_in_tick(
+        &self,
+        game_tick: i64,
+    ) -> RepositoryResult<Vec<BusinessListing>>;
+}
+
+#[async_trait]
+pub trait BusinessListingTxRepository: Send + Sync {
+    async fn insert_business_listings_in_tick(
+        &mut self,
+        game_tick: i64,
+        business_listings: Vec<BusinessListing>,
+    ) -> RepositoryResult<()>;
+
+    async fn delete_business_listings_before_tick(
+        &mut self,
+        game_tick: i64,
+    ) -> RepositoryResult<u64>;
+}

@@ -164,7 +164,7 @@ impl PgCorporationRepository {
         Ok(corporation)
     }
 
-    pub async fn list_corporations_at_tick(
+    pub async fn list_corporations_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         game_tick: i64,
@@ -272,14 +272,12 @@ impl CorporationRepository for PgCorporationService {
             .await
     }
 
-    async fn list_corporations(&self) -> RepositoryResult<Vec<Corporation>> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&*self.pool)
-            .await?;
-
+    async fn list_corporations_in_tick(
+        &self,
+        game_tick: i64,
+    ) -> RepositoryResult<Vec<Corporation>> {
         self.corporation_repo
-            .list_corporations_at_tick(&*self.pool, game_tick)
+            .list_corporations_in_tick(&*self.pool, game_tick)
             .await
     }
 }

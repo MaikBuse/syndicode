@@ -2,26 +2,106 @@ syntax = "proto3";
 
 package syndicode_economy_v1;
 
-/// Request to get the player's corporation details.
+import "interface/v1/shared.proto";
+import "google/protobuf/wrappers.proto"; // For optional primitive types
+
+// Request to query business listings based on criteria
+message QueryBusinessListingsRequest {
+  // Filter by minimum asking price (inclusive)
+  google.protobuf.Int64Value min_asking_price = 1;
+
+  // Filter by maximum asking price (inclusive)
+  google.protobuf.Int64Value max_asking_price = 2;
+
+  // Filter by specific seller corporation UUID
+  google.protobuf.StringValue seller_corporation_uuid = 3;
+
+  // Filter by market uuid
+  google.protobuf.StringValue market_uuid = 5;
+
+  // Filter by minimum operational expenses (inclusive)
+  google.protobuf.Int64Value min_operational_expenses = 6;
+
+  // Filter by maximum operational expenses (inclusive)
+  google.protobuf.Int64Value max_operational_expenses = 7;
+
+  // Field to sort by. Allowed values: "price", "name", "op_expenses", "market_volume"
+  string sort_by = 20;
+
+  // Direction to sort (ASCENDING or DESCENDING)
+  syndicode_interface_v1.SortDirection sort_direction = 21;
+
+  // --- Pagination ---
+  // Maximum number of results to return
+  google.protobuf.Int64Value limit = 30;
+  // Number of results to skip (for pagination)
+  google.protobuf.Int64Value offset = 31;
+}
+
+// Represents detailed information about a business listing, including related business and market data.
+message BusinessListingDetails {
+  string listing_uuid = 1;
+  string business_uuid = 2;
+  string business_name = 3;
+  google.protobuf.StringValue seller_corporation_uuid = 4; // Optional wrapper
+  int64 asking_price = 5;
+  int64 operational_expenses = 6;
+}
+
+// Response containing the list of matching business listings
+message QueryBusinessListingsResponse {
+  repeated BusinessListingDetails listings = 1;
+  // Total number of listings matching the criteria (ignoring limit/offset)
+  int64 total_count = 2;
+}
+
+// Request to get the player's corporation details.
 message GetCorporationRequest {}
 
-/// Response containing corporation details.
+// Response containing corporation details.
 message GetCorporationResponse {
-  /// Corporation owned by the player.
+  // Corporation owned by the player.
   Corporation corporation = 1;
 }
 
-/// Represents a player's corporation in the game.
+message AcquireListedBusinessRequest {
+  // UUID of the business.
+  string business_uuid = 1;
+}
+
+message AcquireListedBusinessResponse {
+  // The acquired business
+  Business business = 1;
+}
+
+// Represents a player's corporation in the game.
 message Corporation {
-  /// UUID of the corporation.
+  // UUID of the corporation.
   string uuid = 1;
 
-  /// UUID of the user who owns the corporation.
+  // UUID of the user who owns the corporation.
   string user_uuid = 2;
 
-  /// Name of the corporation.
+  // Name of the corporation.
   string name = 3;
 
-  /// Current balance or funds available.
+  // Current balance or funds available.
   int64 balance = 4;
+}
+
+message Business {
+  // UUID of the business.
+  string uuid = 1;
+
+  // UUID of the businesses' market.
+  string market_uuid = 2;
+
+  // UUID of the corporation owning the business.
+  string owning_corporation_uuid = 3;
+
+  // Name of the business.
+  string name = 4;
+
+  // Operational expenses of the business that accrue every game tick.
+  int64 operational_expenses = 5;
 }

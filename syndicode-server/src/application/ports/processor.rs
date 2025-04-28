@@ -1,7 +1,7 @@
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use super::{puller::PullError, results::ResultError};
+use super::{outcome::OutcomeError, puller::PullError};
 use crate::{application::error::ApplicationError, domain::repository::RepositoryError};
 
 #[derive(thiserror::Error, Debug)]
@@ -10,7 +10,7 @@ pub enum ProcessorError {
     NotInitialized,
 
     #[error(transparent)]
-    Outcome(#[from] ResultError),
+    Outcome(#[from] OutcomeError),
 
     #[error(transparent)]
     Pull(#[from] PullError),

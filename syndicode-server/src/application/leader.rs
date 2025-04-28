@@ -123,8 +123,6 @@ where
                                     }
                                     // --- Start of modified section ---
                                     Err(err) => {
-                                        // Attempt to downcast the generic error (likely anyhow::Error)
-                                        // to our specific ProcessorError type.
                                         match err {
                                             // Check if it's the specific NotInitialized error
                                             ProcessorError::NotInitialized => {

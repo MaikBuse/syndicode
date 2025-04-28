@@ -1,4 +1,6 @@
 use super::economy::business::PgBusinessRepository;
+use super::economy::business_listing::PgBusinessListingRepository;
+use super::economy::business_offer::PgBusinessOfferRepository;
 use super::economy::corporation::PgCorporationRepository;
 use super::economy::market::PgMarketRepository;
 use super::game_tick::PgGameTickRepository;
@@ -26,6 +28,8 @@ where
     pub business_repo: &'a PgBusinessRepository,
     pub market_repo: &'a PgMarketRepository,
     pub unit_repo: &'a PgUnitRepository,
+    pub business_listing_repo: &'a PgBusinessListingRepository,
+    pub business_offer_repo: &'a PgBusinessOfferRepository,
 }
 
 // Implement the marker trait. Note the lifetimes match the struct.
@@ -43,6 +47,8 @@ pub struct PostgresUnitOfWork {
     business_repo: PgBusinessRepository,
     market_repo: PgMarketRepository,
     unit_repo: PgUnitRepository,
+    business_listing_repo: PgBusinessListingRepository,
+    business_offer_repo: PgBusinessOfferRepository,
 }
 
 impl PostgresUnitOfWork {
@@ -57,6 +63,8 @@ impl PostgresUnitOfWork {
             business_repo: PgBusinessRepository,
             market_repo: PgMarketRepository,
             unit_repo: PgUnitRepository,
+            business_listing_repo: PgBusinessListingRepository,
+            business_offer_repo: PgBusinessOfferRepository,
         }
     }
 }
@@ -91,6 +99,8 @@ impl UnitOfWork for PostgresUnitOfWork {
                 business_repo: &self.business_repo,
                 market_repo: &self.market_repo,
                 unit_repo: &self.unit_repo,
+                business_listing_repo: &self.business_listing_repo,
+                business_offer_repo: &self.business_offer_repo,
             };
 
             // Execute the closure, await the future INSIDE the scope.

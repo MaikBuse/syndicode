@@ -23,7 +23,8 @@ pub trait CorporationRepository: Send + Sync {
         corporation_uuid: Uuid,
     ) -> RepositoryResult<Corporation>;
 
-    async fn list_corporations(&self) -> RepositoryResult<Vec<Corporation>>;
+    async fn list_corporations_in_tick(&self, game_tick: i64)
+        -> RepositoryResult<Vec<Corporation>>;
 }
 
 #[async_trait]

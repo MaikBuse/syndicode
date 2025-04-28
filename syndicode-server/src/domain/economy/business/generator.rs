@@ -863,12 +863,12 @@ pub fn generate_business_name(market_name: MarketName) -> String {
 
             if core.eq_ignore_ascii_case(suffix) || prefix.eq_ignore_ascii_case(core) {
                 format!(
-                    "{}{}", // Simple fallback if parts repeat
+                    "{} {}", // Simple fallback if parts repeat
                     choose_or_default(GENERIC_PREFIXES, &mut rng, "Apex"),
                     choose_or_default(GENERIC_SUFFIXES, &mut rng, "Systems")
                 )
             } else {
-                format!("{}{}{}", prefix, core, suffix) // CamelCase or similar
+                format!("{} {} {}", prefix, core, suffix) // CamelCase or similar
             }
         }
         1 => {
@@ -879,13 +879,13 @@ pub fn generate_business_name(market_name: MarketName) -> String {
 
             if adjective.eq_ignore_ascii_case(core) || adjective.eq_ignore_ascii_case(suffix) {
                 format!(
-                    "{} {}{}", // Simple fallback if parts repeat
+                    "{} {} {}", // Simple fallback if parts repeat
                     choose_or_default(GENERIC_ADJECTIVES, &mut rng, "Prime"),
                     core,
                     suffix
                 )
             } else {
-                format!("{} {}{}", adjective, core, suffix) // Space after adjective
+                format!("{} {} {}", adjective, core, suffix) // Space after adjective
             }
         }
         2 => {
@@ -897,12 +897,12 @@ pub fn generate_business_name(market_name: MarketName) -> String {
 
             if core1.eq_ignore_ascii_case(core2) {
                 format!(
-                    "{}{}", // Simple fallback if parts repeat
+                    "{} {}", // Simple fallback if parts repeat
                     choose_or_default(GENERIC_CORES, &mut rng, "Logic"),
                     suffix
                 )
             } else {
-                format!("{} {}{}", core1, core2, suffix) // Space between cores
+                format!("{} {} {}", core1, core2, suffix) // Space between cores
             }
         }
         _ => {
@@ -914,7 +914,7 @@ pub fn generate_business_name(market_name: MarketName) -> String {
                 choose_or_default(GENERIC_CORES, &mut rng, "Flow").to_string()
             // Simple fallback
             } else {
-                format!("{}{}", prefix, core)
+                format!("{} {}", prefix, core)
             }
         }
     }

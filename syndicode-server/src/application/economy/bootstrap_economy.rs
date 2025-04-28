@@ -5,6 +5,7 @@ use crate::{
     },
     domain::economy::{
         business::{generator::generate_business_name, model::Business},
+        business_listing::model::BusinessListing,
         market::model::{name::MarketName, Market},
     },
 };
@@ -72,6 +73,8 @@ where
         let mut businesses: Vec<Business> =
             Vec::with_capacity(MARKET_NAMES.len() * BUSINESSES_PER_MARKET);
 
+        let mut business_listings: Vec<BusinessListing> = Vec::with_capacity(businesses.len());
+
         for market in markets.iter() {
             for _ in 0..BUSINESSES_PER_MARKET {
                 let name = generate_business_name(market.name);
@@ -85,6 +88,16 @@ where
 
                 businesses.push(business);
             }
+        }
+
+        for business in businesses.iter() {
+            business_listings.push(
+                BusinessListing::builder()
+                    .uuid(Uuid::now_v7())
+                    .business_uuid(business.uuid)
+                    .asking_price(1000)
+                    .build(),
+            );
         }
 
         self.uow
@@ -101,6 +114,7 @@ where
 
                     ctx.insert_markets_in_tick(game_tick, markets).await?;
                     ctx.insert_businesses_in_tick(game_tick, businesses).await?;
+                    ctx.insert_business_listings_in_tick(game_tick, business_listings).await?;
 
                     ctx.set_database_initialization_flag().await?;
 

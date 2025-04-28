@@ -1,9 +1,10 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 #[repr(i16)]
 pub enum UserRole {
     Admin,
+    #[default]
     Player,
 }
 

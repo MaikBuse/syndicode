@@ -1,7 +1,7 @@
 use bon::Builder;
 use uuid::Uuid;
 
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 pub struct Business {
     pub uuid: Uuid,
     pub market_uuid: Uuid,

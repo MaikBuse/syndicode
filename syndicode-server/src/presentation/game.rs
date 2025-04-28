@@ -4,28 +4,37 @@ mod warfare;
 use super::common::{ip_address_from_metadata, uuid_from_metadata};
 use crate::{
     application::{
-        economy::get_corporation::GetCorporationUseCase,
+        economy::{
+            acquire_listed_business::AcquireListedBusinessUseCase,
+            get_corporation::GetCorporationUseCase,
+            query_business_listings::QueryBusinessListingsUseCase,
+        },
         ports::{
             game_tick::GameTickRepository,
             limiter::{LimiterCategory, RateLimitEnforcer},
+            outcome::OutcomeStoreReader,
             queuer::ActionQueueable,
-            results::ResultStoreReader,
         },
         warfare::{list_units_by_user::ListUnitsByUserUseCase, spawn_unit::SpawnUnitUseCase},
     },
     config::Config,
     domain::{
-        economy::corporation::repository::CorporationRepository, outcome::DomainActionOutcome,
+        economy::{
+            business_listing::repository::BusinessListingRepository,
+            corporation::repository::CorporationRepository,
+        },
+        outcome::DomainActionOutcome,
         unit::repository::UnitRepository,
     },
-    infrastructure::valkey::results::create_notification_channel,
+    infrastructure::valkey::outcome::create_notification_channel,
     presentation::common::limitation_error_into_status,
 };
 use bon::{builder, Builder};
 use dashmap::DashMap;
-use economy::get_corporation;
+use economy::{acquire_listed_business, get_corporation, query_business_listings};
 use std::{pin::Pin, sync::Arc};
 use syndicode_proto::{
+    syndicode_economy_v1::{AcquireListedBusinessResponse, Business},
     syndicode_interface_v1::{
         game_service_server::GameService, game_update::Update, player_action::Action,
         ActionFailedResponse, GameUpdate, PlayerAction,
@@ -64,14 +73,15 @@ impl Drop for UserChannelGuard {
 }
 
 #[derive(Builder)]
-pub struct GamePresenter<R, Q, UNT, CRP, RSR, GTR>
+pub struct GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>
 where
     R: RateLimitEnforcer,
     Q: ActionQueueable,
     UNT: UnitRepository,
     CRP: CorporationRepository,
-    RSR: ResultStoreReader,
+    RSR: OutcomeStoreReader,
     GTR: GameTickRepository,
+    BL: BusinessListingRepository,
 {
     pub config: Arc<Config>,
     pub valkey_client: redis::Client,
@@ -81,17 +91,20 @@ where
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
     pub spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
+    pub acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
+    pub query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
 }
 
 #[tonic::async_trait]
-impl<R, Q, UNT, CRP, RSR, GTR> GameService for GamePresenter<R, Q, UNT, CRP, RSR, GTR>
+impl<R, Q, UNT, CRP, RSR, GTR, BL> GameService for GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>
 where
     R: RateLimitEnforcer + 'static,
     Q: ActionQueueable + 'static,
     UNT: UnitRepository + 'static,
     CRP: CorporationRepository + 'static,
-    RSR: ResultStoreReader + 'static,
+    RSR: OutcomeStoreReader + 'static,
     GTR: GameTickRepository + 'static,
+    BL: BusinessListingRepository + 'static,
 {
     type PlayStreamStream = Pin<Box<dyn Stream<Item = Result<GameUpdate, Status>> + Send>>;
 
@@ -124,6 +137,8 @@ where
         // Clone Arcs needed for the spawned task.
         let get_corporation_uc = Arc::clone(&self.get_corporation_uc);
         let list_units_by_user_uc = Arc::clone(&self.list_units_by_user_uc);
+        let acquire_listed_business_uc = Arc::clone(&self.acquire_listed_business_uc);
+        let query_business_listings_uc = Arc::clone(&self.query_business_listings_uc);
         let spawn_unit_uc = Arc::clone(&self.spawn_unit_uc);
 
         let limit = Arc::clone(&self.limit);
@@ -184,6 +199,8 @@ where
                                 .get_corporation_uc(get_corporation_uc.clone())
                                 .list_units_by_user_uc(list_units_by_user_uc.clone())
                                 .spawn_unit_uc(spawn_unit_uc.clone())
+                                .acquire_listed_business_uc(acquire_listed_business_uc.clone())
+                                .query_business_listings_uc(query_business_listings_uc.clone())
                                 .request_uuid(request_uuid)
                                 .call()
                                 .await;
@@ -277,7 +294,7 @@ where
                 tracing::debug!(user_uuid=%user_uuid, request_uuid=%request_uuid, "Received result notification");
 
                 // Fetch the full result from the store
-                match result_reader_clone.retrieve_result(request_uuid).await {
+                match result_reader_clone.retrieve_outcome(request_uuid).await {
                     Ok(Some(payload_bytes)) => {
                         // Attempt to deserialize and construct the GameUpdate
                         // This helper needs access to the Tx channel
@@ -294,7 +311,7 @@ where
                             // Consider breaking if the send error indicates a permanently closed channel.
                         } else {
                             // Delete the result from store after successful send attempt
-                            if let Err(err) = result_reader_clone.delete_result(request_uuid).await
+                            if let Err(err) = result_reader_clone.delete_outcome(request_uuid).await
                             {
                                 tracing::warn!(user_uuid=%user_uuid, request_uuid=%request_uuid, error=%err, "Failed to delete result from store");
                             }
@@ -324,7 +341,7 @@ where
 /// Processes a single action and sends the result/error back through the channel.
 /// Returns Ok(()) if sending succeeded, Err(()) if the channel was closed.
 #[builder]
-async fn process_action<Q, UNT, CRP, GTR>(
+async fn process_action<Q, UNT, CRP, GTR, BL>(
     action: Action,
     tx: &UserTx, // Borrow the sender channel
     request_uuid: Uuid,
@@ -332,12 +349,15 @@ async fn process_action<Q, UNT, CRP, GTR>(
     get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
     spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
+    acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
+    query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
 ) -> Result<(), SendError<Result<GameUpdate, Status>>>
 where
     Q: ActionQueueable,
     UNT: UnitRepository,
     CRP: CorporationRepository,
     GTR: GameTickRepository,
+    BL: BusinessListingRepository,
 {
     let result = match action {
         Action::GetCorporation(_) => {
@@ -361,6 +381,29 @@ where
                 .req_user_uuid(user_uuid)
                 .request_uuid(request_uuid)
                 .list_units_by_user_uc(list_units_by_user_uc)
+                .call()
+                .await
+        }
+        Action::AcquireListedBusiness(req) => {
+            async {
+                let business_uuid = Uuid::parse_str(&req.business_uuid)
+                    .map_err(|_| Status::invalid_argument("Failed to parse business_uuid"))?;
+
+                acquire_listed_business()
+                    .acquire_listed_business_uc(acquire_listed_business_uc)
+                    .req_user_uuid(user_uuid)
+                    .request_uuid(request_uuid)
+                    .business_uuid(business_uuid)
+                    .call()
+                    .await
+            }
+            .await
+        }
+        Action::QueryBusinessListings(req) => {
+            query_business_listings()
+                .req(req)
+                .request_uuid(request_uuid)
+                .query_business_listings_uc(query_business_listings_uc)
                 .call()
                 .await
         }
@@ -412,6 +455,32 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
                 }),
             };
             (Update::SpawnUnit(response), tick_effective, request_uuid)
+        }
+        DomainActionOutcome::ListedBusinessAcquired {
+            request_uuid,
+            tick_effective,
+            user_uuid: _,
+            business_uuid,
+            market_uuid,
+            owning_corporation_uuid,
+            name,
+            operational_expenses,
+        } => {
+            let response = AcquireListedBusinessResponse {
+                business: Some(Business {
+                    uuid: business_uuid.to_string(),
+                    market_uuid: market_uuid.to_string(),
+                    owning_corporation_uuid: owning_corporation_uuid.to_string(),
+                    name,
+                    operational_expenses,
+                }),
+            };
+
+            (
+                Update::AcquireListedBusiness(response),
+                tick_effective,
+                request_uuid,
+            )
         }
         DomainActionOutcome::ActionFailed {
             reason,
