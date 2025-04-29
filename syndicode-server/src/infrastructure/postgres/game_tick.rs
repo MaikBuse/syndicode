@@ -75,12 +75,6 @@ impl GameTickRepository for PgGameTickService {
     async fn get_current_game_tick(&self) -> RepositoryResult<i64> {
         self.game_tick_repo.get_current_game_tick(&*self.pool).await
     }
-
-    async fn update_current_game_tick(&self, new_game_tick: i64) -> RepositoryResult<()> {
-        self.game_tick_repo
-            .update_current_game_tick(&*self.pool, new_game_tick)
-            .await
-    }
 }
 
 #[tonic::async_trait]

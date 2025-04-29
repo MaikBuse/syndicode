@@ -7,8 +7,10 @@ message SpawnUnitRequest {}
 
 // Response after attempting to spawn a unit.
 message SpawnUnitResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
   // The unit that has been spawned.
-  Unit unit = 1;
+  Unit unit = 2;
 }
 
 // Request to list all units owned by a player.
@@ -16,8 +18,10 @@ message ListUnitsRequest {}
 
 // Response containing a list of the player's units.
 message ListUnitsResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
   // List of units owned by the player.
-  repeated Unit units = 1;
+  repeated Unit units = 2;
 }
 
 // Represents a single unit in the game.

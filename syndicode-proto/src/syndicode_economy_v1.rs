@@ -54,10 +54,13 @@ pub struct BusinessListingDetails {
 /// Response containing the list of matching business listings
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryBusinessListingsResponse {
-    #[prost(message, repeated, tag = "1")]
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
     pub listings: ::prost::alloc::vec::Vec<BusinessListingDetails>,
     /// Total number of listings matching the criteria (ignoring limit/offset)
-    #[prost(int64, tag = "2")]
+    #[prost(int64, tag = "3")]
     pub total_count: i64,
 }
 /// Request to get the player's corporation details.
@@ -66,8 +69,11 @@ pub struct GetCorporationRequest {}
 /// Response containing corporation details.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetCorporationResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
     /// Corporation owned by the player.
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag = "2")]
     pub corporation: ::core::option::Option<Corporation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -78,8 +84,11 @@ pub struct AcquireListedBusinessRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AcquireListedBusinessResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
     /// The acquired business
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag = "2")]
     pub business: ::core::option::Option<Business>,
 }
 /// Represents a player's corporation in the game.

@@ -11,6 +11,8 @@ const CLIENT_KEY: &str = "syndicode:results:client";
 
 const OUTCOME_TTL: Duration = Duration::from_secs(300);
 
+pub const GAME_TICK_NOTIFICATION_CHANNEL: &str = "syndicode:game_tick";
+
 #[tonic::async_trait]
 impl OutcomeStoreWriter for ValkeyStore {
     async fn store_outcome(&self, request_uuid: Uuid, payload: &[u8]) -> OutcomeResult<()> {
@@ -61,6 +63,16 @@ impl OutcomeNotifier for ValkeyStore {
         let mut conn = self.conn.clone();
 
         conn.publish::<_, _, usize>(channel_name, request_uuid.to_string())
+            .await
+            .map_err(anyhow::Error::from)?;
+
+        Ok(())
+    }
+
+    async fn notify_game_tick_advanced(&self, game_tick: i64) -> OutcomeResult<()> {
+        let mut conn = self.conn.clone();
+
+        conn.publish::<_, _, usize>(GAME_TICK_NOTIFICATION_CHANNEL, game_tick)
             .await
             .map_err(anyhow::Error::from)?;
 

@@ -53,8 +53,8 @@ where
     init_repo: Arc<INI>,
     simulation: Arc<S>,
     action_puller: Arc<P>,
-    result_store_writer: Arc<RSW>,
-    result_notifier: Arc<RN>,
+    outcome_store_writer: Arc<RSW>,
+    outcome_notifier: Arc<RN>,
     uow: Arc<UOW>,
     game_tick_repo: Arc<GTR>,
     list_units_uc: Arc<ListUnitsUseCase<UNT>>,
@@ -260,16 +260,21 @@ where
                 // Serialize the specific data needed for the final response
                 let result_payload = self.serialize_outcome_for_delivery(&outcome)?; // Helper needed
 
-                self.result_store_writer
+                self.outcome_store_writer
                     .store_outcome(request_uuid, &result_payload)
                     .await?; // Handle store error
 
                 // b. Publish notification
-                self.result_notifier
+                self.outcome_notifier
                     .notify_outcome_ready(user_uuid, request_uuid)
                     .await?; // Handle notify error
             }
         }
+
+        // 7. Send notification that game state has advanced
+        self.outcome_notifier
+            .notify_game_tick_advanced(next_game_tick)
+            .await?;
 
         Ok(next_game_tick)
     }

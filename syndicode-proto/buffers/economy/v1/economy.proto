@@ -50,9 +50,11 @@ message BusinessListingDetails {
 
 // Response containing the list of matching business listings
 message QueryBusinessListingsResponse {
-  repeated BusinessListingDetails listings = 1;
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+  repeated BusinessListingDetails listings = 2;
   // Total number of listings matching the criteria (ignoring limit/offset)
-  int64 total_count = 2;
+  int64 total_count = 3;
 }
 
 // Request to get the player's corporation details.
@@ -60,8 +62,10 @@ message GetCorporationRequest {}
 
 // Response containing corporation details.
 message GetCorporationResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
   // Corporation owned by the player.
-  Corporation corporation = 1;
+  Corporation corporation = 2;
 }
 
 message AcquireListedBusinessRequest {
@@ -70,8 +74,10 @@ message AcquireListedBusinessRequest {
 }
 
 message AcquireListedBusinessResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
   // The acquired business
-  Business business = 1;
+  Business business = 2;
 }
 
 // Represents a player's corporation in the game.

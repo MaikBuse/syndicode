@@ -60,15 +60,16 @@ use crate::{
         },
         valkey::ValkeyStore,
     },
-    presentation::{admin::AdminPresenter, auth::AuthPresenter, game::GamePresenter},
+    presentation::{
+        admin::AdminPresenter,
+        auth::AuthPresenter,
+        game::{GamePresenter, UserChannels},
+    },
 };
-use dashmap::DashMap;
+use bon::bon;
 use sqlx::PgPool;
 use std::sync::Arc;
-use syndicode_proto::syndicode_interface_v1::GameUpdate;
-use tokio::sync::{mpsc::Sender, OnceCell};
-use tonic::Status;
-use uuid::Uuid;
+use tokio::sync::OnceCell;
 
 // Represents the standard configuration of the application state
 pub type DefaultAppState = AppState<
@@ -121,7 +122,6 @@ where
     BL: BusinessListingRepository + 'static,
 {
     pub game_tick_processor: Arc<G>,
-    pub user_channels: Arc<DashMap<Uuid, Sender<Result<GameUpdate, Status>>>>,
     pub leader_elector: Arc<L>,
     pub crypto: Arc<CryptoService>,
     pub init_service: Arc<INI>,
@@ -145,9 +145,8 @@ impl DefaultAppState {
         config: Arc<Config>,
         pg_pool: Arc<PgPool>,
         valkey: Arc<ValkeyStore>,
+        user_channels: UserChannels,
     ) -> anyhow::Result<DefaultAppState> {
-        let user_channels = Arc::new(DashMap::new());
-
         // Crypto service
         let crypto = Arc::new(CryptoService::new()?);
 
@@ -268,8 +267,8 @@ impl DefaultAppState {
         let game_tick_processor = Arc::new(
             GameTickProcessor::builder()
                 .action_puller(valkey.clone())
-                .result_notifier(valkey.clone())
-                .result_store_writer(valkey.clone())
+                .outcome_notifier(valkey.clone())
+                .outcome_store_writer(valkey.clone())
                 .simulation(simulation.clone())
                 .game_tick_repo(game_tick_service.clone())
                 .list_corporations_uc(list_corporations_uc.clone())
@@ -289,7 +288,7 @@ impl DefaultAppState {
             .limit(valkey.clone())
             .user_channels(user_channels.clone())
             .list_units_by_user_uc(list_units_by_user_uc.clone())
-            .result_store_reader(valkey.clone())
+            .outcome_store_reader(valkey.clone())
             .spawn_unit_uc(spawn_unit_uc.clone())
             .get_corporation_uc(get_corporation_uc.clone())
             .valkey_client(valkey.get_client())
@@ -316,7 +315,6 @@ impl DefaultAppState {
         Ok(AppState {
             init_service,
             leader_elector: valkey.clone(),
-            user_channels,
             crypto,
             user_service,
             unit_service,

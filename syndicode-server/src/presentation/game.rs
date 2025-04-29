@@ -50,9 +50,9 @@ use warfare::{list_units, spawn_unit};
 const MPSC_CHANNEL_BUFFER: usize = 16;
 
 // Type alias for the sender part of the channel for game updates to a specific user.
-type UserTx = mpsc::Sender<Result<GameUpdate, Status>>;
+pub type UserTx = mpsc::Sender<Result<GameUpdate, Status>>;
 // Type alias for the map storing user channels, keyed by user UUID.
-type UserChannels = Arc<DashMap<Uuid, UserTx>>;
+pub type UserChannels = Arc<DashMap<Uuid, UserTx>>;
 
 /// RAII Guard for Channel Cleanup
 struct UserChannelGuard {
@@ -73,20 +73,20 @@ impl Drop for UserChannelGuard {
 }
 
 #[derive(Builder)]
-pub struct GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>
+pub struct GamePresenter<R, Q, UNT, CRP, OSR, GTR, BL>
 where
     R: RateLimitEnforcer,
     Q: ActionQueueable,
     UNT: UnitRepository,
     CRP: CorporationRepository,
-    RSR: OutcomeStoreReader,
+    OSR: OutcomeStoreReader,
     GTR: GameTickRepository,
     BL: BusinessListingRepository,
 {
     pub config: Arc<Config>,
     pub valkey_client: redis::Client,
     pub limit: Arc<R>,
-    pub result_store_reader: Arc<RSR>,
+    pub outcome_store_reader: Arc<OSR>,
     pub user_channels: UserChannels,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
@@ -143,10 +143,10 @@ where
 
         let limit = Arc::clone(&self.limit);
         let user_channels_clone = Arc::clone(&self.user_channels);
-        let result_reader_clone = Arc::clone(&self.result_store_reader);
+        let outcome_reader_clone = Arc::clone(&self.outcome_store_reader);
 
         let tx_clone_for_action_task = tx.clone(); // Clone Tx for action processing task
-        let tx_clone_for_result_task = tx.clone(); // Clone Tx for result listener task
+        let tx_clone_for_outcome_task = tx.clone(); // Clone Tx for result listener task
 
         // Task 1: Handle Incoming Client Actions
         tokio::spawn(async move {
@@ -243,17 +243,17 @@ where
         });
 
         // Task 2: Listen for and Deliver Results via Pub/Sub
-        let valkey_client_clone = self.valkey_client.clone();
+        let valkey_outcome_clone = self.valkey_client.clone();
 
         tokio::spawn(async move {
             // Subscribe to the client's result channel
-            let mut pubsub_conn = match valkey_client_clone.get_async_pubsub().await {
+            let mut pubsub_conn = match valkey_outcome_clone.get_async_pubsub().await {
                 Ok(conn) => conn,
                 Err(err) => {
                     tracing::error!(user_id=%user_uuid, error=%err, "Failed to get Redis PubSub connection");
                     // Attempt to send error to client if channel still open
-                    let _ = tx_clone_for_result_task
-                        .send(Err(Status::internal("Result listener setup failed")))
+                    let _ = tx_clone_for_outcome_task
+                        .send(Err(Status::internal("Outcome listener setup failed")))
                         .await;
                     return; // Exit task
                 }
@@ -261,14 +261,14 @@ where
 
             let channel_name = create_notification_channel(user_uuid);
             if let Err(err) = pubsub_conn.subscribe(&channel_name).await {
-                tracing::error!(user_uuid=%user_uuid, channel=%channel_name, error=%err, "Failed to subscribe to result channel");
-                let _ = tx_clone_for_result_task
-                    .send(Err(Status::internal("Result subscription failed")))
+                tracing::error!(user_uuid=%user_uuid, channel=%channel_name, error=%err, "Failed to subscribe to outcome channel");
+                let _ = tx_clone_for_outcome_task
+                    .send(Err(Status::internal("Outcome subscription failed")))
                     .await;
                 return; // Exit task
             }
 
-            tracing::info!(user_uuid=%user_uuid, channel=%channel_name, "Subscribed to result notifications");
+            tracing::info!(user_uuid=%user_uuid, channel=%channel_name, "Subscribed to outcome notifications");
 
             // Use a Stream adapter for the pubsub messages
             let mut message_stream = pubsub_conn.on_message();
@@ -291,42 +291,43 @@ where
                     }
                 };
 
-                tracing::debug!(user_uuid=%user_uuid, request_uuid=%request_uuid, "Received result notification");
+                tracing::debug!(user_uuid=%user_uuid, request_uuid=%request_uuid, "Received outcome notification");
 
                 // Fetch the full result from the store
-                match result_reader_clone.retrieve_outcome(request_uuid).await {
+                match outcome_reader_clone.retrieve_outcome(request_uuid).await {
                     Ok(Some(payload_bytes)) => {
                         // Attempt to deserialize and construct the GameUpdate
                         // This helper needs access to the Tx channel
                         let send_res = send_specific_result(
-                            &tx_clone_for_result_task,
+                            &tx_clone_for_outcome_task,
                             &payload_bytes,
                             user_uuid,
                         )
                         .await;
 
                         if send_res.is_err() {
-                            tracing::warn!(user_uuid=%user_uuid, request_uuid=%request_uuid, "Failed to send final result, client likely disconnected.");
+                            tracing::warn!(user_uuid=%user_uuid, request_uuid=%request_uuid, "Failed to send final outcome, client likely disconnected.");
                             // No need to break here, subscription might still be valid, but the specific send failed.
                             // Consider breaking if the send error indicates a permanently closed channel.
                         } else {
                             // Delete the result from store after successful send attempt
-                            if let Err(err) = result_reader_clone.delete_outcome(request_uuid).await
+                            if let Err(err) =
+                                outcome_reader_clone.delete_outcome(request_uuid).await
                             {
-                                tracing::warn!(user_uuid=%user_uuid, request_uuid=%request_uuid, error=%err, "Failed to delete result from store");
+                                tracing::warn!(user_uuid=%user_uuid, request_uuid=%request_uuid, error=%err, "Failed to delete outcome from store");
                             }
                         }
                     }
                     Ok(None) => {
-                        tracing::warn!(user_uuid=%user_uuid, request_uuid=%request_uuid, "Result payload not found in store (TTL expired or deleted?)");
+                        tracing::warn!(user_uuid=%user_uuid, request_uuid=%request_uuid, "Outcome payload not found in store (TTL expired or deleted?)");
                     }
                     Err(err) => {
-                        tracing::error!(user_uuid=%user_uuid, request_uuid=%request_uuid, error=%err, "Failed to retrieve result payload from store");
+                        tracing::error!(user_uuid=%user_uuid, request_uuid=%request_uuid, error=%err, "Failed to retrieve outcome payload from store");
                     }
                 }
             } // End while let Some(msg)
 
-            tracing::info!(user_uuid=%user_uuid, "Result listener loop finished.");
+            tracing::info!(user_uuid=%user_uuid, "Outcome listener loop finished.");
             // Unsubscribe happens automatically when pubsub_conn is dropped
         });
 
@@ -439,7 +440,7 @@ async fn send_specific_result(
 
 // Helper to convert Domain outcome -> gRPC Update
 fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
-    let (update, game_tick, request_uuid) = match outcome {
+    let (update, game_tick) = match outcome {
         // Assume outcome includes tick if needed
         DomainActionOutcome::UnitSpawned {
             user_uuid,
@@ -449,12 +450,13 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
             ..
         } => {
             let response = SpawnUnitResponse {
+                request_uuid: request_uuid.to_string(),
                 unit: Some(Unit {
                     uuid: unit_uuid.to_string(),
                     user_uuid: user_uuid.to_string(),
                 }),
             };
-            (Update::SpawnUnit(response), tick_effective, request_uuid)
+            (Update::SpawnUnit(response), tick_effective)
         }
         DomainActionOutcome::ListedBusinessAcquired {
             request_uuid,
@@ -467,6 +469,7 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
             operational_expenses,
         } => {
             let response = AcquireListedBusinessResponse {
+                request_uuid: request_uuid.to_string(),
                 business: Some(Business {
                     uuid: business_uuid.to_string(),
                     market_uuid: market_uuid.to_string(),
@@ -476,11 +479,7 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
                 }),
             };
 
-            (
-                Update::AcquireListedBusiness(response),
-                tick_effective,
-                request_uuid,
-            )
+            (Update::AcquireListedBusiness(response), tick_effective)
         }
         DomainActionOutcome::ActionFailed {
             reason,
@@ -488,14 +487,15 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
             request_uuid,
             ..
         } => (
-            Update::ActionFailedResponse(ActionFailedResponse { reason }),
+            Update::ActionFailedResponse(ActionFailedResponse {
+                request_uuid: request_uuid.to_string(),
+                reason,
+            }),
             tick_processed,
-            request_uuid,
         ),
     };
 
     GameUpdate {
-        request_uuid: request_uuid.to_string(),
         game_tick,
         update: Some(update),
     }

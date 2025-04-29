@@ -1139,13 +1139,10 @@ pub mod player_action {
 /// Represents an update sent to the client in response to a player action.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GameUpdate {
-    /// UUID generated on the client to match the response with the initial request.
-    #[prost(string, tag = "1")]
-    pub request_uuid: ::prost::alloc::string::String,
     /// The tick for which the update is relevant.
-    #[prost(int64, tag = "2")]
+    #[prost(int64, tag = "1")]
     pub game_tick: i64,
-    #[prost(oneof = "game_update::Update", tags = "3, 4, 5, 6, 7, 8, 9, 10")]
+    #[prost(oneof = "game_update::Update", tags = "2, 3, 4, 5, 6, 7, 8, 9")]
     pub update: ::core::option::Option<game_update::Update>,
 }
 /// Nested message and enum types in `GameUpdate`.
@@ -1153,52 +1150,56 @@ pub mod game_update {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Update {
         /// Acknowledges receipt and queuing of a player command.
-        #[prost(message, tag = "3")]
+        #[prost(message, tag = "2")]
         ActionInitResponse(super::ActionInitResponse),
-        #[prost(message, tag = "4")]
+        #[prost(message, tag = "3")]
         ActionFailedResponse(super::ActionFailedResponse),
         /// Periodical notification of game tick progression.
-        #[prost(message, tag = "5")]
+        #[prost(message, tag = "4")]
         TickNotification(super::TickNotification),
         /// Response containing corporation data.
-        #[prost(message, tag = "6")]
+        #[prost(message, tag = "5")]
         GetCorporation(super::super::syndicode_economy_v1::GetCorporationResponse),
         /// Response listing all units.
-        #[prost(message, tag = "7")]
+        #[prost(message, tag = "6")]
         ListUnits(super::super::syndicode_warfare_v1::ListUnitsResponse),
         /// Response with the data of the newly spawned unit.
-        #[prost(message, tag = "8")]
+        #[prost(message, tag = "7")]
         SpawnUnit(super::super::syndicode_warfare_v1::SpawnUnitResponse),
         /// Response with the data of the newly acquired business.
-        #[prost(message, tag = "9")]
+        #[prost(message, tag = "8")]
         AcquireListedBusiness(
             super::super::syndicode_economy_v1::AcquireListedBusinessResponse,
         ),
         /// Response containing queried business listings.
-        #[prost(message, tag = "10")]
+        #[prost(message, tag = "9")]
         QueryBusinessListings(
             super::super::syndicode_economy_v1::QueryBusinessListingsResponse,
         ),
     }
 }
 /// Acknowledges receipt and queuing of a player command.
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct ActionInitResponse {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionInitResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+}
 /// Response returned for actions that failed to process.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionFailedResponse {
-    /// The reason why the action failed to process.
+    /// UUID generated on the client to match the response with the initial request.
     #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+    /// The reason why the action failed to process.
+    #[prost(string, tag = "2")]
     pub reason: ::prost::alloc::string::String,
 }
 /// Notifies the client that the authoritative game tick has advanced.
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct TickNotification {
-    /// The game tick number that has just become current.
-    #[prost(int64, tag = "1")]
-    pub new_game_tick: i64,
     /// Timestamp when this tick became effective on the server.
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "1")]
     pub effective_at: ::core::option::Option<::prost_types::Timestamp>,
 }
 /// Generated client implementations.

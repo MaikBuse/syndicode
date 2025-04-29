@@ -36,9 +36,9 @@ where
 {
     match get_corporation_uc.execute(user_uuid).await {
         Ok(outcome) => Ok(GameUpdate {
-            request_uuid: request_uuid.to_string(),
             game_tick: outcome.game_tick,
             update: Some(Update::GetCorporation(GetCorporationResponse {
+                request_uuid: request_uuid.to_string(),
                 corporation: Some(Corporation {
                     uuid: outcome.corporation.uuid.to_string(),
                     user_uuid: outcome.corporation.user_uuid.to_string(),
@@ -71,9 +71,10 @@ where
         .await
     {
         Ok(game_tick) => Ok(GameUpdate {
-            request_uuid: request_uuid.to_string(),
             game_tick,
-            update: Some(Update::ActionInitResponse(ActionInitResponse {})),
+            update: Some(Update::ActionInitResponse(ActionInitResponse {
+                request_uuid: request_uuid.to_string(),
+            })),
         }),
         Err(err) => Err(application_error_into_status(err)),
     }
@@ -118,10 +119,10 @@ where
     }
 
     Ok(GameUpdate {
-        request_uuid: request_uuid.to_string(),
         game_tick,
         update: Some(Update::QueryBusinessListings(
             QueryBusinessListingsResponse {
+                request_uuid: request_uuid.to_string(),
                 listings,
                 total_count: result.total_count,
             },

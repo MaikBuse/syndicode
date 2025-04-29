@@ -10,7 +10,9 @@ use crate::{
         postgres::PostgresDatabase,
         valkey::{LeaderElectionConfig, LimiterConfig, ValkeyStore},
     },
+    presentation::{broadcaster::GameTickBroadcaster, game::UserChannels},
 };
+use dashmap::DashMap;
 use services::AppState;
 use std::{sync::Arc, time::Duration};
 
@@ -18,6 +20,8 @@ pub async fn start_server() -> anyhow::Result<()> {
     let config = Arc::new(Config::new()?);
 
     logging::init();
+
+    let user_channels: UserChannels = Arc::new(DashMap::new());
 
     let pg_pool = Arc::new(PostgresDatabase::init().await?);
 
@@ -39,8 +43,13 @@ pub async fn start_server() -> anyhow::Result<()> {
         .await?,
     );
 
-    let state =
-        AppState::build_services(config.clone(), pg_pool.clone(), valkey_store.clone()).await?;
+    let state = AppState::build_services(
+        config.clone(),
+        pg_pool.clone(),
+        valkey_store.clone(),
+        user_channels.clone(),
+    )
+    .await?;
 
     // Bootstrap
     bootstrap::run()
@@ -64,6 +73,13 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     // Grpc Server
     server::start_grpc_services(config, state, valkey_store.clone()).await?;
+
+    // Game Tick Notification Broadcaster
+    let broadcaster = GameTickBroadcaster::builder()
+        .valkey_client(valkey_store.get_client())
+        .user_channels(user_channels.clone())
+        .build();
+    broadcaster.spawn_listen_and_broadcast_task();
 
     Ok(())
 }

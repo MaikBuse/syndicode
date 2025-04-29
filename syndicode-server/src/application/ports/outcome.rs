@@ -32,6 +32,7 @@ pub trait OutcomeStoreReader: Send + Sync {
 
 #[tonic::async_trait]
 pub trait OutcomeNotifier: Send + Sync {
-    /// Define specific error type
     async fn notify_outcome_ready(&self, user_uuid: Uuid, request_uuid: Uuid) -> OutcomeResult<()>;
+
+    async fn notify_game_tick_advanced(&self, game_tick: i64) -> OutcomeResult<()>;
 }

@@ -36,49 +36,50 @@ message PlayerAction {
 
 // Represents an update sent to the client in response to a player action.
 message GameUpdate {
-  // UUID generated on the client to match the response with the initial request.
-  string request_uuid = 1;
   // The tick for which the update is relevant.
-  int64 game_tick = 2;
+  int64 game_tick = 1;
   oneof update {
     // Acknowledges receipt and queuing of a player command.
-    ActionInitResponse action_init_response = 3;
+    ActionInitResponse action_init_response = 2;
 
-    ActionFailedResponse action_failed_response = 4;
+    ActionFailedResponse action_failed_response = 3;
 
     // Periodical notification of game tick progression.
-    TickNotification tick_notification = 5;
+    TickNotification tick_notification = 4;
 
     // Response containing corporation data.
-    syndicode_economy_v1.GetCorporationResponse get_corporation = 6;
+    syndicode_economy_v1.GetCorporationResponse get_corporation = 5;
 
     // Response listing all units.
-    syndicode_warfare_v1.ListUnitsResponse list_units = 7;
+    syndicode_warfare_v1.ListUnitsResponse list_units = 6;
 
     // Response with the data of the newly spawned unit.
-    syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 8;
+    syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 7;
 
     // Response with the data of the newly acquired business.
-    syndicode_economy_v1.AcquireListedBusinessResponse acquire_listed_business = 9;
+    syndicode_economy_v1.AcquireListedBusinessResponse acquire_listed_business = 8;
 
     // Response containing queried business listings.
-    syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 10; 
+    syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 9; 
   }
 }
 
 // Acknowledges receipt and queuing of a player command.
-message ActionInitResponse {}
+message ActionInitResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+}
 
 // Response returned for actions that failed to process.
 message ActionFailedResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
   // The reason why the action failed to process.
-  string reason = 1;
+  string reason = 2;
 }
 
 // Notifies the client that the authoritative game tick has advanced.
 message TickNotification {
-  // The game tick number that has just become current.
-  int64 new_game_tick = 1; 
   // Timestamp when this tick became effective on the server.
-  google.protobuf.Timestamp effective_at = 2;
+  google.protobuf.Timestamp effective_at = 1;
 }

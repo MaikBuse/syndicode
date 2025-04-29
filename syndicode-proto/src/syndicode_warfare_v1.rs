@@ -5,8 +5,11 @@ pub struct SpawnUnitRequest {}
 /// Response after attempting to spawn a unit.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpawnUnitResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
     /// The unit that has been spawned.
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag = "2")]
     pub unit: ::core::option::Option<Unit>,
 }
 /// Request to list all units owned by a player.
@@ -15,8 +18,11 @@ pub struct ListUnitsRequest {}
 /// Response containing a list of the player's units.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListUnitsResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
     /// List of units owned by the player.
-    #[prost(message, repeated, tag = "1")]
+    #[prost(message, repeated, tag = "2")]
     pub units: ::prost::alloc::vec::Vec<Unit>,
 }
 /// Represents a single unit in the game.

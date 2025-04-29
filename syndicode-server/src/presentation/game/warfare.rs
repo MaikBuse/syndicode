@@ -34,9 +34,10 @@ where
         .map_err(application_error_into_status)?;
 
     Ok(GameUpdate {
-        request_uuid: request_uuid.to_string(),
         game_tick,
-        update: Some(Update::ActionInitResponse(ActionInitResponse {})),
+        update: Some(Update::ActionInitResponse(ActionInitResponse {
+            request_uuid: request_uuid.to_string(),
+        })),
     })
 }
 
@@ -66,7 +67,9 @@ where
 
     Ok(GameUpdate {
         game_tick: outcome.game_tick,
-        request_uuid: request_uuid.to_string(),
-        update: Some(Update::ListUnits(ListUnitsResponse { units: unit_infos })),
+        update: Some(Update::ListUnits(ListUnitsResponse {
+            units: unit_infos,
+            request_uuid: request_uuid.to_string(),
+        })),
     })
 }
