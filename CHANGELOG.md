@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0](https://github.com/MaikBuse/syndicode/compare/v0.8.1...v0.9.0) (2025-04-29)
+
+
+### Features
+
+* add instructions to resend verification mail and login ([f6b87a9](https://github.com/MaikBuse/syndicode/commit/f6b87a99a411db6e1866c551a1076d47862b3df3))
+* introducing basic economy gameloop ([7faf385](https://github.com/MaikBuse/syndicode/commit/7faf38511769202bfe71ffe11d7517b1f0f16e9a))
+* query business listings by multiple parameters ([a7cfc30](https://github.com/MaikBuse/syndicode/commit/a7cfc3074597f8421c8414824f0dc77a46090055))
+* send game tick notifications to clients ([46ad925](https://github.com/MaikBuse/syndicode/commit/46ad92530863903fdcda4a1b87a1b3ebbafb0c39))
+
+
+### Bug Fixes
+
+* create user unit tests ([e0c2506](https://github.com/MaikBuse/syndicode/commit/e0c2506ec4e88bd7927ad40b70bd946cf1e4af2d))
+* port and protocoll of grpcurl call ([32987a0](https://github.com/MaikBuse/syndicode/commit/32987a0bd70c4519a27edfb7d9ddbd6a956842d7))
+* spelling mistake ([a8e9a76](https://github.com/MaikBuse/syndicode/commit/a8e9a7662a55df88bdb9d6a9c4d8b815df136715))
+
 ## [0.8.1](https://github.com/MaikBuse/syndicode/compare/v0.8.0...v0.8.1) (2025-04-20)
 
 
