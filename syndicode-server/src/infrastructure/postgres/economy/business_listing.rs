@@ -84,7 +84,8 @@ impl PgBusinessListingRepository {
                 bl.uuid AS listing_uuid,
                 bl.business_uuid,
                 b.name AS business_name,
-                m.name AS market_name, -- Adjust if MarketName is complex type
+                m.uuid AS market_uuid,
+                m.name AS market_name,
                 bl.seller_corporation_uuid,
                 bl.asking_price,
                 b.operational_expenses,

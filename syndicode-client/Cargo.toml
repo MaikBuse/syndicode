@@ -4,8 +4,25 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bon = { workspace = true }
 syndicode-proto = { path = "../syndicode-proto" }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
 uuid = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+time = { workspace = true }
+textwrap = "0.16.2"
+rustyline = { version = "15.0.0", features = ["derive"] }
+ratatui = "0.29.0"
+crossterm = "0.29.0"
+tui-textarea = "0.7.0"
+toml = "0.8.22"
+tracing-error = "0.2.1"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+directories = "6.0.0"
+lazy_static = "1.5.0"
+color-eyre = "0.6.4"

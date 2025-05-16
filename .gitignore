@@ -3,3 +3,6 @@
 
 # dotenv
 .env
+
+# client
+.syndicode_client_history

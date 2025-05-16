@@ -52,7 +52,9 @@ where
         user_role: UserRole,
         corporation_name: String,
     ) -> ApplicationResult<User> {
+        let user_name = UserName::new(user_name)?;
         let user_password = UserPassword::new(password)?;
+        let user_email = UserEmail::new(user_email)?;
 
         if user_role == UserRole::Admin {
             let Some(req_user_uuid) = maybe_req_user_uuid else {
@@ -70,9 +72,9 @@ where
 
         let user = User {
             uuid: Uuid::now_v7(),
-            name: UserName::new(user_name)?,
+            name: user_name,
             password_hash: password_hash.to_string(),
-            email: UserEmail::new(user_email)?,
+            email: user_email,
             role: user_role,
             status: UserStatus::Pending,
         };
