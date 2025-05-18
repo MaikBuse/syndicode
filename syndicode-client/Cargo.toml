@@ -14,10 +14,7 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 time = { workspace = true }
-textwrap = "0.16.2"
-rustyline = { version = "15.0.0", features = ["derive"] }
 ratatui = "0.29.0"
-crossterm = "0.29.0"
 tui-textarea = "0.7.0"
 toml = "0.8.22"
 tracing-error = "0.2.1"

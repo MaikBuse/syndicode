@@ -9,7 +9,7 @@ use tokio::sync::{mpsc, Mutex, Notify};
 use tokio_stream::StreamExt;
 use tonic::Streaming;
 
-use super::AppEvent;
+use super::app::AppEvent;
 
 #[derive(Debug)]
 pub struct StreamHandler {
@@ -67,11 +67,11 @@ impl StreamHandler {
         let server_stream_arc_opt = self.maybe_server_updates_stream.clone();
 
         tokio::spawn(async move {
-            trace_dbg!("[Task] Update listener spawned. Waiting for start signal...");
+            trace_dbg!("[Stream] Update listener spawned. Waiting for start signal...");
 
             start_signal_clone.notified().await;
             *is_processing_clone.lock().await = true;
-            trace_dbg!("[Task] Start signal received. Beginning processing of server updates.");
+            trace_dbg!("[Stream] Start signal received. Beginning processing of server updates.");
 
             let mut stream_arc = match server_stream_arc_opt.lock().await.take() {
                 Some(arc) => arc,
@@ -104,7 +104,7 @@ impl StreamHandler {
                                         let response = Response::builder()
                                             .response_type(ResponseType::Info)
                                             .code("OK".to_string())
-                                            .message(format!("{:?}", game_update))
+                                            .message(format!("{:#?}", game_update))
                                             .timestamp(OffsetDateTime::now_utc())
                                             .build();
 
@@ -114,21 +114,21 @@ impl StreamHandler {
                                             .is_err()
                                         {
                                             trace_dbg!(
-                                                "[Task] Receiver for responses has been dropped. Task stopping."
+                                                "[Stream] Receiver for responses has been dropped. Task stopping."
                                             );
                                             break;
                                         }
                                     }
                                     Err(status) => {
                                         let error = format!(
-                                            "[Task] Error receiving game update from stream: {:?}",
+                                            "[Stream] Error receiving game update from stream: {:?}",
                                             status
                                         );
                                         trace_dbg!(error);
                                         let response = Response::builder()
                                             .response_type(ResponseType::Error)
                                             .code(status.code().to_string())
-                                            .message(format!("{:?}", status.message()))
+                                            .message(format!("{:#?}", status.message()))
                                             .timestamp(OffsetDateTime::now_utc())
                                             .build();
 
@@ -137,7 +137,7 @@ impl StreamHandler {
                                             .await
                                             .is_err()
                                         {
-                                            trace_dbg!("[Task] Receiver for responses has been dropped (after stream error). Task stopping.");
+                                            trace_dbg!("[Stream] Receiver for responses has been dropped (after stream error). Task stopping.");
                                             break;
                                         }
                                     }
@@ -147,7 +147,7 @@ impl StreamHandler {
                             }
                         }
                         _ = stop_signal_clone.notified() => {
-                            trace_dbg!("[Task] Stop signal received. Stopping processing of server updates.");
+                            trace_dbg!("[Stream] Stop signal received. Stopping processing of server updates.");
                             break;
                     }
                 }
@@ -155,7 +155,7 @@ impl StreamHandler {
 
             *is_processing_clone.lock().await = false;
 
-            trace_dbg!("[Task] Finished processing server updates.");
+            trace_dbg!("[Stream] Finished processing server updates.");
         })
     }
 }

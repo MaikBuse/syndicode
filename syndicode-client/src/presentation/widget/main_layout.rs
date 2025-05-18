@@ -24,6 +24,7 @@ impl MainLayoutWidget {
         area: Rect,
         buf: &mut Buffer,
         maybe_username: Option<String>,
+        is_stream_active: bool,
     ) -> MainArea {
         // Styles (existing)
         let outer_block_style = Style::default().bg(CYBER_BG);
@@ -64,16 +65,24 @@ impl MainLayoutWidget {
         .areas(inner_area);
 
         let (status, user_name) = match maybe_username {
-            Some(user_name) => ("Online", user_name.clone()),
-            None => ("Offline", "-".to_string()),
+            Some(user_name) => ("Authenticated", user_name.clone()),
+            None => ("Unauthenticated", "-".to_string()),
+        };
+
+        let stream = match is_stream_active {
+            true => "Active",
+            false => "Inactive",
         };
 
         let header_spans = vec![
             " Status: ".fg(CYBER_FG),
-            status.fg(CYBER_YELLOW), // Display status with yellow color
+            status.fg(CYBER_YELLOW),
             " | ".fg(CYBER_FG),
             "User: ".fg(CYBER_FG),
-            user_name.fg(CYBER_PINK).add_modifier(Modifier::BOLD), // Display username with pink color and bold
+            user_name.fg(CYBER_PINK).add_modifier(Modifier::BOLD),
+            " | ".fg(CYBER_FG),
+            "Stream: ".fg(CYBER_FG),
+            stream.fg(CYBER_YELLOW),
         ];
         let header_line = Line::from(header_spans).left_aligned();
         Paragraph::new(header_line).render(header_area, buf);

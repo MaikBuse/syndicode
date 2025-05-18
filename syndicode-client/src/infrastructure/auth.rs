@@ -29,13 +29,13 @@ impl AuthenticationRepository for GrpcHandler {
             Ok(response) => Ok(Response::builder()
                 .response_type(ResponseType::Success)
                 .code("OK".to_string())
-                .message(format!("{:?}", response))
+                .message(format!("{:#?}", response))
                 .timestamp(OffsetDateTime::now_utc())
                 .build()),
             Err(status) => Ok(Response::builder()
                 .response_type(ResponseType::Error)
                 .code(status.code().description().to_string())
-                .message(format!("{:?}", status.message()))
+                .message(format!("{:#?}", status.message()))
                 .timestamp(OffsetDateTime::now_utc())
                 .build()),
         }
@@ -55,13 +55,13 @@ impl AuthenticationRepository for GrpcHandler {
             Ok(response) => Ok(Response::builder()
                 .response_type(ResponseType::Success)
                 .code("OK".to_string())
-                .message(format!("{:?}", response))
+                .message(format!("{:#?}", response))
                 .timestamp(OffsetDateTime::now_utc())
                 .build()),
             Err(status) => Ok(Response::builder()
                 .response_type(ResponseType::Error)
                 .code(status.code().description().to_string())
-                .message(format!("{:?}", status.message()))
+                .message(format!("{:#?}", status.message()))
                 .timestamp(OffsetDateTime::now_utc())
                 .build()),
         }
@@ -83,13 +83,13 @@ impl AuthenticationRepository for GrpcHandler {
             Ok(response) => Ok(Response::builder()
                 .response_type(ResponseType::Success)
                 .code("OK".to_string())
-                .message(format!("{:?}", response))
+                .message(format!("{:#?}", response))
                 .timestamp(OffsetDateTime::now_utc())
                 .build()),
             Err(status) => Ok(Response::builder()
                 .response_type(ResponseType::Error)
                 .code(status.code().description().to_string())
-                .message(format!("{:?}", status.message()))
+                .message(format!("{:#?}", status.message()))
                 .timestamp(OffsetDateTime::now_utc())
                 .build()),
         }
@@ -107,7 +107,7 @@ impl AuthenticationRepository for GrpcHandler {
 
         match result {
             Ok(response) => {
-                let message = format!("{:?}", response);
+                let message = format!("{:#?}", response);
                 let jwt = response.into_inner().jwt;
 
                 Ok((
@@ -125,7 +125,7 @@ impl AuthenticationRepository for GrpcHandler {
                 Response::builder()
                     .response_type(ResponseType::Error)
                     .code(status.code().description().to_string())
-                    .message(format!("{:?}", status.message()))
+                    .message(format!("{:#?}", status.message()))
                     .timestamp(OffsetDateTime::now_utc())
                     .build(),
             )),

@@ -1,4 +1,4 @@
-use super::AppEvent;
+use super::app::AppEvent;
 use ratatui::crossterm::event::{Event, KeyCode};
 use tokio::sync::mpsc;
 
@@ -19,8 +19,7 @@ impl InputReader {
         'read_input_loop: loop {
             // Spawn the blocking read operation on a dedicated thread
             // so it doesn't block the async runtime.
-            let event_result =
-                tokio::task::spawn_blocking(move || ratatui::crossterm::event::read()).await;
+            let event_result = tokio::task::spawn_blocking(ratatui::crossterm::event::read).await;
 
             match event_result {
                 Ok(Ok(event)) => {

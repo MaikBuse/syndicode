@@ -101,7 +101,7 @@ impl GameTickBroadcaster {
                 tracing::debug!(tick=%game_tick, "Broadcaster: Finished broadcasting tick.");
             } // End while let Some(msg)
 
-            tracing::info!(
+            tracing::error!(
                 "Broadcaster: Game tick notification listener loop finished unexpectedly."
             );
             // Consider what happens if the loop exits. Should the application shut down?

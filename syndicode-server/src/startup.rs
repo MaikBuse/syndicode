@@ -71,15 +71,15 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     tokio::spawn(leader_loop_manager.run());
 
-    // Grpc Server
-    server::start_grpc_services(config, state, valkey_store.clone()).await?;
-
     // Game Tick Notification Broadcaster
     let broadcaster = GameTickBroadcaster::builder()
         .valkey_client(valkey_store.get_client())
         .user_channels(user_channels.clone())
         .build();
     broadcaster.spawn_listen_and_broadcast_task();
+
+    // Grpc Server
+    server::start_grpc_services(config, state, valkey_store.clone()).await?;
 
     Ok(())
 }

@@ -1,8 +1,6 @@
 use crate::{
     domain::response::{Response, ResponseType},
-    presentation::theme::{
-        ACCENT_DARK_PURPLE, CYBER_BG, CYBER_FG, CYBER_PINK, CYBER_RED, CYBER_YELLOW,
-    },
+    presentation::theme::{ACCENT_DARK_PURPLE, CYBER_BG, CYBER_FG, CYBER_RED, CYBER_YELLOW},
 };
 use ratatui::{
     buffer::Buffer,
@@ -14,11 +12,7 @@ use ratatui::{
         Padding, StatefulWidget, Widget,
     },
 };
-// std::borrow::Cow is not strictly needed here anymore if we only take the first line
-// use std::borrow::Cow;
 use std::collections::VecDeque;
-// textwrap might still be useful for truncating the single line if prefix + first line of message is too long
-use textwrap;
 use time::macros::format_description;
 
 const MAX_RESPONSES: usize = 100;
@@ -42,7 +36,6 @@ const PLACEHOLDER_STYLE: Style = Style::new()
     .bg(CYBER_BG);
 const BORDER_STYLE: Style = Style::new().fg(CYBER_FG);
 const TITLE_STYLE: Style = Style::new()
-    .fg(CYBER_PINK)
     .bg(ACCENT_DARK_PURPLE)
     .add_modifier(Modifier::BOLD);
 const ICON_STYLE: Style = Style::new().add_modifier(Modifier::BOLD);
@@ -56,8 +49,7 @@ const HIGHLIGHT_SYMBOL_WIDTH: u16 = 3; // For ">> "
 
 #[derive(Debug)]
 pub struct ResponseListWidget {
-    pub responses: VecDeque<Response>, // Made public to allow app to get selected response
-                                       // Alternatively, add a method like `pub fn get_response(&self, index: usize) -> Option<&Response>`
+    pub responses: VecDeque<Response>,
 }
 
 impl ResponseListWidget {
@@ -108,45 +100,20 @@ impl ResponseListWidget {
         let code_span = Span::styled(response.code.clone(), base_message_style);
         let separator_span = Span::styled(": ", base_message_style);
 
-        let mut line_spans = vec![timestamp_span, icon_span, code_span, separator_span];
-        let prefix_width = line_spans.iter().map(|s| s.width()).sum::<usize>() as u16;
-
-        // Get the first line of the message, or an empty string if no message
-        let message_first_line = response.message.lines().next().unwrap_or("").to_string();
-        // Alternative: let message_summary = "[Details...]";
-
-        let available_width_for_message_summary = item_content_width.saturating_sub(prefix_width);
-
-        if available_width_for_message_summary > 0 {
-            // Truncate the message summary if it's too long for the remaining space
-            let options = textwrap::Options::new(available_width_for_message_summary as usize)
-                .word_separator(textwrap::WordSeparator::AsciiSpace)
-                .break_words(false); // Don't break words, just truncate the line
-
-            // textwrap::wrap returns a Vec, we only care about the first (and only) line
-            let wrapped_summary_lines = textwrap::wrap(&message_first_line, &options);
-            let summary_to_display = if let Some(first_wrapped_line) = wrapped_summary_lines.get(0)
-            {
-                if first_wrapped_line.len() < message_first_line.len()
-                    && first_wrapped_line.len() > 3
-                {
-                    // Add ellipsis if truncated and there's space
-                    format!(
-                        "{}...",
-                        first_wrapped_line
-                            .chars()
-                            .take(first_wrapped_line.len().saturating_sub(3))
-                            .collect::<String>()
-                    )
-                } else {
-                    first_wrapped_line.to_string()
-                }
-            } else {
-                "".to_string() // Should not happen if message_first_line is not empty
-            };
-            line_spans.push(Span::styled(summary_to_display, base_message_style));
-        }
-        // If available_width_for_message_summary is 0, we just show the prefix (which might also be truncated by ratatui)
+        let message = response
+            .message
+            .clone()
+            .split_whitespace()
+            .collect::<Vec<&str>>()
+            .join(" ");
+        let message_styled = Span::styled(message, base_message_style);
+        let line_spans = vec![
+            timestamp_span,
+            icon_span,
+            code_span,
+            separator_span,
+            message_styled,
+        ];
 
         ListItem::new(Line::from(line_spans))
     }
