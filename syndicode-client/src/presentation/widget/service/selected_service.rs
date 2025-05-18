@@ -209,7 +209,7 @@ impl From<ServiceAction> for SelectedService<'_> {
                 sort_direction: SelectedServiceData::new(
                     "Sort Direction",
                     "0 or 1",
-                    SelectedBlockQueryBusinessListings::SortBy,
+                    SelectedBlockQueryBusinessListings::SortDirection,
                 ),
                 limit: SelectedServiceData::new(
                     "Limit",

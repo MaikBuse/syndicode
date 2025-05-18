@@ -27,7 +27,7 @@ impl ServiceDetailWidget {
         buf: &mut ratatui::prelude::Buffer,
         selected_service: &mut SelectedService,
     ) {
-        let popup_area = centered_rect(25, 60, frame_area);
+        let popup_area = centered_rect(25, 80, frame_area);
 
         Clear.render(popup_area, buf);
 

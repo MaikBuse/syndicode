@@ -56,9 +56,20 @@ where
                             .textarea
                             .lines()
                             .first()
-                            .map(|x| x.to_owned());
-                        let maybe_market_uuid: Option<String> =
-                            market_uuid.textarea.lines().first().map(|x| x.to_owned());
+                            .map(|x| match x.is_empty() {
+                                true => None,
+                                false => Some(x.to_owned()),
+                            })
+                            .flatten();
+                        let maybe_market_uuid: Option<String> = market_uuid
+                            .textarea
+                            .lines()
+                            .first()
+                            .map(|x| match x.is_empty() {
+                                true => None,
+                                false => Some(x.to_owned()),
+                            })
+                            .flatten();
                         let maybe_min_operational_expenses: Option<i64> = min_operational_expenses
                             .textarea
                             .lines()
