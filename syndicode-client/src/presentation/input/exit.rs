@@ -1,12 +1,13 @@
 use crate::{
-    domain::{auth::AuthenticationRepository, game::GameRepository},
+    domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository},
     presentation::app::{App, CurrentScreen, CurrentScreenMain},
 };
 use ratatui::crossterm::event::{Event, KeyCode};
 
-pub(super) fn handle_exit<AUTH, GAME>(app: &mut App<'_, AUTH, GAME>, event: Event)
+pub(super) fn handle_exit<AUTH, ADMIN, GAME>(app: &mut App<'_, AUTH, ADMIN, GAME>, event: Event)
 where
     AUTH: AuthenticationRepository,
+    ADMIN: AdminRepository,
     GAME: GameRepository,
 {
     if let Event::Key(key_event) = event {

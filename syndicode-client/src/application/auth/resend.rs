@@ -1,6 +1,6 @@
 use crate::domain::{
     auth::{AuthenticationRepository, ResendVerificationReq},
-    response::Response,
+    response::DomainResponse,
 };
 use bon::{bon, Builder};
 use std::sync::Arc;
@@ -20,7 +20,7 @@ where
     AUTH: AuthenticationRepository,
 {
     #[builder]
-    pub async fn execute(&mut self, user_name: String) -> anyhow::Result<Response> {
+    pub async fn execute(&mut self, user_name: String) -> anyhow::Result<DomainResponse> {
         let req = ResendVerificationReq { user_name };
 
         self.auth_repository

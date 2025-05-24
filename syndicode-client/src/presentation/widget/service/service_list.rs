@@ -32,8 +32,8 @@ pub enum ServiceAction {
     ResendVerification,
     Login,
     // Administration Category (Example)
-    ListUsers,
-    GetUserDetails,
+    CreateUser,
+    DeleteUser,
     // Game Category
     PlayStream,
     QueryBusinessListings,
@@ -46,8 +46,8 @@ impl Display for ServiceAction {
             ServiceAction::VerifyRegistration => write!(f, "Verify User Registration"),
             ServiceAction::ResendVerification => write!(f, "Resend Verification Code"),
             ServiceAction::Login => write!(f, "Login User"),
-            ServiceAction::ListUsers => write!(f, "List All Users"),
-            ServiceAction::GetUserDetails => write!(f, "Get User Details"),
+            ServiceAction::CreateUser => write!(f, "Create User"),
+            ServiceAction::DeleteUser => write!(f, "Delete User"),
             ServiceAction::PlayStream => write!(f, "Setup the game stream"),
             ServiceAction::QueryBusinessListings => write!(f, "Query business listings"),
         }
@@ -203,8 +203,8 @@ pub fn default_services() -> Vec<ServiceCategory> {
         ServiceCategory {
             name: "⚙️Administration".to_string(),
             items: vec![
-                ServiceItem::new(ServiceAction::ListUsers),
-                ServiceItem::new(ServiceAction::GetUserDetails),
+                ServiceItem::new(ServiceAction::CreateUser),
+                ServiceItem::new(ServiceAction::DeleteUser),
             ],
         },
         ServiceCategory {

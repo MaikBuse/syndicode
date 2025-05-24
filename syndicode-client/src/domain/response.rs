@@ -2,7 +2,7 @@ use bon::Builder;
 use time::OffsetDateTime;
 
 #[derive(Builder, Debug, Clone)]
-pub struct Response {
+pub struct DomainResponse {
     pub code: String,
     pub message: String,
     pub timestamp: OffsetDateTime,
@@ -14,6 +14,7 @@ pub enum ResponseType {
     Success,
     Error,
     Info,
+    GameTickeNotification,
 }
 
 impl From<bool> for ResponseType {

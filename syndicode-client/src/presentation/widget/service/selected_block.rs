@@ -94,6 +94,58 @@ impl SelectedBlockLogin {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum SelectedBlockCreateUser {
+    #[default]
+    UserName,
+    UserPassword,
+    UserEmail,
+    UserRole,
+    CorporationName,
+}
+
+impl SelectedBlockCreateUser {
+    pub fn advance(&mut self) {
+        *self = match self {
+            SelectedBlockCreateUser::UserName => Self::UserPassword,
+            SelectedBlockCreateUser::UserPassword => Self::UserEmail,
+            SelectedBlockCreateUser::UserEmail => Self::UserRole,
+            SelectedBlockCreateUser::UserRole => Self::CorporationName,
+            SelectedBlockCreateUser::CorporationName => Self::UserName,
+        };
+    }
+
+    pub fn previous(&mut self) {
+        *self = match self {
+            SelectedBlockCreateUser::UserName => Self::CorporationName,
+            SelectedBlockCreateUser::UserPassword => Self::UserName,
+            SelectedBlockCreateUser::UserEmail => Self::UserPassword,
+            SelectedBlockCreateUser::UserRole => Self::UserEmail,
+            SelectedBlockCreateUser::CorporationName => Self::UserRole,
+        };
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum SelectedBlockDeleteUser {
+    #[default]
+    UserUuid,
+}
+
+impl SelectedBlockDeleteUser {
+    pub fn advance(&mut self) {
+        *self = match self {
+            SelectedBlockDeleteUser::UserUuid => Self::UserUuid,
+        };
+    }
+
+    pub fn previous(&mut self) {
+        *self = match self {
+            SelectedBlockDeleteUser::UserUuid => Self::UserUuid,
+        };
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum SelectedBlockQueryBusinessListings {
     #[default]
     MinAskingPrice,

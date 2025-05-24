@@ -1,6 +1,6 @@
 use crate::domain::{
     auth::{AuthenticationRepository, RegisterUserReq},
-    response::Response,
+    response::DomainResponse,
 };
 use bon::{bon, Builder};
 use std::sync::Arc;
@@ -26,7 +26,7 @@ where
         user_password: String,
         email: String,
         corporation_name: String,
-    ) -> anyhow::Result<Response> {
+    ) -> anyhow::Result<DomainResponse> {
         let req = RegisterUserReq::builder()
             .user_name(user_name)
             .user_password(user_password)

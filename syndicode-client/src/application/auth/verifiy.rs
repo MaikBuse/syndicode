@@ -1,6 +1,6 @@
 use crate::domain::{
     auth::{AuthenticationRepository, VerifyUserReq},
-    response::Response,
+    response::DomainResponse,
 };
 use bon::{bon, Builder};
 use std::sync::Arc;
@@ -20,7 +20,11 @@ where
     AUTH: AuthenticationRepository,
 {
     #[builder]
-    pub async fn execute(&mut self, user_name: String, code: String) -> anyhow::Result<Response> {
+    pub async fn execute(
+        &mut self,
+        user_name: String,
+        code: String,
+    ) -> anyhow::Result<DomainResponse> {
         let req = VerifyUserReq { user_name, code };
 
         self.auth_repository.lock().await.verifiy_user(req).await

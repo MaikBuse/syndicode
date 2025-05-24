@@ -6,6 +6,8 @@ mod theme;
 mod ui;
 mod widget;
 
+use crate::application::admin::create_user::CreateUserUseCase;
+use crate::application::admin::delete_user::DeleteUserUseCase;
 use crate::application::auth::login::LoginUserUseCase;
 use crate::application::auth::resend::ResendVerificationUseCase;
 use crate::application::auth::verifiy::VerifyUserUseCase;
@@ -58,6 +60,12 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let login_uc = LoginUserUseCase::builder()
         .auth_repository(grpc_handler.clone())
         .build();
+    let create_user_uc = CreateUserUseCase::builder()
+        .admin_repository(grpc_handler.clone())
+        .build();
+    let delete_user_uc = DeleteUserUseCase::builder()
+        .admin_repository(grpc_handler.clone())
+        .build();
     let play_stream_uc = PlayStreamUseCase::builder()
         .game_repo(grpc_handler.clone())
         .build();
@@ -82,6 +90,8 @@ pub async fn run_cli() -> anyhow::Result<()> {
     // Build the main App state
     let mut app = App::builder()
         .should_exit(false)
+        .hide_game_tick_notification(false)
+        .yank_buffer(String::new())
         .stream_handler(stream_handler)
         .response_detail_vim(response_detail_vim)
         .service_list_widget(service_list_widget)
@@ -96,6 +106,8 @@ pub async fn run_cli() -> anyhow::Result<()> {
         .verifiy_uc(verify_uc)
         .resend_uc(resend_uc)
         .login_uc(login_uc)
+        .create_user_uc(create_user_uc)
+        .delete_user_uc(delete_user_uc)
         .play_stream_uc(play_stream_uc)
         .query_business_listings_uc(query_business_listings_uc)
         .is_stream_active(false)

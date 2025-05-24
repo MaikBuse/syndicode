@@ -15,13 +15,19 @@ use super::{
 };
 use crate::{
     application::{
+        admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
         auth::{
             login::LoginUserUseCase, register::RegisterUseCase, resend::ResendVerificationUseCase,
             verifiy::VerifyUserUseCase,
         },
         game::{query_business_listings::QueryBusinessListingsUseCase, stream::PlayStreamUseCase},
     },
-    domain::{auth::AuthenticationRepository, game::GameRepository, response::Response},
+    domain::{
+        admin::AdminRepository,
+        auth::AuthenticationRepository,
+        game::GameRepository,
+        response::{DomainResponse, ResponseType},
+    },
     trace_dbg,
 };
 use bon::Builder;
@@ -31,7 +37,7 @@ use tui_textarea::TextArea;
 
 pub enum AppEvent {
     Crossterm(ratatui::crossterm::event::Event),
-    StreamUpdate(Response),
+    StreamUpdate(DomainResponse),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -44,7 +50,7 @@ pub enum CurrentScreenMain {
 pub enum CurrentScreen {
     Main(CurrentScreenMain),
     ServiceDetail,
-    ListDetail,
+    ResponseDetail,
     Exiting,
 }
 
@@ -55,14 +61,17 @@ impl Default for CurrentScreen {
 }
 
 #[derive(Debug, Builder)]
-pub struct App<'a, AUTH, GAME>
+pub struct App<'a, AUTH, ADMIN, GAME>
 where
     AUTH: AuthenticationRepository,
+    ADMIN: AdminRepository,
     GAME: GameRepository,
 {
     pub maybe_username: Option<String>,
     pub maybe_token: Option<String>,
+    pub yank_buffer: String,
     pub is_stream_active: bool,
+    pub hide_game_tick_notification: bool,
     pub current_screen: CurrentScreen,
     pub should_exit: bool,
     pub stream_handler: StreamHandler,
@@ -80,13 +89,16 @@ where
     pub verifiy_uc: VerifyUserUseCase<AUTH>,
     pub resend_uc: ResendVerificationUseCase<AUTH>,
     pub login_uc: LoginUserUseCase<AUTH>,
+    pub create_user_uc: CreateUserUseCase<ADMIN>,
+    pub delete_user_uc: DeleteUserUseCase<ADMIN>,
     pub play_stream_uc: PlayStreamUseCase<GAME>,
     pub query_business_listings_uc: QueryBusinessListingsUseCase<GAME>,
 }
 
-impl<'a, AUTH, GAME> App<'a, AUTH, GAME>
+impl<'a, AUTH, ADMIN, GAME> App<'a, AUTH, ADMIN, GAME>
 where
     AUTH: AuthenticationRepository,
+    ADMIN: AdminRepository,
     GAME: GameRepository,
 {
     pub async fn run(
@@ -106,11 +118,26 @@ where
                     handle_crossterm_event(self, event).await?;
                 }
                 Some(AppEvent::StreamUpdate(response)) => {
-                    self.response_list_widget.push(response);
+                    let is_main_screen = self.current_screen
+                        == CurrentScreen::Main(CurrentScreenMain::Responses)
+                        || self.current_screen == CurrentScreen::ResponseDetail;
 
-                    if self.current_screen == CurrentScreen::Main(CurrentScreenMain::Responses) {
-                        self.response_list_state.select_next();
-                    }
+                    match response.response_type {
+                        ResponseType::GameTickeNotification => {
+                            self.response_list_widget.push(response);
+
+                            if !self.hide_game_tick_notification && is_main_screen {
+                                self.response_list_state.select_next();
+                            }
+                        }
+                        _ => {
+                            self.response_list_widget.push(response);
+
+                            if is_main_screen {
+                                self.response_list_state.select_next();
+                            }
+                        }
+                    };
                 }
                 None => {
                     trace_dbg!("App::run: Event channel closed, exiting loop.");

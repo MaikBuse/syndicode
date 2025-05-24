@@ -71,7 +71,6 @@ impl PgBusinessListingRepository {
         Ok(())
     }
 
-    // New method for querying business listings
     pub async fn query_business_listings(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres> + Copy,
@@ -91,11 +90,13 @@ impl PgBusinessListingRepository {
                 b.operational_expenses,
                 m.volume AS market_volume
             FROM business_listings bl
-            JOIN businesses b ON bl.business_uuid = b.uuid
-            JOIN markets m ON b.market_uuid = m.uuid
-            WHERE bl.game_tick = "#,
+            JOIN businesses b ON bl.business_uuid = b.uuid AND b.game_tick = "#,
         );
-        qb.push_bind(game_tick); // Always filter by the current game tick
+        qb.push_bind(game_tick);
+        qb.push(" JOIN markets m ON b.market_uuid = m.uuid AND m.game_tick = ");
+        qb.push_bind(game_tick);
+        qb.push(" WHERE bl.game_tick = ");
+        qb.push_bind(game_tick);
 
         // Build WHERE clause dynamically
         if let Some(min_price) = req.min_asking_price {
@@ -146,8 +147,6 @@ impl PgBusinessListingRepository {
             },
             None => "b.name",
         };
-        // Validate sort_column against allowed list to prevent injection if not using match
-        // (match already does this implicitly)
 
         let sort_direction = req.sort_direction.unwrap_or_default().to_string();
 

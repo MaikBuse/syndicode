@@ -1,9 +1,9 @@
 use crate::{
-    domain::response::{Response, ResponseType},
+    domain::response::{DomainResponse, ResponseType},
     trace_dbg,
 };
 use std::sync::Arc;
-use syndicode_proto::syndicode_interface_v1::GameUpdate;
+use syndicode_proto::syndicode_interface_v1::{game_update::Update, GameUpdate};
 use time::OffsetDateTime;
 use tokio::sync::{mpsc, Mutex, Notify};
 use tokio_stream::StreamExt;
@@ -76,7 +76,7 @@ impl StreamHandler {
             let mut stream_arc = match server_stream_arc_opt.lock().await.take() {
                 Some(arc) => arc,
                 None => {
-                    let error_response = Response::builder()
+                    let error_response = DomainResponse::builder()
                         .response_type(ResponseType::Error) // Use an appropriate error type
                         .code("STREAM_NOT_CONFIGURED".to_string())
                         .message(
@@ -101,22 +101,8 @@ impl StreamHandler {
                             if let Some(stream_result) = maybe_stream_result {
                                 match stream_result {
                                     Ok(game_update) => {
-                                        let response = Response::builder()
-                                            .response_type(ResponseType::Info)
-                                            .code("OK".to_string())
-                                            .message(format!("{:#?}", game_update))
-                                            .timestamp(OffsetDateTime::now_utc())
-                                            .build();
-
-                                        if app_event_tx
-                                            .send(AppEvent::StreamUpdate(response))
-                                            .await
-                                            .is_err()
-                                        {
-                                            trace_dbg!(
-                                                "[Stream] Receiver for responses has been dropped. Task stopping."
-                                            );
-                                            break;
+                                        if let Err(err) = handle_game_update(game_update, app_event_tx.clone()).await {
+                                            trace_dbg!(err);
                                         }
                                     }
                                     Err(status) => {
@@ -125,7 +111,7 @@ impl StreamHandler {
                                             status
                                         );
                                         trace_dbg!(error);
-                                        let response = Response::builder()
+                                        let response = DomainResponse::builder()
                                             .response_type(ResponseType::Error)
                                             .code(status.code().to_string())
                                             .message(format!("{:#?}", status.message()))
@@ -158,4 +144,39 @@ impl StreamHandler {
             trace_dbg!("[Stream] Finished processing server updates.");
         })
     }
+}
+
+async fn handle_game_update(
+    game_update: GameUpdate,
+    app_event_tx: mpsc::Sender<AppEvent>,
+) -> anyhow::Result<()> {
+    let response = match game_update.update.as_ref() {
+        Some(update) => match update {
+            Update::TickNotification(_) => DomainResponse::builder()
+                .response_type(ResponseType::GameTickeNotification)
+                .code("OK".to_string())
+                .message(format!("{:#?}", game_update))
+                .timestamp(OffsetDateTime::now_utc())
+                .build(),
+            _ => DomainResponse::builder()
+                .response_type(ResponseType::Info)
+                .code("OK".to_string())
+                .message(format!("{:#?}", game_update))
+                .timestamp(OffsetDateTime::now_utc())
+                .build(),
+        },
+        None => todo!(),
+    };
+
+    if app_event_tx
+        .send(AppEvent::StreamUpdate(response))
+        .await
+        .is_err()
+    {
+        return Err(anyhow::anyhow!(
+            "[Stream] Receiver for responses has been dropped. Task stopping."
+        ));
+    }
+
+    Ok(())
 }

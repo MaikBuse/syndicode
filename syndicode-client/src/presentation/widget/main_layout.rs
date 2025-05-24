@@ -40,6 +40,9 @@ impl MainLayoutWidget {
         // Outer Block (existing)
         let title = Line::from(" Syndicode gRPC Client ").style(main_title_style);
         let instructions = Line::from(vec![
+            " Hide/Show Notifications ".fg(CYBER_FG),
+            "<e>".fg(CYBER_YELLOW),
+            " | ".fg(CYBER_FG),
             " Confirm ".fg(CYBER_FG),
             "<Enter>".fg(CYBER_YELLOW),
             " | ".fg(CYBER_FG),

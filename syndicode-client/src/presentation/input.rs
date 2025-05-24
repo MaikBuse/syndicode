@@ -1,22 +1,23 @@
 mod exit;
-mod list_detail;
 mod main;
+mod response_detail;
 mod service_detail;
 
 use super::{app::CurrentScreen, App};
-use crate::domain::{auth::AuthenticationRepository, game::GameRepository};
+use crate::domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository};
 use exit::handle_exit;
-use list_detail::handle_list_detail;
 use main::handle_main;
 use ratatui::crossterm::event::Event;
+use response_detail::handle_response_detail;
 use service_detail::handle_service_detail;
 
-pub(super) async fn handle_crossterm_event<AUTH, GAME>(
-    app: &mut App<'_, AUTH, GAME>,
+pub(super) async fn handle_crossterm_event<AUTH, ADMIN, GAME>(
+    app: &mut App<'_, AUTH, ADMIN, GAME>,
     event: Event,
 ) -> anyhow::Result<()>
 where
     AUTH: AuthenticationRepository,
+    ADMIN: AdminRepository,
     GAME: GameRepository,
 {
     match app.current_screen {
@@ -26,8 +27,8 @@ where
         CurrentScreen::ServiceDetail => {
             handle_service_detail(app, event).await?;
         }
-        CurrentScreen::ListDetail => {
-            handle_list_detail(app, event).await;
+        CurrentScreen::ResponseDetail => {
+            handle_response_detail(app, event).await;
         }
         CurrentScreen::Exiting => {
             handle_exit(app, event);

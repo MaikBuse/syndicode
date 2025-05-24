@@ -10,6 +10,8 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Clear, Widget},
 };
 
+const SINGE_LINE_CONSTRAINT: Constraint = Constraint::Length(3);
+
 // --- Styling Constants ---
 const POPUP_BACKGROUND_COLOR: Color = CYBER_BG;
 const POPUP_BORDER_COLOR: Color = CYBER_PINK;
@@ -63,7 +65,7 @@ impl ServiceDetailWidget {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .margin(1)
-                    .constraints([Constraint::Length(3), Constraint::Length(3)])
+                    .constraints([SINGE_LINE_CONSTRAINT, SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
                 user_name.update_textarea(*selected);
@@ -82,10 +84,10 @@ impl ServiceDetailWidget {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
                     ])
                     .split(inner_popup_area);
 
@@ -107,7 +109,7 @@ impl ServiceDetailWidget {
             } => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
-                    .constraints([Constraint::Length(3)])
+                    .constraints([SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
                 user_name.update_textarea(*selected);
@@ -120,7 +122,7 @@ impl ServiceDetailWidget {
             } => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
-                    .constraints([Constraint::Length(3), Constraint::Length(3)])
+                    .constraints([SINGE_LINE_CONSTRAINT, SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
                 user_name.update_textarea(*selected);
@@ -128,6 +130,52 @@ impl ServiceDetailWidget {
 
                 user_password.update_textarea(*selected);
                 user_password.textarea.render(input_chunks[1], buf);
+            }
+            SelectedService::CreateUser {
+                selected,
+                user_name,
+                user_password,
+                user_email,
+                user_role,
+                corporation_name,
+            } => {
+                let input_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                    ])
+                    .split(inner_popup_area);
+
+                user_name.update_textarea(*selected);
+                user_name.textarea.render(input_chunks[0], buf);
+
+                user_password.update_textarea(*selected);
+                user_password.textarea.render(input_chunks[1], buf);
+
+                user_email.update_textarea(*selected);
+                user_email.textarea.render(input_chunks[2], buf);
+
+                user_role.update_textarea(*selected);
+                user_role.textarea.render(input_chunks[3], buf);
+
+                corporation_name.update_textarea(*selected);
+                corporation_name.textarea.render(input_chunks[4], buf);
+            }
+            SelectedService::DeleteUser {
+                selected,
+                user_uuid,
+            } => {
+                let input_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([SINGE_LINE_CONSTRAINT])
+                    .split(inner_popup_area);
+
+                user_uuid.update_textarea(*selected);
+                user_uuid.textarea.render(input_chunks[0], buf);
             }
             SelectedService::QueryBusinessListings {
                 selected,
@@ -145,16 +193,16 @@ impl ServiceDetailWidget {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
-                        Constraint::Length(3),
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
+                        SINGE_LINE_CONSTRAINT,
                     ])
                     .split(inner_popup_area);
 

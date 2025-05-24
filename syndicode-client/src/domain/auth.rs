@@ -1,4 +1,4 @@
-use crate::domain::response::Response;
+use crate::domain::response::DomainResponse;
 use bon::Builder;
 
 #[derive(Builder)]
@@ -24,9 +24,11 @@ pub struct LoginUserReq {
 }
 
 pub trait AuthenticationRepository {
-    async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<Response>;
-    async fn verifiy_user(&mut self, req: VerifyUserReq) -> anyhow::Result<Response>;
-    async fn resend_verification(&mut self, req: ResendVerificationReq)
-        -> anyhow::Result<Response>;
-    async fn login_user(&mut self, req: LoginUserReq) -> anyhow::Result<(String, Response)>;
+    async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<DomainResponse>;
+    async fn verifiy_user(&mut self, req: VerifyUserReq) -> anyhow::Result<DomainResponse>;
+    async fn resend_verification(
+        &mut self,
+        req: ResendVerificationReq,
+    ) -> anyhow::Result<DomainResponse>;
+    async fn login_user(&mut self, req: LoginUserReq) -> anyhow::Result<(String, DomainResponse)>;
 }

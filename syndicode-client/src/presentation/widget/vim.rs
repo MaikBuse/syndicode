@@ -85,7 +85,12 @@ impl Vim {
         }
     }
 
-    pub fn transition(&self, response_detail_textarea: &mut TextArea, input: Input) -> Transition {
+    pub fn transition(
+        &self,
+        textarea: &mut TextArea,
+        input: Input,
+        yank_buffer: &mut String,
+    ) -> Transition {
         if input.key == Key::Null {
             return Transition::Nop;
         }
@@ -96,31 +101,31 @@ impl Vim {
                     Input {
                         key: Key::Char('h'),
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::Back),
+                    } => textarea.move_cursor(CursorMove::Back),
                     Input {
                         key: Key::Char('j'),
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::Down),
+                    } => textarea.move_cursor(CursorMove::Down),
                     Input {
                         key: Key::Char('k'),
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::Up),
+                    } => textarea.move_cursor(CursorMove::Up),
                     Input {
                         key: Key::Char('l'),
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::Forward),
+                    } => textarea.move_cursor(CursorMove::Forward),
                     Input {
                         key: Key::Char('w'),
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::WordForward),
+                    } => textarea.move_cursor(CursorMove::WordForward),
                     Input {
                         key: Key::Char('e'),
                         ctrl: false,
                         ..
                     } => {
-                        response_detail_textarea.move_cursor(CursorMove::WordEnd);
+                        textarea.move_cursor(CursorMove::WordEnd);
                         if matches!(self.mode, Mode::Operator(_)) {
-                            response_detail_textarea.move_cursor(CursorMove::Forward);
+                            textarea.move_cursor(CursorMove::Forward);
                             // Include the text under the cursor
                         }
                     }
@@ -128,35 +133,35 @@ impl Vim {
                         key: Key::Char('b'),
                         ctrl: false,
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::WordBack),
+                    } => textarea.move_cursor(CursorMove::WordBack),
                     Input {
                         key: Key::Char('^'),
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::Head),
+                    } => textarea.move_cursor(CursorMove::Head),
                     Input {
                         key: Key::Char('$'),
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::End),
+                    } => textarea.move_cursor(CursorMove::End),
                     Input {
                         key: Key::Char('D'),
                         ..
                     } => {
-                        response_detail_textarea.delete_line_by_end();
+                        textarea.delete_line_by_end();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
                         key: Key::Char('C'),
                         ..
                     } => {
-                        response_detail_textarea.delete_line_by_end();
-                        response_detail_textarea.cancel_selection();
+                        textarea.delete_line_by_end();
+                        textarea.cancel_selection();
                         return Transition::Mode(Mode::Insert);
                     }
                     Input {
                         key: Key::Char('p'),
                         ..
                     } => {
-                        response_detail_textarea.paste();
+                        textarea.paste();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
@@ -164,7 +169,7 @@ impl Vim {
                         ctrl: false,
                         ..
                     } => {
-                        response_detail_textarea.undo();
+                        textarea.undo();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
@@ -172,62 +177,62 @@ impl Vim {
                         ctrl: true,
                         ..
                     } => {
-                        response_detail_textarea.redo();
+                        textarea.redo();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
                         key: Key::Char('x'),
                         ..
                     } => {
-                        response_detail_textarea.delete_next_char();
+                        textarea.delete_next_char();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
                         key: Key::Char('i'),
                         ..
                     } => {
-                        response_detail_textarea.cancel_selection();
+                        textarea.cancel_selection();
                         return Transition::Mode(Mode::Insert);
                     }
                     Input {
                         key: Key::Char('a'),
                         ..
                     } => {
-                        response_detail_textarea.cancel_selection();
-                        response_detail_textarea.move_cursor(CursorMove::Forward);
+                        textarea.cancel_selection();
+                        textarea.move_cursor(CursorMove::Forward);
                         return Transition::Mode(Mode::Insert);
                     }
                     Input {
                         key: Key::Char('A'),
                         ..
                     } => {
-                        response_detail_textarea.cancel_selection();
-                        response_detail_textarea.move_cursor(CursorMove::End);
+                        textarea.cancel_selection();
+                        textarea.move_cursor(CursorMove::End);
                         return Transition::Mode(Mode::Insert);
                     }
                     Input {
                         key: Key::Char('o'),
                         ..
                     } => {
-                        response_detail_textarea.move_cursor(CursorMove::End);
-                        response_detail_textarea.insert_newline();
+                        textarea.move_cursor(CursorMove::End);
+                        textarea.insert_newline();
                         return Transition::Mode(Mode::Insert);
                     }
                     Input {
                         key: Key::Char('O'),
                         ..
                     } => {
-                        response_detail_textarea.move_cursor(CursorMove::Head);
-                        response_detail_textarea.insert_newline();
-                        response_detail_textarea.move_cursor(CursorMove::Up);
+                        textarea.move_cursor(CursorMove::Head);
+                        textarea.insert_newline();
+                        textarea.move_cursor(CursorMove::Up);
                         return Transition::Mode(Mode::Insert);
                     }
                     Input {
                         key: Key::Char('I'),
                         ..
                     } => {
-                        response_detail_textarea.cancel_selection();
-                        response_detail_textarea.move_cursor(CursorMove::Head);
+                        textarea.cancel_selection();
+                        textarea.move_cursor(CursorMove::Head);
                         return Transition::Mode(Mode::Insert);
                     }
                     Input {
@@ -238,38 +243,38 @@ impl Vim {
                         key: Key::Char('e'),
                         ctrl: true,
                         ..
-                    } => response_detail_textarea.scroll((1, 0)),
+                    } => textarea.scroll((1, 0)),
                     Input {
                         key: Key::Char('y'),
                         ctrl: true,
                         ..
-                    } => response_detail_textarea.scroll((-1, 0)),
+                    } => textarea.scroll((-1, 0)),
                     Input {
                         key: Key::Char('d'),
                         ctrl: true,
                         ..
-                    } => response_detail_textarea.scroll(Scrolling::HalfPageDown),
+                    } => textarea.scroll(Scrolling::HalfPageDown),
                     Input {
                         key: Key::Char('u'),
                         ctrl: true,
                         ..
-                    } => response_detail_textarea.scroll(Scrolling::HalfPageUp),
+                    } => textarea.scroll(Scrolling::HalfPageUp),
                     Input {
                         key: Key::Char('f'),
                         ctrl: true,
                         ..
-                    } => response_detail_textarea.scroll(Scrolling::PageDown),
+                    } => textarea.scroll(Scrolling::PageDown),
                     Input {
                         key: Key::Char('b'),
                         ctrl: true,
                         ..
-                    } => response_detail_textarea.scroll(Scrolling::PageUp),
+                    } => textarea.scroll(Scrolling::PageUp),
                     Input {
                         key: Key::Char('v'),
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Normal => {
-                        response_detail_textarea.start_selection();
+                        textarea.start_selection();
                         return Transition::Mode(Mode::Visual);
                     }
                     Input {
@@ -277,9 +282,9 @@ impl Vim {
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Normal => {
-                        response_detail_textarea.move_cursor(CursorMove::Head);
-                        response_detail_textarea.start_selection();
-                        response_detail_textarea.move_cursor(CursorMove::End);
+                        textarea.move_cursor(CursorMove::Head);
+                        textarea.start_selection();
+                        textarea.move_cursor(CursorMove::End);
                         return Transition::Mode(Mode::Visual);
                     }
                     Input { key: Key::Esc, .. } if self.mode == Mode::Normal => {
@@ -291,7 +296,7 @@ impl Vim {
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Visual => {
-                        response_detail_textarea.cancel_selection();
+                        textarea.cancel_selection();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
@@ -307,25 +312,25 @@ impl Vim {
                         }
                     ) =>
                     {
-                        response_detail_textarea.move_cursor(CursorMove::Top)
+                        textarea.move_cursor(CursorMove::Top)
                     }
                     Input {
                         key: Key::Char('G'),
                         ctrl: false,
                         ..
-                    } => response_detail_textarea.move_cursor(CursorMove::Bottom),
+                    } => textarea.move_cursor(CursorMove::Bottom),
                     Input {
                         key: Key::Char(c),
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Operator(c) => {
                         // Handle yy, dd, cc. (This is not strictly the same behavior as Vim)
-                        response_detail_textarea.move_cursor(CursorMove::Head);
-                        response_detail_textarea.start_selection();
-                        let cursor = response_detail_textarea.cursor();
-                        response_detail_textarea.move_cursor(CursorMove::Down);
-                        if cursor == response_detail_textarea.cursor() {
-                            response_detail_textarea.move_cursor(CursorMove::End);
+                        textarea.move_cursor(CursorMove::Head);
+                        textarea.start_selection();
+                        let cursor = textarea.cursor();
+                        textarea.move_cursor(CursorMove::Down);
+                        if cursor == textarea.cursor() {
+                            textarea.move_cursor(CursorMove::End);
                             // At the last line, move to end of the line instead
                         }
                     }
@@ -334,7 +339,7 @@ impl Vim {
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Normal => {
-                        response_detail_textarea.start_selection();
+                        textarea.start_selection();
                         return Transition::Mode(Mode::Operator(op));
                     }
                     Input {
@@ -342,8 +347,9 @@ impl Vim {
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Visual => {
-                        response_detail_textarea.move_cursor(CursorMove::Forward); // Vim's text selection is inclusive
-                        response_detail_textarea.copy();
+                        textarea.move_cursor(CursorMove::Forward); // Vim's text selection is inclusive
+                        textarea.copy();
+                        *yank_buffer = textarea.yank_text();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
@@ -351,8 +357,8 @@ impl Vim {
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Visual => {
-                        response_detail_textarea.move_cursor(CursorMove::Forward); // Vim's text selection is inclusive
-                        response_detail_textarea.cut();
+                        textarea.move_cursor(CursorMove::Forward); // Vim's text selection is inclusive
+                        textarea.cut();
                         return Transition::Mode(Mode::Normal);
                     }
                     Input {
@@ -360,8 +366,8 @@ impl Vim {
                         ctrl: false,
                         ..
                     } if self.mode == Mode::Visual => {
-                        response_detail_textarea.move_cursor(CursorMove::Forward); // Vim's text selection is inclusive
-                        response_detail_textarea.cut();
+                        textarea.move_cursor(CursorMove::Forward); // Vim's text selection is inclusive
+                        textarea.cut();
                         return Transition::Mode(Mode::Insert);
                     }
                     input => return Transition::Pending(input),
@@ -370,15 +376,15 @@ impl Vim {
                 // Handle the pending operator
                 match self.mode {
                     Mode::Operator('y') => {
-                        response_detail_textarea.copy();
+                        textarea.copy();
                         Transition::Mode(Mode::Normal)
                     }
                     Mode::Operator('d') => {
-                        response_detail_textarea.cut();
+                        textarea.cut();
                         Transition::Mode(Mode::Normal)
                     }
                     Mode::Operator('c') => {
-                        response_detail_textarea.cut();
+                        textarea.cut();
                         Transition::Mode(Mode::Insert)
                     }
                     _ => Transition::Nop,
@@ -392,7 +398,7 @@ impl Vim {
                     ..
                 } => Transition::Mode(Mode::Normal),
                 input => {
-                    response_detail_textarea.input(input); // Use default key mappings in insert mode
+                    textarea.input(input); // Use default key mappings in insert mode
                     Transition::Mode(Mode::Insert)
                 }
             },

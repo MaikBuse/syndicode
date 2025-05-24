@@ -1,5 +1,5 @@
 use crate::{
-    domain::{auth::AuthenticationRepository, game::GameRepository},
+    domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository},
     presentation::{
         app::{App, CurrentScreen, CurrentScreenMain},
         widget::vim::{Transition, Vim},
@@ -8,9 +8,12 @@ use crate::{
 };
 use ratatui::crossterm::event::Event;
 
-pub(super) async fn handle_list_detail<AUTH, GAME>(app: &mut App<'_, AUTH, GAME>, event: Event)
-where
+pub(super) async fn handle_response_detail<AUTH, ADMIN, GAME>(
+    app: &mut App<'_, AUTH, ADMIN, GAME>,
+    event: Event,
+) where
     AUTH: AuthenticationRepository,
+    ADMIN: AdminRepository,
     GAME: GameRepository,
 {
     let Some(response_detail_textarea) = app.maybe_response_detail_textarea.as_mut() else {
@@ -18,10 +21,11 @@ where
         return;
     };
 
-    app.response_detail_vim = match app
-        .response_detail_vim
-        .transition(response_detail_textarea, event.into())
-    {
+    app.response_detail_vim = match app.response_detail_vim.transition(
+        response_detail_textarea,
+        event.into(),
+        &mut app.yank_buffer,
+    ) {
         Transition::Mode(mode) if app.response_detail_vim.mode != mode => {
             response_detail_textarea.set_block(mode.block());
             response_detail_textarea.set_cursor_style(mode.cursor_style());

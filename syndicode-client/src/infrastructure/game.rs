@@ -6,7 +6,7 @@ use syndicode_proto::{
 };
 use tokio::sync::mpsc::{self};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{metadata::MetadataValue, Request, Streaming};
+use tonic::{Request, Streaming};
 use uuid::Uuid;
 
 impl GameRepository for GrpcHandler {
@@ -20,22 +20,7 @@ impl GameRepository for GrpcHandler {
         let mut grpc_request = Request::new(request_stream);
 
         self.add_ip_metadata(grpc_request.metadata_mut())?;
-
-        // Add the token as metadata
-        let auth_header_value = format!("Bearer {}", token);
-        match MetadataValue::try_from(&auth_header_value) {
-            Ok(metadata_value) => {
-                grpc_request
-                    .metadata_mut()
-                    .insert("authorization", metadata_value);
-            }
-            Err(e) => {
-                return Err(anyhow::anyhow!(
-                    "Failed to create metadata for token: {}",
-                    e
-                ));
-            }
-        }
+        self.add_token_metadata(grpc_request.metadata_mut(), token)?;
 
         // Call the `play_stream` method with the modified gRPC request
         match self.game_client.play_stream(grpc_request).await {

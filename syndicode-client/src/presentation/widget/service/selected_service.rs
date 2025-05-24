@@ -4,8 +4,9 @@ use crate::presentation::theme::{
 
 use super::{
     selected_block::{
-        SelectedBlockLogin, SelectedBlockQueryBusinessListings, SelectedBlockRegister,
-        SelectedBlockResend, SelectedBlockVerify,
+        SelectedBlockCreateUser, SelectedBlockDeleteUser, SelectedBlockLogin,
+        SelectedBlockQueryBusinessListings, SelectedBlockRegister, SelectedBlockResend,
+        SelectedBlockVerify,
     },
     service_list::ServiceAction,
 };
@@ -16,7 +17,13 @@ use ratatui::{
 };
 use tui_textarea::TextArea;
 
-const TEXTAREA_STYLE: Style = Style::new().fg(CYBER_FG).bg(INPUT_AREA_BG);
+const TEXTAREA_STYLE: Style = Style {
+    fg: Some(CYBER_FG),
+    bg: Some(INPUT_AREA_BG),
+    underline_color: None,
+    add_modifier: Modifier::empty(),
+    sub_modifier: Modifier::empty(),
+};
 const VISIBLE_CURSOR_STYLE: Style = Style::new().add_modifier(Modifier::REVERSED);
 const HIDDEN_CURSOR_STYLE: Style = Style::new().bg(INPUT_AREA_BG);
 const SELECTED_INPUT_TITLE_STYLE: Style = Style::new()
@@ -45,6 +52,8 @@ where
     fn new(title: &'static str, placeholder: &'static str, block: B) -> Self {
         let mut textarea = TextArea::default();
         textarea.set_placeholder_text(placeholder);
+        textarea.set_style(TEXTAREA_STYLE);
+
         Self {
             textarea,
             title,
@@ -55,12 +64,12 @@ where
     pub fn update_textarea(&mut self, currently_selected: B) {
         let is_selected = currently_selected == self.block;
 
-        self.textarea.set_style(TEXTAREA_STYLE);
         self.textarea.set_cursor_style(if is_selected {
             VISIBLE_CURSOR_STYLE
         } else {
             HIDDEN_CURSOR_STYLE
         });
+
         self.textarea
             .set_block(self.create_input_block(self.title, is_selected));
     }
@@ -111,6 +120,18 @@ pub enum SelectedService<'a> {
         user_name: SelectedServiceData<'a, SelectedBlockLogin>,
         user_password: SelectedServiceData<'a, SelectedBlockLogin>,
     },
+    CreateUser {
+        selected: SelectedBlockCreateUser,
+        user_name: SelectedServiceData<'a, SelectedBlockCreateUser>,
+        user_password: SelectedServiceData<'a, SelectedBlockCreateUser>,
+        user_email: SelectedServiceData<'a, SelectedBlockCreateUser>,
+        user_role: SelectedServiceData<'a, SelectedBlockCreateUser>,
+        corporation_name: SelectedServiceData<'a, SelectedBlockCreateUser>,
+    },
+    DeleteUser {
+        selected: SelectedBlockDeleteUser,
+        user_uuid: SelectedServiceData<'a, SelectedBlockDeleteUser>,
+    },
     QueryBusinessListings {
         selected: SelectedBlockQueryBusinessListings,
         min_asking_price: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
@@ -142,13 +163,13 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockRegister::UserPassword,
                 ),
                 corporation_name: SelectedServiceData::new(
-                    "Email",
-                    "name@domain.com",
+                    "Corporation Name",
+                    "Lima Hammersmith Inc.",
                     SelectedBlockRegister::CorporationName,
                 ),
                 email: SelectedServiceData::new(
-                    "Corporation Name",
-                    "Lima Hammersmith Inc.",
+                    "Email",
+                    "name@domain.com",
                     SelectedBlockRegister::Email,
                 ),
             },
@@ -169,7 +190,56 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockResend::UserName,
                 ),
             },
-            ServiceAction::QueryBusinessListings => Self::QueryBusinessListings {
+            ServiceAction::Login => Self::Login {
+                selected: SelectedBlockLogin::default(),
+                user_name: SelectedServiceData::new(
+                    "Username",
+                    "Mc_Lovin",
+                    SelectedBlockLogin::UserName,
+                ),
+                user_password: SelectedServiceData::new(
+                    "Password",
+                    "my-secret-password",
+                    SelectedBlockLogin::UserPassword,
+                ),
+            },
+            ServiceAction::CreateUser => Self::CreateUser {
+                selected: SelectedBlockCreateUser::default(),
+                user_name: SelectedServiceData::new(
+                    "Username",
+                    "Mc_Lovin",
+                    SelectedBlockCreateUser::UserName,
+                ),
+                user_password: SelectedServiceData::new(
+                    "Password",
+                    "my-secret-password",
+                    SelectedBlockCreateUser::UserPassword,
+                ),
+                user_email: SelectedServiceData::new(
+                    "Email",
+                    "name@domain.com",
+                    SelectedBlockCreateUser::UserEmail,
+                ),
+                user_role: SelectedServiceData::new(
+                    "Role",
+                    "1 (Admin) or 2 (Player)",
+                    SelectedBlockCreateUser::UserRole,
+                ),
+                corporation_name: SelectedServiceData::new(
+                    "Corporation Name",
+                    "Lima Hammersmith Inc.",
+                    SelectedBlockCreateUser::CorporationName,
+                ),
+            },
+            ServiceAction::DeleteUser => Self::DeleteUser {
+                selected: SelectedBlockDeleteUser::default(),
+                user_uuid: SelectedServiceData::new(
+                    "User UUID",
+                    "7a520b51-ad88-446c-84d6-80de0ed99230",
+                    SelectedBlockDeleteUser::UserUuid,
+                ),
+            },
+            _ => Self::QueryBusinessListings {
                 selected: SelectedBlockQueryBusinessListings::default(),
                 min_asking_price: SelectedServiceData::new(
                     "Min. Asking Price",
@@ -220,19 +290,6 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Offset",
                     "50",
                     SelectedBlockQueryBusinessListings::Offset,
-                ),
-            },
-            _ => Self::Login {
-                selected: SelectedBlockLogin::UserName,
-                user_name: SelectedServiceData::new(
-                    "Username",
-                    "Mc_Lovin",
-                    SelectedBlockLogin::UserName,
-                ),
-                user_password: SelectedServiceData::new(
-                    "Password",
-                    "my-secret-password",
-                    SelectedBlockLogin::UserPassword,
                 ),
             },
         }

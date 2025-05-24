@@ -1,7 +1,8 @@
 use crate::{
-    domain::response::{Response, ResponseType},
+    domain::response::{DomainResponse, ResponseType},
     presentation::theme::{ACCENT_DARK_PURPLE, CYBER_BG, CYBER_FG, CYBER_RED, CYBER_YELLOW},
 };
+use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -49,7 +50,7 @@ const HIGHLIGHT_SYMBOL_WIDTH: u16 = 3; // For ">> "
 
 #[derive(Debug)]
 pub struct ResponseListWidget {
-    pub responses: VecDeque<Response>,
+    pub responses: VecDeque<DomainResponse>,
 }
 
 impl ResponseListWidget {
@@ -59,19 +60,50 @@ impl ResponseListWidget {
         }
     }
 
-    pub fn push(&mut self, response: Response) {
+    pub fn get_response(
+        &self,
+        index: usize,
+        hide_game_tick_notification: bool,
+    ) -> Option<&DomainResponse> {
+        let mut counter = 0_usize;
+        for response in self.responses.iter() {
+            if hide_game_tick_notification
+                && response.response_type == ResponseType::GameTickeNotification
+            {
+                continue;
+            }
+
+            if index == counter {
+                return Some(response);
+            }
+
+            counter += 1;
+        }
+
+        None
+    }
+
+    pub fn push(&mut self, response: DomainResponse) {
         if self.responses.len() >= MAX_RESPONSES {
-            self.responses.pop_back();
+            let mut index_to_remove: Option<usize> = None;
+
+            'for_reponse: for (index, response) in self.responses.reversed().0.iter().enumerate() {
+                if response.response_type == ResponseType::GameTickeNotification {
+                    index_to_remove = Some(index);
+                    break 'for_reponse;
+                }
+            }
+
+            match index_to_remove {
+                Some(index) => self.responses.remove(index),
+                None => self.responses.pop_back(),
+            };
         }
         self.responses.push_front(response);
     }
 
-    pub fn clear(&mut self) {
-        self.responses.clear();
-    }
-
     // item_content_width is the width available for the text of this single line
-    fn create_list_item(response: &'_ Response, item_content_width: u16) -> ListItem<'_> {
+    fn create_list_item(response: &'_ DomainResponse, item_content_width: u16) -> ListItem<'_> {
         if item_content_width == 0 {
             return ListItem::new(Text::raw(""));
         }
@@ -84,15 +116,19 @@ impl ResponseListWidget {
 
         let (icon_span, base_message_style) = match response.response_type {
             ResponseType::Success => (
-                Span::styled("✓ ", SUCCESS_TEXT_STYLE.patch(ICON_STYLE)),
+                Span::styled("✓  ", SUCCESS_TEXT_STYLE.patch(ICON_STYLE)),
                 SUCCESS_TEXT_STYLE,
             ),
             ResponseType::Error => (
-                Span::styled("✗ ", ERROR_TEXT_STYLE.patch(ICON_STYLE)),
+                Span::styled("✗  ", ERROR_TEXT_STYLE.patch(ICON_STYLE)),
                 ERROR_TEXT_STYLE,
             ),
             ResponseType::Info => (
-                Span::styled("ℹ ", INFO_TEXT_STYLE.patch(ICON_STYLE)),
+                Span::styled("ℹ  ", INFO_TEXT_STYLE.patch(ICON_STYLE)),
+                NORMAL_TEXT_STYLE,
+            ),
+            ResponseType::GameTickeNotification => (
+                Span::styled("ℹ  ", INFO_TEXT_STYLE.patch(ICON_STYLE)),
                 NORMAL_TEXT_STYLE,
             ),
         };
@@ -125,12 +161,14 @@ impl Default for ResponseListWidget {
     }
 }
 
-// The render function remains largely the same, but item_content_width
-// calculation is now for a single line summary.
-impl StatefulWidget for &ResponseListWidget {
-    type State = ListState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+impl ResponseListWidget {
+    pub fn render(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &mut ListState,
+        hide_game_tick_notification: bool,
+    ) {
         let title_text = format!("Responses ({})", self.responses.len());
         let block = Block::default()
             .borders(Borders::ALL)
@@ -167,12 +205,20 @@ impl StatefulWidget for &ResponseListWidget {
             return;
         }
 
-        let items: Vec<ListItem> = self
-            .responses
-            .iter()
-            .map(|response| ResponseListWidget::create_list_item(response, item_content_width))
-            .map(|item| item.style(Style::default().bg(CYBER_BG)))
-            .collect();
+        let mut items: Vec<ListItem> = Vec::with_capacity(self.responses.len());
+
+        'for_response: for response in self.responses.iter() {
+            if hide_game_tick_notification
+                && response.response_type == ResponseType::GameTickeNotification
+            {
+                continue 'for_response;
+            }
+
+            let mut item = ResponseListWidget::create_list_item(response, item_content_width);
+            item = item.style(Style::default().bg(CYBER_BG));
+
+            items.push(item);
+        }
 
         let list_widget = List::new(items)
             .block(block)

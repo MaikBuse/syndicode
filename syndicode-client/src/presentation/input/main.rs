@@ -1,5 +1,5 @@
 use crate::{
-    domain::{auth::AuthenticationRepository, game::GameRepository},
+    domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository},
     presentation::{
         app::{App, CurrentScreen, CurrentScreenMain},
         widget::{
@@ -12,13 +12,23 @@ use crate::{
 use ratatui::crossterm::event::{Event, KeyCode};
 use tui_textarea::TextArea;
 
-pub(super) async fn handle_main<AUTH, GAME>(app: &mut App<'_, AUTH, GAME>, event: Event)
-where
+pub(super) async fn handle_main<AUTH, ADMIN, GAME>(
+    app: &mut App<'_, AUTH, ADMIN, GAME>,
+    event: Event,
+) where
     AUTH: AuthenticationRepository,
+    ADMIN: AdminRepository,
     GAME: GameRepository,
 {
     if let Event::Key(key_event) = event {
         match key_event.code {
+            KeyCode::Char('e') => {
+                app.hide_game_tick_notification = !app.hide_game_tick_notification;
+
+                if let CurrentScreen::Main(CurrentScreenMain::Responses) = app.current_screen {
+                    app.response_list_state.select(Some(0));
+                }
+            }
             KeyCode::Char('h') | KeyCode::Left => {
                 app.service_list_state.select(Some(0));
                 app.response_list_state.select(None);
@@ -82,9 +92,10 @@ where
     }
 }
 
-async fn handle_enter<AUTH, GAME>(app: &mut App<'_, AUTH, GAME>)
+async fn handle_enter<AUTH, ADMIN, GAME>(app: &mut App<'_, AUTH, ADMIN, GAME>)
 where
     AUTH: AuthenticationRepository,
+    ADMIN: AdminRepository,
     GAME: GameRepository,
 {
     if let CurrentScreen::Main(CurrentScreenMain::Services) = app.current_screen {
@@ -120,12 +131,14 @@ where
             return;
         };
 
-        let Some(response) = app.response_list_widget.responses.get(current_index) else {
+        let Some(response) = app
+            .response_list_widget
+            .get_response(current_index, app.hide_game_tick_notification)
+        else {
             trace_dbg!("Failed to retrieve response from response list by index");
             return;
         };
 
-        // let span = response.message.split("    ").filter(|s| !s.is_empty());
         let span = response.message.lines();
 
         let mut response_detail_textarea = TextArea::from(span);
@@ -134,6 +147,6 @@ where
 
         app.maybe_response_detail_textarea = Some(response_detail_textarea);
 
-        app.current_screen = CurrentScreen::ListDetail;
+        app.current_screen = CurrentScreen::ResponseDetail;
     }
 }
