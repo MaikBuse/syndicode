@@ -2,7 +2,7 @@ use bon::{bon, Builder};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::domain::game::GameRepository;
+use crate::domain::game::{GameRepository, QueryBusinessListingsDomainRequest};
 
 #[derive(Builder, Debug)]
 pub struct QueryBusinessListingsUseCase<GAME>
@@ -31,21 +31,23 @@ where
         limit: Option<i64>,
         offset: Option<i64>,
     ) -> anyhow::Result<()> {
+        let req = QueryBusinessListingsDomainRequest::builder()
+            .maybe_min_asking_price(min_asking_price)
+            .maybe_max_asking_price(max_asking_price)
+            .maybe_seller_corporation_uuid(seller_corporation_uuid)
+            .maybe_market_uuid(market_uuid)
+            .maybe_min_operational_expenses(min_operational_expenses)
+            .maybe_max_operational_expenses(max_operational_expenses)
+            .sort_by(sort_by)
+            .sort_direction(sort_direction)
+            .maybe_limit(limit)
+            .maybe_offset(offset)
+            .build();
+
         self.game_repo
             .lock()
             .await
-            .query_business_listings(
-                min_asking_price,
-                max_asking_price,
-                seller_corporation_uuid,
-                market_uuid,
-                min_operational_expenses,
-                max_operational_expenses,
-                sort_by,
-                sort_direction,
-                limit,
-                offset,
-            )
+            .query_business_listings(req)
             .await
     }
 }

@@ -63,10 +63,9 @@ use crate::{
     presentation::{
         admin::AdminPresenter,
         auth::AuthPresenter,
-        game::{GamePresenter, UserChannels},
+        game::{user_channel_guard::UserChannels, GamePresenter},
     },
 };
-use bon::bon;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::OnceCell;

@@ -4,9 +4,9 @@ use crate::{
         app::{App, CurrentScreen, CurrentScreenMain},
         widget::service::{
             selected_block::{
-                SelectedBlockCreateUser, SelectedBlockDeleteUser, SelectedBlockLogin,
-                SelectedBlockQueryBusinessListings, SelectedBlockRegister, SelectedBlockResend,
-                SelectedBlockVerify,
+                SelectedBlockAcquireBusinessListing, SelectedBlockCreateUser,
+                SelectedBlockDeleteUser, SelectedBlockLogin, SelectedBlockQueryBusinessListings,
+                SelectedBlockRegister, SelectedBlockResend, SelectedBlockVerify,
             },
             selected_service::SelectedService,
         },
@@ -133,6 +133,29 @@ where
                             .sort_direction(sort_direction)
                             .maybe_limit(maybe_limit)
                             .maybe_offset(maybe_offset)
+                            .call()
+                            .await?;
+
+                        app.maybe_selected_service = None;
+                        app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
+                    }
+                    SelectedService::AcquireBusinessListing {
+                        selected: _,
+                        business_listing_uuid,
+                    } => {
+                        let business_listing_uuid = business_listing_uuid
+                            .textarea
+                            .lines()
+                            .first()
+                            .ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "Failed to retrieve business listing uuid from textarea"
+                                )
+                            })?;
+
+                        app.acquire_business_listing_uc
+                            .execute()
+                            .business_listing_uuid(business_listing_uuid.to_owned())
                             .call()
                             .await?;
 
@@ -458,6 +481,14 @@ where
                                 offset.textarea.insert_str(app.yank_buffer.clone());
                             }
                         },
+                        SelectedService::AcquireBusinessListing {
+                            selected: _,
+                            business_listing_uuid,
+                        } => {
+                            business_listing_uuid
+                                .textarea
+                                .insert_str(app.yank_buffer.clone());
+                        }
                     }
                 }
             }
@@ -474,6 +505,9 @@ where
                         SelectedService::QueryBusinessListings { selected, .. } => {
                             selected.advance()
                         }
+                        SelectedService::AcquireBusinessListing { selected, .. } => {
+                            selected.advance()
+                        }
                     }
                 };
             }
@@ -487,6 +521,9 @@ where
                         SelectedService::CreateUser { selected, .. } => selected.previous(),
                         SelectedService::DeleteUser { selected, .. } => selected.previous(),
                         SelectedService::QueryBusinessListings { selected, .. } => {
+                            selected.previous()
+                        }
+                        SelectedService::AcquireBusinessListing { selected, .. } => {
                             selected.previous()
                         }
                     }
@@ -619,6 +656,14 @@ where
                     }
                     SelectedBlockQueryBusinessListings::Offset => {
                         offset.textarea.input(event);
+                    }
+                },
+                SelectedService::AcquireBusinessListing {
+                    selected,
+                    business_listing_uuid,
+                } => match selected {
+                    SelectedBlockAcquireBusinessListing::BusinessListingUuid => {
+                        business_listing_uuid.textarea.input(event);
                     }
                 },
             },

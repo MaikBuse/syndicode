@@ -2,7 +2,6 @@ use crate::{
     domain::response::{DomainResponse, ResponseType},
     presentation::theme::{ACCENT_DARK_PURPLE, CYBER_BG, CYBER_FG, CYBER_RED, CYBER_YELLOW},
 };
-use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -85,21 +84,26 @@ impl ResponseListWidget {
 
     pub fn push(&mut self, response: DomainResponse) {
         if self.responses.len() >= MAX_RESPONSES {
-            let mut index_to_remove: Option<usize> = None;
+            let mut index_of_oldest_gtn_to_remove: Option<usize> = None;
 
-            'for_reponse: for (index, response) in self.responses.reversed().0.iter().enumerate() {
-                if response.response_type == ResponseType::GameTickeNotification {
-                    index_to_remove = Some(index);
-                    break 'for_reponse;
+            // Iterate from newest to oldest to find the oldest GameTickeNotification.
+            // The `enumerate()` gives `i` as index from the front (0 = newest).
+            // If multiple GTNs exist, the last one encountered in this loop (largest `i`)
+            // will be the oldest one.
+            for (i, r) in self.responses.iter().enumerate() {
+                if r.response_type == ResponseType::GameTickeNotification {
+                    index_of_oldest_gtn_to_remove = Some(i);
                 }
             }
 
-            match index_to_remove {
-                Some(index) => self.responses.remove(index),
-                None => self.responses.pop_back(),
-            };
+            if let Some(idx) = index_of_oldest_gtn_to_remove {
+                self.responses.remove(idx);
+            } else {
+                // No GameTickeNotification found, or none to remove. Remove the oldest item overall.
+                self.responses.pop_back(); // .pop_back() removes from the end (oldest item)
+            }
         }
-        self.responses.push_front(response);
+        self.responses.push_front(response); // Add new response to the front (it becomes the newest)
     }
 
     // item_content_width is the width available for the text of this single line
@@ -169,7 +173,15 @@ impl ResponseListWidget {
         state: &mut ListState,
         hide_game_tick_notification: bool,
     ) {
-        let title_text = format!("Responses ({})", self.responses.len());
+        let response_count = match hide_game_tick_notification {
+            true => self
+                .responses
+                .iter()
+                .filter(|x| x.response_type != ResponseType::GameTickeNotification)
+                .count(),
+            false => self.responses.len(),
+        };
+        let title_text = format!("Responses ({})", response_count);
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Double)

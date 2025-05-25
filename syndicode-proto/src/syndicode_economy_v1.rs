@@ -78,9 +78,9 @@ pub struct GetCorporationResponse {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AcquireListedBusinessRequest {
-    /// UUID of the business.
+    /// UUID of the business listing.
     #[prost(string, tag = "1")]
-    pub business_uuid: ::prost::alloc::string::String,
+    pub business_listing_uuid: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AcquireListedBusinessResponse {

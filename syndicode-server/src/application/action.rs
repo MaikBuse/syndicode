@@ -14,7 +14,7 @@ pub struct QueuedActionPayload {
 #[derive(Serialize, Deserialize)]
 pub enum ActionDetails {
     SpawnUnit,
-    AcquireListedBusiness { business_uuid: Uuid },
+    AcquireListedBusiness { business_listing_uuid: Uuid },
 }
 
 impl Display for ActionDetails {

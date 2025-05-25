@@ -69,8 +69,8 @@ message GetCorporationResponse {
 }
 
 message AcquireListedBusinessRequest {
-  // UUID of the business.
-  string business_uuid = 1;
+  // UUID of the business listing.
+  string business_listing_uuid = 1;
 }
 
 message AcquireListedBusinessResponse {

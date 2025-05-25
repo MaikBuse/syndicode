@@ -92,9 +92,14 @@ impl Simulationable for SimulationService {
 
             let result = match action.details {
                 ActionDetails::SpawnUnit => handle_spawn_unit(state, &action, next_game_tick),
-                ActionDetails::AcquireListedBusiness { business_uuid } => {
-                    handle_acquire_listed_business(state, &action, business_uuid, next_game_tick)
-                }
+                ActionDetails::AcquireListedBusiness {
+                    business_listing_uuid,
+                } => handle_acquire_listed_business(
+                    state,
+                    &action,
+                    business_listing_uuid,
+                    next_game_tick,
+                ),
             };
 
             match result {

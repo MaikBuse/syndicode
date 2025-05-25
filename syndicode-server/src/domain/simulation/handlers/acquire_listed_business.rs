@@ -278,12 +278,14 @@ mod tests {
         )
     }
 
-    fn create_test_action(user_uuid: Uuid, business_uuid: Uuid) -> QueuedActionPayload {
+    fn create_test_action(user_uuid: Uuid, business_listing_uuid: Uuid) -> QueuedActionPayload {
         // Changed param name
         QueuedActionPayload {
             request_uuid: Uuid::now_v7(),
             user_uuid,
-            details: ActionDetails::AcquireListedBusiness { business_uuid },
+            details: ActionDetails::AcquireListedBusiness {
+                business_listing_uuid,
+            },
         }
     }
 

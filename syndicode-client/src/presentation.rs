@@ -11,6 +11,7 @@ use crate::application::admin::delete_user::DeleteUserUseCase;
 use crate::application::auth::login::LoginUserUseCase;
 use crate::application::auth::resend::ResendVerificationUseCase;
 use crate::application::auth::verifiy::VerifyUserUseCase;
+use crate::application::game::acquire_listed_business::AcquireListedBusinessUseCase;
 use crate::application::game::query_business_listings::QueryBusinessListingsUseCase;
 use crate::application::game::stream::PlayStreamUseCase;
 use crate::config::load_config;
@@ -72,6 +73,9 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let query_business_listings_uc = QueryBusinessListingsUseCase::builder()
         .game_repo(grpc_handler.clone())
         .build();
+    let acquire_listed_business_uc = AcquireListedBusinessUseCase::builder()
+        .game_repo(grpc_handler.clone())
+        .build();
 
     // Initialize StreamHandler (owned by App or managed alongside)
     let stream_handler = StreamHandler::new();
@@ -110,6 +114,7 @@ pub async fn run_cli() -> anyhow::Result<()> {
         .delete_user_uc(delete_user_uc)
         .play_stream_uc(play_stream_uc)
         .query_business_listings_uc(query_business_listings_uc)
+        .acquire_business_listing_uc(acquire_listed_business_uc)
         .is_stream_active(false)
         .build();
 

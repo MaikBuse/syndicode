@@ -4,9 +4,9 @@ use crate::presentation::theme::{
 
 use super::{
     selected_block::{
-        SelectedBlockCreateUser, SelectedBlockDeleteUser, SelectedBlockLogin,
-        SelectedBlockQueryBusinessListings, SelectedBlockRegister, SelectedBlockResend,
-        SelectedBlockVerify,
+        SelectedBlockAcquireBusinessListing, SelectedBlockCreateUser, SelectedBlockDeleteUser,
+        SelectedBlockLogin, SelectedBlockQueryBusinessListings, SelectedBlockRegister,
+        SelectedBlockResend, SelectedBlockVerify,
     },
     service_list::ServiceAction,
 };
@@ -145,6 +145,10 @@ pub enum SelectedService<'a> {
         limit: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
         offset: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
     },
+    AcquireBusinessListing {
+        selected: SelectedBlockAcquireBusinessListing,
+        business_listing_uuid: SelectedServiceData<'a, SelectedBlockAcquireBusinessListing>,
+    },
 }
 
 impl From<ServiceAction> for SelectedService<'_> {
@@ -239,7 +243,7 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockDeleteUser::UserUuid,
                 ),
             },
-            _ => Self::QueryBusinessListings {
+            ServiceAction::QueryBusinessListings => Self::QueryBusinessListings {
                 selected: SelectedBlockQueryBusinessListings::default(),
                 min_asking_price: SelectedServiceData::new(
                     "Min. Asking Price",
@@ -290,6 +294,14 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Offset",
                     "50",
                     SelectedBlockQueryBusinessListings::Offset,
+                ),
+            },
+            _ => Self::AcquireBusinessListing {
+                selected: SelectedBlockAcquireBusinessListing::default(),
+                business_listing_uuid: SelectedServiceData::new(
+                    "Business listing UUID",
+                    "01970208-57a6-712a-a9c1-497e4e71f764",
+                    SelectedBlockAcquireBusinessListing::BusinessListingUuid,
                 ),
             },
         }

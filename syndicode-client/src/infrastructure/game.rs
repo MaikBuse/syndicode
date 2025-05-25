@@ -1,7 +1,7 @@
 use super::grpc::GrpcHandler;
-use crate::domain::game::GameRepository;
+use crate::domain::game::{GameRepository, QueryBusinessListingsDomainRequest};
 use syndicode_proto::{
-    syndicode_economy_v1::QueryBusinessListingsRequest,
+    syndicode_economy_v1::{AcquireListedBusinessRequest, QueryBusinessListingsRequest},
     syndicode_interface_v1::{player_action::Action, GameUpdate, PlayerAction},
 };
 use tokio::sync::mpsc::{self};
@@ -34,16 +34,7 @@ impl GameRepository for GrpcHandler {
 
     async fn query_business_listings(
         &self,
-        min_asking_price: Option<i64>,
-        max_asking_price: Option<i64>,
-        seller_corporation_uuid: Option<String>,
-        market_uuid: Option<String>,
-        min_operational_expenses: Option<i64>,
-        max_operational_expenses: Option<i64>,
-        sort_by: String,
-        sort_direction: i32,
-        limit: Option<i64>,
-        offset: Option<i64>,
+        req: QueryBusinessListingsDomainRequest,
     ) -> anyhow::Result<()> {
         let Some(client_action_tx) = self.maybe_client_action_tx.clone() else {
             return Err(anyhow::anyhow!(
@@ -55,16 +46,35 @@ impl GameRepository for GrpcHandler {
             request_uuid: Uuid::now_v7().to_string(),
             action: Some(Action::QueryBusinessListings(
                 QueryBusinessListingsRequest {
-                    min_asking_price,
-                    max_asking_price,
-                    seller_corporation_uuid,
-                    market_uuid,
-                    min_operational_expenses,
-                    max_operational_expenses,
-                    sort_by,
-                    sort_direction,
-                    limit,
-                    offset,
+                    min_asking_price: req.min_asking_price,
+                    max_asking_price: req.max_asking_price,
+                    seller_corporation_uuid: req.seller_corporation_uuid,
+                    market_uuid: req.market_uuid,
+                    min_operational_expenses: req.min_operational_expenses,
+                    max_operational_expenses: req.max_operational_expenses,
+                    sort_by: req.sort_by,
+                    sort_direction: req.sort_direction,
+                    limit: req.limit,
+                    offset: req.offset,
+                },
+            )),
+        };
+
+        Ok(client_action_tx.send(player_action).await?)
+    }
+
+    async fn acquire_listed_business(&self, business_listing_uuid: String) -> anyhow::Result<()> {
+        let Some(client_action_tx) = self.maybe_client_action_tx.clone() else {
+            return Err(anyhow::anyhow!(
+                "Failed to retrieve client action sender from grpc handler"
+            ));
+        };
+
+        let player_action = PlayerAction {
+            request_uuid: Uuid::now_v7().to_string(),
+            action: Some(Action::AcquireListedBusiness(
+                AcquireListedBusinessRequest {
+                    business_listing_uuid,
                 },
             )),
         };

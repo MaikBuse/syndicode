@@ -195,3 +195,23 @@ impl SelectedBlockQueryBusinessListings {
         };
     }
 }
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum SelectedBlockAcquireBusinessListing {
+    #[default]
+    BusinessListingUuid,
+}
+
+impl SelectedBlockAcquireBusinessListing {
+    pub fn advance(&mut self) {
+        *self = match self {
+            SelectedBlockAcquireBusinessListing::BusinessListingUuid => Self::BusinessListingUuid,
+        };
+    }
+
+    pub fn previous(&mut self) {
+        *self = match self {
+            SelectedBlockAcquireBusinessListing::BusinessListingUuid => Self::BusinessListingUuid,
+        };
+    }
+}

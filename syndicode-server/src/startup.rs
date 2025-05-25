@@ -10,7 +10,7 @@ use crate::{
         postgres::PostgresDatabase,
         valkey::{LeaderElectionConfig, LimiterConfig, ValkeyStore},
     },
-    presentation::{broadcaster::GameTickBroadcaster, game::UserChannels},
+    presentation::{broadcaster::GameTickBroadcaster, game::user_channel_guard::UserChannels},
 };
 use dashmap::DashMap;
 use services::AppState;

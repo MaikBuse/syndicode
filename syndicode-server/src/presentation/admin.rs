@@ -67,7 +67,7 @@ where
         let user_role = match request.user_role() {
             ProtoUserRole::Unspecified => {
                 return Err(Status::invalid_argument(
-                    "The user's role needs to either be 'Player' or 'Admin'",
+                    "The user's role needs to either be '1' (Admin) or '2' (Player)",
                 ));
             }
             ProtoUserRole::Player => UserRole::Player,

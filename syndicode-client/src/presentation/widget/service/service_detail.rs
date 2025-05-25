@@ -242,6 +242,18 @@ impl ServiceDetailWidget {
                 offset.update_textarea(*selected);
                 offset.textarea.render(input_chunks[9], buf);
             }
+            SelectedService::AcquireBusinessListing {
+                selected,
+                business_listing_uuid,
+            } => {
+                let input_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([SINGE_LINE_CONSTRAINT])
+                    .split(inner_popup_area);
+
+                business_listing_uuid.update_textarea(*selected);
+                business_listing_uuid.textarea.render(input_chunks[0], buf);
+            }
         }
     }
 }

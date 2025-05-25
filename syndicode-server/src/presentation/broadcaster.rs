@@ -1,4 +1,3 @@
-use super::game::UserChannels;
 use crate::{
     infrastructure::valkey::outcome::GAME_TICK_NOTIFICATION_CHANNEL, utils::timestamp_now,
 };
@@ -6,6 +5,8 @@ use bon::Builder;
 use futures::stream::{iter, StreamExt};
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::{game_update::Update, GameUpdate, TickNotification};
+
+use super::game::user_channel_guard::UserChannels;
 
 // Configuration for concurrency
 const MAX_CONCURRENT_TICK_BROADCASTS: usize = 50;

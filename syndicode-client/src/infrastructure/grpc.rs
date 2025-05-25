@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use syndicode_proto::syndicode_interface_v1::{
     admin_service_client::AdminServiceClient, auth_service_client::AuthServiceClient,
     game_service_client::GameServiceClient, PlayerAction,
@@ -6,7 +8,7 @@ use time::OffsetDateTime;
 use tokio::sync::mpsc;
 use tonic::{
     metadata::{Ascii, MetadataKey, MetadataMap, MetadataValue},
-    transport::Channel,
+    transport::{Channel, Endpoint},
     Response, Status,
 };
 
@@ -21,9 +23,26 @@ pub struct GrpcHandler {
 
 impl GrpcHandler {
     pub async fn new(address: String) -> anyhow::Result<Self> {
-        let auth_client = AuthServiceClient::connect(address.clone()).await?;
-        let admin_client = AdminServiceClient::connect(address.clone()).await?;
-        let game_client = GameServiceClient::connect(address).await?;
+        // It's good practice to ensure the address string is a valid URI.
+        // Endpoint::from_shared or Endpoint::from_str will parse it.
+        // Tonic expects URIs like "http://localhost:50051" or "https://example.com:443"
+        let endpoint_uri_str =
+            if !address.starts_with("http://") && !address.starts_with("https://") {
+                // Default to http if no scheme is provided. Adjust if you need https by default.
+                format!("http://{}", address)
+            } else {
+                address
+            };
+
+        // Create an Endpoint from the address string.
+        // This allows for more configuration options if needed later.
+        let endpoint = Endpoint::from_str(endpoint_uri_str.as_str())?;
+
+        let channel = endpoint.connect().await?;
+
+        let auth_client = AuthServiceClient::new(channel.clone());
+        let admin_client = AdminServiceClient::new(channel.clone());
+        let game_client = GameServiceClient::new(channel);
 
         Ok(GrpcHandler {
             auth_client,

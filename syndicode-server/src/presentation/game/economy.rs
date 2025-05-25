@@ -56,7 +56,7 @@ pub async fn acquire_listed_business<Q, GTR>(
     acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
     request_uuid: Uuid,
     req_user_uuid: Uuid,
-    business_uuid: Uuid,
+    business_listing_uuid: Uuid,
 ) -> Result<GameUpdate, Status>
 where
     Q: ActionQueueable,
@@ -66,7 +66,7 @@ where
         .execute()
         .req_user_uuid(req_user_uuid)
         .request_uuid(request_uuid)
-        .business_uuid(business_uuid)
+        .business_listing_uuid(business_listing_uuid)
         .call()
         .await
     {

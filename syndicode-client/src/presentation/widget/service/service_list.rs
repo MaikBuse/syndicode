@@ -37,6 +37,7 @@ pub enum ServiceAction {
     // Game Category
     PlayStream,
     QueryBusinessListings,
+    AcquireListedBusiness,
 }
 
 impl Display for ServiceAction {
@@ -50,6 +51,7 @@ impl Display for ServiceAction {
             ServiceAction::DeleteUser => write!(f, "Delete User"),
             ServiceAction::PlayStream => write!(f, "Setup the game stream"),
             ServiceAction::QueryBusinessListings => write!(f, "Query business listings"),
+            ServiceAction::AcquireListedBusiness => write!(f, "Acquire listed business"),
         }
     }
 }
@@ -212,6 +214,7 @@ pub fn default_services() -> Vec<ServiceCategory> {
             items: vec![
                 ServiceItem::new(ServiceAction::PlayStream),
                 ServiceItem::new(ServiceAction::QueryBusinessListings),
+                ServiceItem::new(ServiceAction::AcquireListedBusiness),
             ],
         },
     ]

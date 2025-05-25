@@ -20,7 +20,10 @@ use crate::{
             login::LoginUserUseCase, register::RegisterUseCase, resend::ResendVerificationUseCase,
             verifiy::VerifyUserUseCase,
         },
-        game::{query_business_listings::QueryBusinessListingsUseCase, stream::PlayStreamUseCase},
+        game::{
+            acquire_listed_business::AcquireListedBusinessUseCase,
+            query_business_listings::QueryBusinessListingsUseCase, stream::PlayStreamUseCase,
+        },
     },
     domain::{
         admin::AdminRepository,
@@ -93,6 +96,7 @@ where
     pub delete_user_uc: DeleteUserUseCase<ADMIN>,
     pub play_stream_uc: PlayStreamUseCase<GAME>,
     pub query_business_listings_uc: QueryBusinessListingsUseCase<GAME>,
+    pub acquire_business_listing_uc: AcquireListedBusinessUseCase<GAME>,
 }
 
 impl<'a, AUTH, ADMIN, GAME> App<'a, AUTH, ADMIN, GAME>
