@@ -166,6 +166,12 @@ async fn handle_game_update(
             .message(format!("{:#?}", game_update))
             .timestamp(OffsetDateTime::now_utc())
             .build(),
+        Update::ActionFailedResponse(_) => DomainResponse::builder()
+            .response_type(ResponseType::Error)
+            .code("ERR".to_string())
+            .message(format!("{:#?}", game_update))
+            .timestamp(OffsetDateTime::now_utc())
+            .build(),
         _ => DomainResponse::builder()
             .response_type(ResponseType::Info)
             .code("OK".to_string())
