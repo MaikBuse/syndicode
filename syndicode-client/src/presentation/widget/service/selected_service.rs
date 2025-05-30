@@ -53,6 +53,7 @@ where
         let mut textarea = TextArea::default();
         textarea.set_placeholder_text(placeholder);
         textarea.set_style(TEXTAREA_STYLE);
+        textarea.set_cursor_line_style(Style::default());
 
         Self {
             textarea,
