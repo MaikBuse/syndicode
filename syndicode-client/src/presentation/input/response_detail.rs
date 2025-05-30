@@ -4,7 +4,6 @@ use crate::{
         app::{App, CurrentScreen, CurrentScreenMain},
         widget::vim::{Transition, Vim},
     },
-    trace_dbg,
 };
 use ratatui::crossterm::event::Event;
 
@@ -17,7 +16,7 @@ pub(super) async fn handle_response_detail<AUTH, ADMIN, GAME>(
     GAME: GameRepository,
 {
     let Some(response_detail_textarea) = app.maybe_response_detail_textarea.as_mut() else {
-        trace_dbg!("[Input] Failed to retrieve response list textarea");
+        tracing::error!("[Input] Failed to retrieve response list textarea");
         return;
     };
 

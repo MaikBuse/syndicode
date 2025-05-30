@@ -1,7 +1,4 @@
-use crate::{
-    domain::response::{DomainResponse, ResponseType},
-    trace_dbg,
-};
+use crate::domain::response::{DomainResponse, ResponseType};
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::{game_update::Update, GameUpdate};
 use time::OffsetDateTime;
@@ -34,18 +31,18 @@ impl StreamHandler {
     pub async fn set_server_updates_stream(&self, stream: Streaming<GameUpdate>) {
         let mut guard = self.maybe_server_updates_stream.lock().await;
         *guard = Some(stream);
-        trace_dbg!("[StreamHandler] Server updates stream has been set.");
+        tracing::debug!("[StreamHandler] Server updates stream has been set.");
     }
 
     // Method to signal the spawned task(s) to start processing
     pub fn signal_start_processing(&self) {
-        trace_dbg!("[StreamHandler] Signaling tasks to start processing.");
+        tracing::info!("[StreamHandler] Signaling tasks to start processing.");
         self.start_processing_signal.notify_one(); // Wakes one waiting task
     }
 
     // Method to signal the spawned task(s) to stop processing
     pub fn signal_stop_processing(&self) {
-        trace_dbg!("[StreamHandler] Signaling tasks to stop processing.");
+        tracing::debug!("[StreamHandler] Signaling tasks to stop processing.");
         self.stop_processing_signal.notify_one();
     }
 
@@ -67,11 +64,13 @@ impl StreamHandler {
         let server_stream_arc_opt = self.maybe_server_updates_stream.clone();
 
         tokio::spawn(async move {
-            trace_dbg!("[Stream] Update listener spawned. Waiting for start signal...");
+            tracing::debug!("[Stream] Update listener spawned. Waiting for start signal...");
 
             start_signal_clone.notified().await;
             *is_processing_clone.lock().await = true;
-            trace_dbg!("[Stream] Start signal received. Beginning processing of server updates.");
+            tracing::debug!(
+                "[Stream] Start signal received. Beginning processing of server updates."
+            );
 
             let mut stream_arc = match server_stream_arc_opt.lock().await.take() {
                 Some(arc) => arc,
@@ -97,51 +96,55 @@ impl StreamHandler {
             // Main loop for processing stream updates
             loop {
                 tokio::select! {
-                        maybe_stream_result = stream_arc.next() => {
-                            if let Some(stream_result) = maybe_stream_result {
-                                match stream_result {
-                                    Ok(game_update) => {
-                                        if let Err(err) = handle_game_update(game_update, app_event_tx.clone()).await {
-                                            trace_dbg!(err);
-                                        }
-                                    }
-                                    Err(status) => {
-                                        let error = format!(
-                                            "[Stream] Error receiving game update from stream: {:?}",
-                                            status
-                                        );
-                                        trace_dbg!(error);
-                                        let response = DomainResponse::builder()
-                                            .response_type(ResponseType::Error)
-                                            .code(status.code().to_string())
-                                            .message(format!("{:#?}", status.message()))
-                                            .timestamp(OffsetDateTime::now_utc())
-                                            .build();
-
-                                        if app_event_tx
-                                            .send(AppEvent::StreamUpdate(response))
-                                            .await
-                                            .is_err()
-                                        {
-                                            trace_dbg!("[Stream] Receiver for responses has been dropped (after stream error). Task stopping.");
-                                            break;
-                                        }
+                    maybe_stream_result = stream_arc.next() => {
+                        if let Some(stream_result) = maybe_stream_result {
+                            match stream_result {
+                                Ok(game_update) => {
+                                    if let Err(err) = handle_game_update(game_update, app_event_tx.clone()).await {
+                                        tracing::error!("{}", err);
+                                        // Don't break here - just log and continue
+                                        continue;
                                     }
                                 }
-                            } else {
-                                break;
+                                Err(status) => {
+                                    let error = format!(
+                                        "[Stream] Error receiving game update from stream: {:?}",
+                                        status
+                                    );
+                                    tracing::warn!(error);
+                                    let response = DomainResponse::builder()
+                                        .response_type(ResponseType::Error)
+                                        .code(status.code().to_string())
+                                        .message(format!("{:#?}", status.message()))
+                                        .timestamp(OffsetDateTime::now_utc())
+                                        .build();
+
+                                    if app_event_tx
+                                        .send(AppEvent::StreamUpdate(response))
+                                        .await
+                                        .is_err()
+                                    {
+                                        tracing::error!("[Stream] Receiver for responses has been dropped (after stream error). Task stopping.");
+                                        break;
+                                    }
+                                    // Don't break here either - continue processing
+                                    continue;
+                                }
                             }
-                        }
-                        _ = stop_signal_clone.notified() => {
-                            trace_dbg!("[Stream] Stop signal received. Stopping processing of server updates.");
+                        } else {
                             break;
+                        }
+                    }
+                    _ = stop_signal_clone.notified() => {
+                        tracing::debug!("[Stream] Stop signal received. Stopping processing of server updates.");
+                        break;
                     }
                 }
             }
 
             *is_processing_clone.lock().await = false;
 
-            trace_dbg!("[Stream] Finished processing server updates.");
+            tracing::debug!("[Stream] Finished processing server updates.");
         })
     }
 }
@@ -150,22 +153,25 @@ async fn handle_game_update(
     game_update: GameUpdate,
     app_event_tx: mpsc::Sender<AppEvent>,
 ) -> anyhow::Result<()> {
-    let response = match game_update.update.as_ref() {
-        Some(update) => match update {
-            Update::TickNotification(_) => DomainResponse::builder()
-                .response_type(ResponseType::GameTickeNotification)
-                .code("OK".to_string())
-                .message(format!("{:#?}", game_update))
-                .timestamp(OffsetDateTime::now_utc())
-                .build(),
-            _ => DomainResponse::builder()
-                .response_type(ResponseType::Info)
-                .code("OK".to_string())
-                .message(format!("{:#?}", game_update))
-                .timestamp(OffsetDateTime::now_utc())
-                .build(),
-        },
-        None => todo!(),
+    let Some(update) = game_update.update.as_ref() else {
+        return Err(anyhow::anyhow!(
+            "[Stream] Failed to retrieve Update from GameUpdate"
+        ));
+    };
+
+    let response = match update {
+        Update::TickNotification(_) => DomainResponse::builder()
+            .response_type(ResponseType::GameTickeNotification)
+            .code("OK".to_string())
+            .message(format!("{:#?}", game_update))
+            .timestamp(OffsetDateTime::now_utc())
+            .build(),
+        _ => DomainResponse::builder()
+            .response_type(ResponseType::Info)
+            .code("OK".to_string())
+            .message(format!("{:#?}", game_update))
+            .timestamp(OffsetDateTime::now_utc())
+            .build(),
     };
 
     if app_event_tx

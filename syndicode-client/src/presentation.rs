@@ -15,7 +15,6 @@ use crate::application::game::acquire_listed_business::AcquireListedBusinessUseC
 use crate::application::game::query_business_listings::QueryBusinessListingsUseCase;
 use crate::application::game::stream::PlayStreamUseCase;
 use crate::config::load_config;
-use crate::trace_dbg;
 use crate::{application::auth::register::RegisterUseCase, infrastructure::grpc::GrpcHandler};
 use app::{App, CurrentScreen};
 use event::InputReader;
@@ -127,14 +126,14 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let final_app_result = app.run(&mut terminal, &mut app_event_rx).await;
 
     // Graceful shutdown sequence
-    trace_dbg!("Application loop ended. Shutting down...");
+    tracing::debug!("Application loop ended. Shutting down...");
 
     // Await the completion of the input reader task
     read_input_handle.await?;
 
     // Restore the terminal to its original state
     ratatui::restore();
-    trace_dbg!("Terminal restored. Exiting.");
+    tracing::debug!("Terminal restored. Exiting.");
 
     final_app_result
 }

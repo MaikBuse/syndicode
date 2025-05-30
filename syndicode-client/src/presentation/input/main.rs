@@ -7,7 +7,6 @@ use crate::{
             vim::Mode,
         },
     },
-    trace_dbg,
 };
 use ratatui::crossterm::event::{Event, KeyCode};
 use tui_textarea::TextArea;
@@ -127,7 +126,7 @@ where
 
     if let CurrentScreen::Main(CurrentScreenMain::Responses) = app.current_screen {
         let Some(current_index) = app.response_list_state.selected() else {
-            trace_dbg!("Failed to retrieve the current index of the reponse list state");
+            tracing::error!("Failed to retrieve the current index of the reponse list state");
             return;
         };
 
@@ -135,7 +134,7 @@ where
             .response_list_widget
             .get_response(current_index, app.hide_game_tick_notification)
         else {
-            trace_dbg!("Failed to retrieve response from response list by index");
+            tracing::error!("Failed to retrieve response from response list by index");
             return;
         };
 

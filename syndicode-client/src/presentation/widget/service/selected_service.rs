@@ -20,9 +20,9 @@ use tui_textarea::TextArea;
 const TEXTAREA_STYLE: Style = Style {
     fg: Some(CYBER_FG),
     bg: Some(INPUT_AREA_BG),
-    underline_color: None,
+    underline_color: Some(Color::Reset),
     add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
+    sub_modifier: Modifier::UNDERLINED,
 };
 const VISIBLE_CURSOR_STYLE: Style = Style::new().add_modifier(Modifier::REVERSED);
 const HIDDEN_CURSOR_STYLE: Style = Style::new().bg(INPUT_AREA_BG);

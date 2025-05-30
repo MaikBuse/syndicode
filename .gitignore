@@ -5,4 +5,4 @@
 .env
 
 # client
-.syndicode_client_history
+syndicode-client.log

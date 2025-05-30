@@ -31,7 +31,6 @@ use crate::{
         game::GameRepository,
         response::{DomainResponse, ResponseType},
     },
-    trace_dbg,
 };
 use bon::Builder;
 use ratatui::{widgets::ListState, DefaultTerminal};
@@ -144,13 +143,13 @@ where
                     };
                 }
                 None => {
-                    trace_dbg!("App::run: Event channel closed, exiting loop.");
+                    tracing::info!("App::run: Event channel closed, exiting loop.");
                     break 'app_loop;
                 }
             };
 
             if self.should_exit {
-                trace_dbg!("App::run: Exiting loop due to should_exit flag.");
+                tracing::info!("App::run: Exiting loop due to should_exit flag.");
 
                 if self.stream_handler.is_processing().await {
                     self.stream_handler.signal_stop_processing();
