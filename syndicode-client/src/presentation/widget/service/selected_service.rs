@@ -49,11 +49,15 @@ impl<B> SelectedServiceData<'_, B>
 where
     B: PartialEq,
 {
-    fn new(title: &'static str, placeholder: &'static str, block: B) -> Self {
+    fn new(title: &'static str, placeholder: &'static str, block: B, mask_field: bool) -> Self {
         let mut textarea = TextArea::default();
         textarea.set_placeholder_text(placeholder);
         textarea.set_style(TEXTAREA_STYLE);
         textarea.set_cursor_line_style(Style::default());
+
+        if mask_field {
+            textarea.set_mask_char('\u{2022}');
+        }
 
         Self {
             textarea,
@@ -161,21 +165,25 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Username",
                     "Mc_Lovin",
                     SelectedBlockRegister::UserName,
+                    false,
                 ),
                 user_password: SelectedServiceData::new(
                     "Password",
                     "my-secret-password",
                     SelectedBlockRegister::UserPassword,
+                    true,
                 ),
                 corporation_name: SelectedServiceData::new(
                     "Corporation Name",
                     "Lima Hammersmith Inc.",
                     SelectedBlockRegister::CorporationName,
+                    false,
                 ),
                 email: SelectedServiceData::new(
                     "Email",
                     "name@domain.com",
                     SelectedBlockRegister::Email,
+                    false,
                 ),
             },
             ServiceAction::VerifyRegistration => Self::VerifyRegistration {
@@ -184,8 +192,14 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Username",
                     "Mc_Lovin",
                     SelectedBlockVerify::UserName,
+                    false,
                 ),
-                code: SelectedServiceData::new("Code", "8FA3FLI91", SelectedBlockVerify::Code),
+                code: SelectedServiceData::new(
+                    "Code",
+                    "8FA3FLI91",
+                    SelectedBlockVerify::Code,
+                    false,
+                ),
             },
             ServiceAction::ResendVerification => Self::ResendVerification {
                 selected: SelectedBlockResend::default(),
@@ -193,6 +207,7 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Username",
                     "Mc_Lovin",
                     SelectedBlockResend::UserName,
+                    false,
                 ),
             },
             ServiceAction::Login => Self::Login {
@@ -201,11 +216,13 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Username",
                     "Mc_Lovin",
                     SelectedBlockLogin::UserName,
+                    false,
                 ),
                 user_password: SelectedServiceData::new(
                     "Password",
                     "my-secret-password",
                     SelectedBlockLogin::UserPassword,
+                    true,
                 ),
             },
             ServiceAction::CreateUser => Self::CreateUser {
@@ -214,26 +231,31 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Username",
                     "Mc_Lovin",
                     SelectedBlockCreateUser::UserName,
+                    false,
                 ),
                 user_password: SelectedServiceData::new(
                     "Password",
                     "my-secret-password",
                     SelectedBlockCreateUser::UserPassword,
+                    true,
                 ),
                 user_email: SelectedServiceData::new(
                     "Email",
                     "name@domain.com",
                     SelectedBlockCreateUser::UserEmail,
+                    false,
                 ),
                 user_role: SelectedServiceData::new(
                     "Role",
                     "1 (Admin) or 2 (Player)",
                     SelectedBlockCreateUser::UserRole,
+                    false,
                 ),
                 corporation_name: SelectedServiceData::new(
                     "Corporation Name",
                     "Lima Hammersmith Inc.",
                     SelectedBlockCreateUser::CorporationName,
+                    false,
                 ),
             },
             ServiceAction::DeleteUser => Self::DeleteUser {
@@ -242,6 +264,7 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "User UUID",
                     "7a520b51-ad88-446c-84d6-80de0ed99230",
                     SelectedBlockDeleteUser::UserUuid,
+                    false,
                 ),
             },
             ServiceAction::QueryBusinessListings => Self::QueryBusinessListings {
@@ -250,51 +273,61 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Min. Asking Price",
                     "1000",
                     SelectedBlockQueryBusinessListings::MinAskingPrice,
+                    false,
                 ),
                 max_asking_price: SelectedServiceData::new(
                     "Max. Asking Price",
                     "2000",
                     SelectedBlockQueryBusinessListings::MaxAskingPrice,
+                    false,
                 ),
                 seller_corporation_uuid: SelectedServiceData::new(
                     "Seller Corporation UUID",
                     "0196e20b-c252-7520-ae13-935b5d5f0029",
                     SelectedBlockQueryBusinessListings::SellerCorporationUuid,
+                    false,
                 ),
                 market_uuid: SelectedServiceData::new(
                     "Market UUID",
                     "0196e24f-eda1-7145-a177-8d2f8c38f7c4",
                     SelectedBlockQueryBusinessListings::MarketUuid,
+                    false,
                 ),
                 min_operational_expenses: SelectedServiceData::new(
                     "Min. Operational Expenses",
                     "10",
                     SelectedBlockQueryBusinessListings::MinOperationalExpenses,
+                    false,
                 ),
                 max_operational_expenses: SelectedServiceData::new(
                     "Max. Operational Expenses",
                     "30",
                     SelectedBlockQueryBusinessListings::MaxOperationalExpenses,
+                    false,
                 ),
                 sort_by: SelectedServiceData::new(
                     "Sort By",
                     "price, name, op_expenses, market_volume",
                     SelectedBlockQueryBusinessListings::SortBy,
+                    false,
                 ),
                 sort_direction: SelectedServiceData::new(
                     "Sort Direction",
                     "0 or 1",
                     SelectedBlockQueryBusinessListings::SortDirection,
+                    false,
                 ),
                 limit: SelectedServiceData::new(
                     "Limit",
                     "20",
                     SelectedBlockQueryBusinessListings::Limit,
+                    false,
                 ),
                 offset: SelectedServiceData::new(
                     "Offset",
                     "50",
                     SelectedBlockQueryBusinessListings::Offset,
+                    false,
                 ),
             },
             _ => Self::AcquireBusinessListing {
@@ -303,6 +336,7 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Business listing UUID",
                     "01970208-57a6-712a-a9c1-497e4e71f764",
                     SelectedBlockAcquireBusinessListing::BusinessListingUuid,
+                    false,
                 ),
             },
         }
