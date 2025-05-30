@@ -404,7 +404,10 @@ See [open issues](https://github.com/MaikBuse/syndicode/issues) for current idea
 
 ## 📚 License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+This work is licensed under a
+[Creative Commons Attribution 4.0 International License][cc-by].
+
+[![CC BY 4.0][cc-by-image]][cc-by]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -420,6 +423,9 @@ Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBus
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
+[cc-by]: http://creativecommons.org/licenses/by/4.0/
+[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
+[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
 [contributors-shield]: https://img.shields.io/github/contributors/MaikBuse/syndicode.svg?style=for-the-badge
 [contributors-url]: https://github.com/MaikBuse/syndicode/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/MaikBuse/syndicode.svg?style=for-the-badge
