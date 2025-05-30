@@ -30,6 +30,14 @@ use widget::service::service_list::{default_services, ServiceListWidget};
 use widget::vim::{Mode, Vim};
 
 pub async fn run_cli() -> anyhow::Result<()> {
+    // Load configuration
+    let config = load_config()?;
+
+    // Initialize gRPC handler (shared among use cases)
+    let grpc_handler = Arc::new(Mutex::new(
+        GrpcHandler::new(config.grpc.auth_service_address).await?,
+    ));
+
     let mut terminal = ratatui::init();
 
     // Event channel for input events from InputReader
@@ -38,14 +46,6 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let input_reader = InputReader::new();
     // Spawn a task to read input events and send them through the channel
     let read_input_handle = tokio::spawn(input_reader.read_input_events(app_event_tx.clone()));
-
-    // Load configuration
-    let config = load_config()?;
-
-    // Initialize gRPC handler (shared among use cases)
-    let grpc_handler = Arc::new(Mutex::new(
-        GrpcHandler::new(config.grpc.auth_service_address).await?,
-    ));
 
     // Initialize Use Cases
     let register_uc = RegisterUseCase::builder()

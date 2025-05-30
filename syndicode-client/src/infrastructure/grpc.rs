@@ -38,7 +38,12 @@ impl GrpcHandler {
         // This allows for more configuration options if needed later.
         let endpoint = Endpoint::from_str(endpoint_uri_str.as_str())?;
 
-        let channel = endpoint.connect().await?;
+        let Ok(channel) = endpoint.connect().await else {
+            return Err(anyhow::anyhow!(
+                "Failed to establish connection to server: {}",
+                endpoint_uri_str
+            ));
+        };
 
         let auth_client = AuthServiceClient::new(channel.clone());
         let admin_client = AdminServiceClient::new(channel.clone());
