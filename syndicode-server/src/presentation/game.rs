@@ -10,6 +10,7 @@ use crate::{
             get_corporation::GetCorporationUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
         },
+        game_tick::GetGameTickUseCase,
         ports::{
             game_tick::GameTickRepository,
             limiter::{LimiterCategory, RateLimitEnforcer},
@@ -32,7 +33,7 @@ use crate::{
 };
 use bon::{builder, Builder};
 use economy::{acquire_listed_business, get_corporation, query_business_listings};
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, str::FromStr, sync::Arc};
 use syndicode_proto::{
     syndicode_economy_v1::{AcquireListedBusinessResponse, Business},
     syndicode_interface_v1::{
@@ -43,7 +44,7 @@ use syndicode_proto::{
 };
 use tokio::sync::mpsc::{self, error::SendError};
 use tokio_stream::{wrappers::ReceiverStream, Stream, StreamExt};
-use tonic::{Request, Response, Status, Streaming};
+use tonic::{Code, Request, Response, Status, Streaming};
 use user_channel_guard::{UserChannelGuard, UserChannels, UserTx};
 use uuid::Uuid;
 use warfare::{list_units, spawn_unit};
@@ -67,6 +68,7 @@ where
     pub limit: Arc<R>,
     pub outcome_store_reader: Arc<OSR>,
     pub user_channels: UserChannels,
+    pub get_game_tick_uc: Arc<GetGameTickUseCase<GTR>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
     pub spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
@@ -116,6 +118,7 @@ where
         }
 
         // Clone Arcs needed for the spawned tasks.
+        let get_game_tick_uc = Arc::clone(&self.get_game_tick_uc);
         let get_corporation_uc = Arc::clone(&self.get_corporation_uc);
         let list_units_by_user_uc = Arc::clone(&self.list_units_by_user_uc);
         let acquire_listed_business_uc = Arc::clone(&self.acquire_listed_business_uc);
@@ -160,26 +163,18 @@ where
                             continue;
                         }
 
-                        let Ok(request_uuid) = Uuid::parse_str(&player_action.request_uuid) else {
-                            let _ = (*user_channel_tx_arc_for_action_task)
-                                .send(Err(Status::internal(
-                                    "Failed to parse the provided request uuid",
-                                )))
-                                .await;
-                            continue;
-                        };
-
                         if let Some(act) = player_action.action {
-                            let send_result = process_action()
+                            let send_result = process_stream_action()
                                 .user_uuid(user_uuid)
                                 .action(act)
                                 .tx(&user_channel_tx_arc_for_action_task) // Pass a reference to the sender
+                                .get_game_tick_uc(get_game_tick_uc.clone())
                                 .get_corporation_uc(get_corporation_uc.clone())
                                 .list_units_by_user_uc(list_units_by_user_uc.clone())
                                 .spawn_unit_uc(spawn_unit_uc.clone())
                                 .acquire_listed_business_uc(acquire_listed_business_uc.clone())
                                 .query_business_listings_uc(query_business_listings_uc.clone())
-                                .request_uuid(request_uuid)
+                                .request_uuid(player_action.request_uuid)
                                 .call()
                                 .await;
 
@@ -198,14 +193,27 @@ where
                         }
                     }
                     Err(status) => {
-                        tracing::error!(
-                            "Error receiving action from user {}: {}",
-                            user_uuid,
-                            status
-                        );
+                        match status.code() {
+                            Code::Unknown => {
+                                tracing::debug!(
+                                    "Client from user '{}' probably disconnected with status  {}",
+                                    user_uuid,
+                                    status
+                                );
+                            }
+                            _ => {
+                                tracing::error!(
+                                    "Error receiving action from user {} with status  {}",
+                                    user_uuid,
+                                    status
+                                );
+                            }
+                        }
+
                         let _ = (*user_channel_tx_arc_for_action_task)
                             .send(Err(Status::internal("Stream read error")))
                             .await;
+
                         break;
                     }
                 }
@@ -298,11 +306,12 @@ where
 }
 
 #[builder]
-async fn process_action<Q, UNT, CRP, GTR, BL>(
+async fn process_stream_action<Q, UNT, CRP, GTR, BL>(
     action: Action,
-    tx: &UserTx, // Takes a reference to the mpsc::Sender
-    request_uuid: Uuid,
+    tx: &UserTx,
+    request_uuid: String,
     user_uuid: Uuid,
+    get_game_tick_uc: Arc<GetGameTickUseCase<GTR>>,
     get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
     spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
@@ -316,6 +325,20 @@ where
     GTR: GameTickRepository,
     BL: BusinessListingRepository,
 {
+    let Ok(request_uuid) = Uuid::from_str(&request_uuid) else {
+        let game_tick = get_game_tick_uc.execute().await.unwrap_or_default();
+
+        let game_update = GameUpdate {
+            game_tick,
+            update: Some(Update::ActionFailedResponse(ActionFailedResponse {
+                request_uuid: request_uuid.clone(),
+                reason: format!("Invalid request UUID: {}", request_uuid),
+            })),
+        };
+
+        return tx.send(Ok(game_update)).await;
+    };
+
     let result = match action {
         Action::GetCorporation(_) => {
             get_corporation()
@@ -342,22 +365,14 @@ where
                 .await
         }
         Action::AcquireListedBusiness(req) => {
-            async {
-                let Ok(business_listing_uuid) = Uuid::parse_str(&req.business_listing_uuid) else {
-                    return Err(Status::invalid_argument(
-                        "Failed to parse business listing UUID",
-                    ));
-                };
-
-                acquire_listed_business()
-                    .acquire_listed_business_uc(acquire_listed_business_uc)
-                    .req_user_uuid(user_uuid)
-                    .request_uuid(request_uuid)
-                    .business_listing_uuid(business_listing_uuid)
-                    .call()
-                    .await
-            }
-            .await
+            acquire_listed_business()
+                .get_game_tick_uc(get_game_tick_uc)
+                .acquire_listed_business_uc(acquire_listed_business_uc)
+                .req_user_uuid(user_uuid)
+                .request_uuid(request_uuid)
+                .business_listing_uuid(req.business_listing_uuid)
+                .call()
+                .await
         }
         Action::QueryBusinessListings(req) => {
             query_business_listings()

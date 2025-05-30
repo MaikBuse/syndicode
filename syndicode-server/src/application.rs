@@ -4,6 +4,7 @@ pub mod auth;
 pub mod bootstrap;
 pub mod economy;
 pub mod error;
+pub mod game_tick;
 pub mod leader;
 pub mod ports;
 pub mod processor;

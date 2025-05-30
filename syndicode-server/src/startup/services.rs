@@ -16,6 +16,7 @@ use crate::{
             list_markets::ListMarketsUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
         },
+        game_tick::GetGameTickUseCase,
         ports::{
             crypto::{JwtHandler, PasswordHandler},
             game_tick::GameTickRepository,
@@ -165,6 +166,13 @@ impl DefaultAppState {
         let business_service = Arc::new(PgBusinessService::new(pg_pool.clone()));
         let business_listing_service = Arc::new(PgBusinessListingService::new(pg_pool.clone()));
 
+        // System use cases
+        let get_game_tick_uc = Arc::new(
+            GetGameTickUseCase::<PgGameTickService>::builder()
+                .game_tick_repo(game_tick_service.clone())
+                .build(),
+        );
+
         // Auth use cases
         let login_uc = Arc::new(LoginUseCase::new(
             crypto.clone(),
@@ -286,6 +294,7 @@ impl DefaultAppState {
             .config(config.clone())
             .limit(valkey.clone())
             .user_channels(user_channels.clone())
+            .get_game_tick_uc(get_game_tick_uc.clone())
             .list_units_by_user_uc(list_units_by_user_uc.clone())
             .outcome_store_reader(valkey.clone())
             .spawn_unit_uc(spawn_unit_uc.clone())
