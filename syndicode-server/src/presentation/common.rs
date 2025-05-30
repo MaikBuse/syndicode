@@ -1,8 +1,5 @@
 use super::middleware::USER_UUID_KEY;
-use crate::application::{
-    error::ApplicationError,
-    ports::limiter::{LimitationError, LimiterCategory, RateLimitEnforcer},
-};
+use crate::application::ports::limiter::{LimitationError, LimiterCategory, RateLimitEnforcer};
 use anyhow::Result;
 use std::{str::FromStr, sync::Arc};
 use tonic::{metadata::MetadataMap, Code, Status};
@@ -31,33 +28,6 @@ pub fn parse_maybe_uuid(maybe_uuid: Option<String>, context: &str) -> Result<Opt
     }
 
     Ok(None)
-}
-
-pub(super) fn application_error_into_status(err: ApplicationError) -> Status {
-    match err {
-        ApplicationError::UserNotPending => Status::failed_precondition(err.to_string()),
-        ApplicationError::VerificationCodeExpired => Status::deadline_exceeded(err.to_string()),
-        ApplicationError::PasswordTooShort(_)
-        | ApplicationError::PasswordTooLong(_)
-        | ApplicationError::EmailInvalid(_)
-        | ApplicationError::UserNameTooLong(_)
-        | ApplicationError::UserNameTooShort(_)
-        | ApplicationError::CorporationNameTooShort(_)
-        | ApplicationError::CorporationNameTooLong(_)
-        | ApplicationError::VerificationCodeFalse
-        | ApplicationError::UniqueConstraint => Status::invalid_argument(err.to_string()),
-        ApplicationError::WrongUserCredentials
-        | ApplicationError::MissingAuthentication
-        | ApplicationError::UserInactive => Status::unauthenticated(err.to_string()),
-        ApplicationError::Unauthorized => Status::permission_denied(err.to_string()),
-        ApplicationError::Limitation(_)
-        | ApplicationError::Database(_)
-        | ApplicationError::Queue(_)
-        | ApplicationError::Pull(_)
-        | ApplicationError::VerificationSendable(_)
-        | ApplicationError::Sqlx(_)
-        | ApplicationError::Other(_) => Status::internal(err.to_string()),
-    }
 }
 
 pub(super) fn limitation_error_into_status(err: LimitationError) -> Status {

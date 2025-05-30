@@ -1,4 +1,7 @@
-use super::common::{application_error_into_status, check_rate_limit, uuid_from_metadata};
+use super::{
+    common::{check_rate_limit, uuid_from_metadata},
+    error::PresentationError,
+};
 use crate::{
     application::{
         admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
@@ -98,7 +101,7 @@ where
                     user_role,
                 }))
             }
-            Err(err) => Err(application_error_into_status(err)),
+            Err(err) => Err(PresentationError::from(err).into()),
         }
     }
 
@@ -125,7 +128,7 @@ where
 
         match self.delete_user_uc.execute(req_user_uuid, user_uuid).await {
             Ok(_) => Ok(Response::new(DeleteUserResponse {})),
-            Err(err) => Err(application_error_into_status(err)),
+            Err(err) => Err(PresentationError::from(err).into()),
         }
     }
 }

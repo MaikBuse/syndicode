@@ -2,7 +2,10 @@ mod economy;
 pub mod user_channel_guard;
 mod warfare;
 
-use super::common::{ip_address_from_metadata, uuid_from_metadata};
+use super::{
+    common::{ip_address_from_metadata, uuid_from_metadata},
+    error::PresentationError,
+};
 use crate::{
     application::{
         economy::{
@@ -10,7 +13,7 @@ use crate::{
             get_corporation::GetCorporationUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
         },
-        game_tick::GetGameTickUseCase,
+        get_game_tick::GetGameTickUseCase,
         ports::{
             game_tick::GameTickRepository,
             limiter::{LimiterCategory, RateLimitEnforcer},
@@ -328,13 +331,8 @@ where
     let Ok(request_uuid) = Uuid::from_str(&request_uuid) else {
         let game_tick = get_game_tick_uc.execute().await.unwrap_or_default();
 
-        let game_update = GameUpdate {
-            game_tick,
-            update: Some(Update::ActionFailedResponse(ActionFailedResponse {
-                request_uuid: request_uuid.clone(),
-                reason: format!("Invalid request UUID: {}", request_uuid),
-            })),
-        };
+        let game_update = PresentationError::InvalidArgument("Invalid request UUID".to_string())
+            .into_game_update(game_tick, request_uuid.to_string());
 
         return tx.send(Ok(game_update)).await;
     };
@@ -342,6 +340,7 @@ where
     let result = match action {
         Action::GetCorporation(_) => {
             get_corporation()
+                .get_game_tick_uc(get_game_tick_uc)
                 .get_corporation_uc(get_corporation_uc)
                 .user_uuid(user_uuid)
                 .request_uuid(request_uuid)
@@ -350,6 +349,7 @@ where
         }
         Action::SpawnUnit(_) => {
             spawn_unit()
+                .get_game_tick_uc(get_game_tick_uc)
                 .request_uuid(request_uuid)
                 .req_user_uuid(user_uuid)
                 .spawn_unit_uc(spawn_unit_uc)
@@ -358,6 +358,7 @@ where
         }
         Action::ListUnit(_) => {
             list_units()
+                .get_game_tick_uc(get_game_tick_uc)
                 .req_user_uuid(user_uuid)
                 .request_uuid(request_uuid)
                 .list_units_by_user_uc(list_units_by_user_uc)
@@ -376,6 +377,7 @@ where
         }
         Action::QueryBusinessListings(req) => {
             query_business_listings()
+                .get_game_tick_uc(get_game_tick_uc)
                 .req(req)
                 .request_uuid(request_uuid)
                 .query_business_listings_uc(query_business_listings_uc)

@@ -16,7 +16,7 @@ use crate::{
             list_markets::ListMarketsUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
         },
-        game_tick::GetGameTickUseCase,
+        get_game_tick::GetGameTickUseCase,
         ports::{
             crypto::{JwtHandler, PasswordHandler},
             game_tick::GameTickRepository,

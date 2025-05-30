@@ -252,7 +252,7 @@ mod tests {
             name: input_user_name.clone(),
             password_hash: expected_hashed_password.clone(),
             email: input_email.clone(),
-            role: input_role.clone(),
+            role: input_role,
             status: UserStatus::Pending,
         };
 
@@ -273,7 +273,7 @@ mod tests {
             .execute()
             .user_name(input_user_name.into_inner())
             .password(input_password.clone())
-            .user_role(input_role.clone())
+            .user_role(input_role)
             .user_email(input_email.into_inner())
             .corporation_name(input_corp_name.clone())
             .call()
@@ -315,7 +315,7 @@ mod tests {
             .maybe_req_user_uuid(requesting_user_uuid)
             .user_name(input_user_name)
             .password(input_password.clone())
-            .user_role(input_role.clone())
+            .user_role(input_role)
             .user_email(input_email)
             .corporation_name(input_corp_name.clone())
             .call()

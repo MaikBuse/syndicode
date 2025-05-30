@@ -1,4 +1,4 @@
-use super::common::{application_error_into_status, check_rate_limit};
+use super::{common::check_rate_limit, error::PresentationError};
 use crate::{
     application::{
         admin::create_user::CreateUserUseCase,
@@ -81,7 +81,7 @@ where
             Ok(user) => Ok(Response::new(RegisterResponse {
                 user_uuid: user.uuid.to_string(),
             })),
-            Err(err) => Err(application_error_into_status(err)),
+            Err(err) => Err(PresentationError::from(err).into()),
         }
     }
 
@@ -103,7 +103,7 @@ where
             .verify_user_uc
             .execute(request.user_name, request.code)
             .await
-            .map_err(application_error_into_status)?;
+            .map_err(PresentationError::from)?;
 
         Ok(Response::new(VerifyUserResponse {
             user_uuid: user_uuid.to_string(),
@@ -126,7 +126,7 @@ where
             .resend_verification_uc
             .execute(request.into_inner().user_name)
             .await
-            .map_err(application_error_into_status)?;
+            .map_err(PresentationError::from)?;
 
         Ok(Response::new(ResendVerificationEmailResponse {
             user_name: user.name.into_inner(),
@@ -155,7 +155,7 @@ where
         {
             Ok(user) => user,
             Err(err) => {
-                return Err(application_error_into_status(err));
+                return Err(PresentationError::from(err).into());
             }
         };
 
