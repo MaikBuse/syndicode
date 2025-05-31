@@ -165,6 +165,18 @@ impl ServiceDetailWidget {
                 corporation_name.update_textarea(*selected);
                 corporation_name.textarea.render(input_chunks[4], buf);
             }
+            SelectedService::GetUser {
+                selected,
+                user_uuid,
+            } => {
+                let input_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([SINGE_LINE_CONSTRAINT])
+                    .split(inner_popup_area);
+
+                user_uuid.update_textarea(*selected);
+                user_uuid.textarea.render(input_chunks[0], buf);
+            }
             SelectedService::DeleteUser {
                 selected,
                 user_uuid,

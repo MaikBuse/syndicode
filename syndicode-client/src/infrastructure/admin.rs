@@ -1,4 +1,6 @@
-use syndicode_proto::syndicode_interface_v1::{CreateUserRequest, DeleteUserRequest};
+use syndicode_proto::syndicode_interface_v1::{
+    CreateUserRequest, DeleteUserRequest, GetUserRequest,
+};
 use tonic::Request;
 
 use crate::domain::{
@@ -41,6 +43,21 @@ impl AdminRepository for GrpcHandler {
         self.add_token_metadata(request.metadata_mut(), token)?;
 
         let result = self.admin_client.delete_user(request).await;
+
+        self.response_from_result(result)
+    }
+
+    async fn get_user(
+        &mut self,
+        token: String,
+        user_uuid: String,
+    ) -> anyhow::Result<DomainResponse> {
+        let mut request = Request::new(GetUserRequest { user_uuid });
+
+        self.add_ip_metadata(request.metadata_mut())?;
+        self.add_token_metadata(request.metadata_mut(), token)?;
+
+        let result = self.admin_client.get_user(request).await;
 
         self.response_from_result(result)
     }

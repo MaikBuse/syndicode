@@ -17,9 +17,13 @@ use super::{
 };
 use crate::{
     application::{
-        admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
+        admin::{
+            create_user::CreateUserUseCase, delete_user::DeleteUserUseCase,
+            get_user::GetUserUseCase,
+        },
         auth::{
-            login::LoginUserUseCase, register::RegisterUseCase, resend::ResendVerificationUseCase,
+            get_current_user::GetCurrentUserUseCase, login::LoginUserUseCase,
+            register::RegisterUseCase, resend::ResendVerificationUseCase,
             verifiy::VerifyUserUseCase,
         },
         game::{
@@ -95,7 +99,9 @@ where
     pub verifiy_uc: VerifyUserUseCase<AUTH>,
     pub resend_uc: ResendVerificationUseCase<AUTH>,
     pub login_uc: LoginUserUseCase<AUTH>,
+    pub get_current_user_uc: GetCurrentUserUseCase<AUTH>,
     pub create_user_uc: CreateUserUseCase<ADMIN>,
+    pub get_user_uc: GetUserUseCase<ADMIN>,
     pub delete_user_uc: DeleteUserUseCase<ADMIN>,
     pub play_stream_uc: PlayStreamUseCase<GAME>,
     pub get_corporation_uc: GetCorporationUseCase<GAME>,

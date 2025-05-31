@@ -105,40 +105,58 @@ where
             .service_list_widget
             .get_selected_action(&app.service_list_state)
         {
-            if let ServiceAction::PlayStream = service_action {
-                if let Some(token) = app.maybe_token.clone() {
-                    let server_updates_stream = match app.play_stream_uc.execute(token).await {
-                        Ok(inner) => inner,
-                        Err(err) => {
-                            tracing::error!("Failed to retrieve play stream: {}", err);
-                            return;
-                        }
-                    };
-
-                    app.stream_handler
-                        .set_server_updates_stream(server_updates_stream)
-                        .await;
-
-                    app.stream_handler.signal_start_processing();
-
-                    let categories = default_services()
-                        .is_stream_active(true)
-                        .is_logged_in(true)
-                        .call();
-                    app.service_list_widget = ServiceListWidget::new(categories);
-                    app.is_stream_active = true;
+            match service_action {
+                ServiceAction::GetCurrentUser => {
+                    if let Some(token) = app.maybe_token.clone() {
+                        match app.get_current_user_uc.execute().token(token).call().await {
+                            Ok(response) => {
+                                app.response_list_widget.push(response);
+                            }
+                            Err(err) => {
+                                tracing::error!(
+                                    "Failed to retrieve the current user with error: {}",
+                                    err
+                                );
+                            }
+                        };
+                        return;
+                    }
                 }
-                return;
-            }
+                ServiceAction::PlayStream => {
+                    if let Some(token) = app.maybe_token.clone() {
+                        let server_updates_stream = match app.play_stream_uc.execute(token).await {
+                            Ok(inner) => inner,
+                            Err(err) => {
+                                tracing::error!("Failed to retrieve play stream: {}", err);
+                                return;
+                            }
+                        };
 
-            if let ServiceAction::GetCorporation = service_action {
-                if let Err(err) = app.get_corporation_uc.execute().await {
-                    tracing::error!("Failed to retrieve corporation: {}", err);
+                        app.stream_handler
+                            .set_server_updates_stream(server_updates_stream)
+                            .await;
+
+                        app.stream_handler.signal_start_processing();
+
+                        let categories = default_services()
+                            .is_stream_active(true)
+                            .is_logged_in(true)
+                            .call();
+                        app.service_list_widget = ServiceListWidget::new(categories);
+                        app.is_stream_active = true;
+                    }
                     return;
                 }
+                ServiceAction::GetCorporation => {
+                    if let Err(err) = app.get_corporation_uc.execute().await {
+                        tracing::error!("Failed to retrieve corporation: {}", err);
+                        return;
+                    }
 
-                return;
-            }
+                    return;
+                }
+                _ => {}
+            };
 
             let selected = SelectedService::from(service_action);
 

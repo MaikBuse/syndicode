@@ -1,7 +1,10 @@
-use super::{common::check_rate_limit, error::PresentationError};
+use super::{
+    common::{check_rate_limit, uuid_from_metadata},
+    error::PresentationError,
+};
 use crate::{
     application::{
-        admin::create_user::CreateUserUseCase,
+        admin::{create_user::CreateUserUseCase, get_user::GetUserUseCase},
         auth::{
             login::LoginUseCase, resend_verification::ResendVerificationUseCase,
             verify_user::VerifyUserUseCase,
@@ -19,9 +22,9 @@ use crate::{
 use bon::Builder;
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::{
-    auth_service_server::AuthService, LoginRequest, LoginResponse, RegisterRequest,
-    RegisterResponse, ResendVerificationEmailRequest, ResendVerificationEmailResponse,
-    VerifyUserRequest, VerifyUserResponse,
+    auth_service_server::AuthService, GetCurrentUserRequest, GetUserResponse, LoginRequest,
+    LoginResponse, RegisterRequest, RegisterResponse, ResendVerificationEmailRequest,
+    ResendVerificationEmailResponse, VerifyUserRequest, VerifyUserResponse,
 };
 use tonic::{Request, Response, Status};
 
@@ -37,6 +40,7 @@ where
 {
     config: Arc<Config>,
     limit: Arc<R>,
+    get_user_uc: Arc<GetUserUseCase<USR>>,
     create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
     login_uc: Arc<LoginUseCase<P, J, USR>>,
     verify_user_uc: Arc<VerifyUserUseCase<UOW>>,
@@ -160,5 +164,45 @@ where
         };
 
         Ok(Response::new(LoginResponse { jwt }))
+    }
+
+    async fn get_current_user(
+        &self,
+        request: Request<GetCurrentUserRequest>,
+    ) -> Result<Response<GetUserResponse>, Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            &self.config.ip_address_header,
+            LimiterCategory::Auth,
+        )
+        .await?;
+
+        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
+            Ok(uuid) => uuid,
+            Err(status) => return Err(status),
+        };
+
+        let user = match self
+            .get_user_uc
+            .execute()
+            .req_user_uuid(req_user_uuid)
+            .user_uuid(req_user_uuid)
+            .call()
+            .await
+        {
+            Ok(user) => user,
+            Err(err) => {
+                return Err(PresentationError::from(err).into());
+            }
+        };
+
+        Ok(Response::new(GetUserResponse {
+            user_uuid: user.uuid.to_string(),
+            user_name: user.name.into_inner(),
+            email: user.email.into_inner(),
+            user_role: user.role.into(),
+            status: user.status.to_string(),
+        }))
     }
 }

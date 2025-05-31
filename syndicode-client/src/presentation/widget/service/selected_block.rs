@@ -126,6 +126,26 @@ impl SelectedBlockCreateUser {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum SelectedBlockGetUser {
+    #[default]
+    UserUuid,
+}
+
+impl SelectedBlockGetUser {
+    pub fn advance(&mut self) {
+        *self = match self {
+            SelectedBlockGetUser::UserUuid => Self::UserUuid,
+        };
+    }
+
+    pub fn previous(&mut self) {
+        *self = match self {
+            SelectedBlockGetUser::UserUuid => Self::UserUuid,
+        };
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum SelectedBlockDeleteUser {
     #[default]
     UserUuid,

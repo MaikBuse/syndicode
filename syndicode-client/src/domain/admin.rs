@@ -14,6 +14,13 @@ pub trait AdminRepository {
         token: String,
         req: CreateUserDomainRequest,
     ) -> anyhow::Result<DomainResponse>;
+
+    async fn get_user(
+        &mut self,
+        token: String,
+        user_uuid: String,
+    ) -> anyhow::Result<DomainResponse>;
+
     async fn delete_user(
         &mut self,
         token: String,

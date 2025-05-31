@@ -2,7 +2,7 @@ use crate::{
     application::{
         admin::{
             bootstrap_admin::BootstrapAdminUseCase, create_user::CreateUserUseCase,
-            delete_user::DeleteUserUseCase,
+            delete_user::DeleteUserUseCase, get_user::GetUserUseCase,
         },
         auth::{
             login::LoginUseCase, resend_verification::ResendVerificationUseCase,
@@ -179,6 +179,11 @@ impl DefaultAppState {
             crypto.clone(),
             user_service.clone(),
         ));
+        let get_user_uc = Arc::new(
+            GetUserUseCase::builder()
+                .user_repo(user_service.clone())
+                .build(),
+        );
 
         // Admin use cases
         let bootstrap_admin_uc = Arc::new(
@@ -308,6 +313,7 @@ impl DefaultAppState {
             .config(config.clone())
             .limit(valkey.clone())
             .create_user_uc(create_user_uc.clone())
+            .get_user_uc(get_user_uc.clone())
             .delete_user_uc(delete_user_uc.clone())
             .build();
 
@@ -315,6 +321,7 @@ impl DefaultAppState {
             .config(config.clone())
             .limit(valkey.clone())
             .create_user_uc(create_user_uc.clone())
+            .get_user_uc(get_user_uc)
             .login_uc(login_uc.clone())
             .verify_user_uc(verify_user_uc.clone())
             .resend_verification_uc(resend_verification_uc.clone())

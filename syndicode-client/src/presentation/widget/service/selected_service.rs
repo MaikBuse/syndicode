@@ -5,8 +5,8 @@ use crate::presentation::theme::{
 use super::{
     selected_block::{
         SelectedBlockAcquireBusinessListing, SelectedBlockCreateUser, SelectedBlockDeleteUser,
-        SelectedBlockLogin, SelectedBlockQueryBusinessListings, SelectedBlockRegister,
-        SelectedBlockResend, SelectedBlockVerify,
+        SelectedBlockGetUser, SelectedBlockLogin, SelectedBlockQueryBusinessListings,
+        SelectedBlockRegister, SelectedBlockResend, SelectedBlockVerify,
     },
     service_list::ServiceAction,
 };
@@ -132,6 +132,10 @@ pub enum SelectedService<'a> {
         user_email: SelectedServiceData<'a, SelectedBlockCreateUser>,
         user_role: SelectedServiceData<'a, SelectedBlockCreateUser>,
         corporation_name: SelectedServiceData<'a, SelectedBlockCreateUser>,
+    },
+    GetUser {
+        selected: SelectedBlockGetUser,
+        user_uuid: SelectedServiceData<'a, SelectedBlockGetUser>,
     },
     DeleteUser {
         selected: SelectedBlockDeleteUser,
@@ -327,6 +331,15 @@ impl From<ServiceAction> for SelectedService<'_> {
                     "Offset",
                     "50",
                     SelectedBlockQueryBusinessListings::Offset,
+                    false,
+                ),
+            },
+            ServiceAction::GetUser => Self::GetUser {
+                selected: SelectedBlockGetUser::default(),
+                user_uuid: SelectedServiceData::new(
+                    "User UUID",
+                    "7a520b51-ad88-446c-84d6-80de0ed99230",
+                    SelectedBlockGetUser::UserUuid,
                     false,
                 ),
             },

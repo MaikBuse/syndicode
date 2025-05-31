@@ -9,6 +9,9 @@ service AdminService {
   //Creates a new user account.
   rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
 
+  // Retrieves a user by UUID.
+  rpc GetUser(GetUserRequest) returns (syndicode_interface_v1.GetUserResponse);
+
   //Deletes an existing user by UUID.
   rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
 }
@@ -41,6 +44,12 @@ message CreateUserResponse {
 
   //Role assigned to the user.
   syndicode_interface_v1.UserRole user_role = 3;
+}
+
+// Request message for retrieving a user by UUID.
+message GetUserRequest {
+  // UUID of the user to retrieve.
+  string user_uuid = 1;
 }
 
 //Request to delete a user by UUID.

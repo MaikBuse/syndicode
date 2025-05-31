@@ -21,3 +21,20 @@ enum UserRole {
   PLAYER = 2;
 }
 
+// Response message containing user details.
+message GetUserResponse {
+  // UUID of the user.
+  string user_uuid = 1;
+
+  // Name of the user.
+  string user_name = 2;
+
+  // Email address of the user.
+  string email = 3;
+
+  // Role of the user.
+  syndicode_interface_v1.UserRole user_role = 4;
+
+  // Status of the user account.
+  string status = 5;
+}

@@ -8,6 +8,8 @@ mod widget;
 
 use crate::application::admin::create_user::CreateUserUseCase;
 use crate::application::admin::delete_user::DeleteUserUseCase;
+use crate::application::admin::get_user::GetUserUseCase;
+use crate::application::auth::get_current_user::GetCurrentUserUseCase;
 use crate::application::auth::login::LoginUserUseCase;
 use crate::application::auth::resend::ResendVerificationUseCase;
 use crate::application::auth::verifiy::VerifyUserUseCase;
@@ -65,7 +67,13 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let login_uc = LoginUserUseCase::builder()
         .auth_repository(grpc_handler.clone())
         .build();
+    let get_current_user_uc = GetCurrentUserUseCase::builder()
+        .auth_repository(grpc_handler.clone())
+        .build();
     let create_user_uc = CreateUserUseCase::builder()
+        .admin_repository(grpc_handler.clone())
+        .build();
+    let get_user_uc = GetUserUseCase::builder()
         .admin_repository(grpc_handler.clone())
         .build();
     let delete_user_uc = DeleteUserUseCase::builder()
@@ -121,7 +129,9 @@ pub async fn run_cli() -> anyhow::Result<()> {
         .verifiy_uc(verify_uc)
         .resend_uc(resend_uc)
         .login_uc(login_uc)
+        .get_current_user_uc(get_current_user_uc)
         .create_user_uc(create_user_uc)
+        .get_user_uc(get_user_uc)
         .delete_user_uc(delete_user_uc)
         .play_stream_uc(play_stream_uc)
         .get_corporation_uc(get_corporation_uc)

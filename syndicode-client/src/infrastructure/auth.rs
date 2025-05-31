@@ -7,7 +7,8 @@ use crate::domain::{
     response::{DomainResponse, ResponseType},
 };
 use syndicode_proto::syndicode_interface_v1::{
-    LoginRequest, RegisterRequest, ResendVerificationEmailRequest, VerifyUserRequest,
+    GetCurrentUserRequest, LoginRequest, RegisterRequest, ResendVerificationEmailRequest,
+    VerifyUserRequest,
 };
 use time::OffsetDateTime;
 use tonic::Request;
@@ -88,5 +89,16 @@ impl AuthenticationRepository for GrpcHandler {
                     .build(),
             )),
         }
+    }
+
+    async fn get_current_user(&mut self, token: String) -> anyhow::Result<DomainResponse> {
+        let mut request = Request::new(GetCurrentUserRequest {});
+
+        self.add_ip_metadata(request.metadata_mut())?;
+        self.add_token_metadata(request.metadata_mut(), token)?;
+
+        let result = self.auth_client.get_current_user(request).await;
+
+        self.response_from_result(result)
     }
 }

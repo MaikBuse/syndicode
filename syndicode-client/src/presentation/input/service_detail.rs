@@ -5,8 +5,9 @@ use crate::{
         widget::service::{
             selected_block::{
                 SelectedBlockAcquireBusinessListing, SelectedBlockCreateUser,
-                SelectedBlockDeleteUser, SelectedBlockLogin, SelectedBlockQueryBusinessListings,
-                SelectedBlockRegister, SelectedBlockResend, SelectedBlockVerify,
+                SelectedBlockDeleteUser, SelectedBlockGetUser, SelectedBlockLogin,
+                SelectedBlockQueryBusinessListings, SelectedBlockRegister, SelectedBlockResend,
+                SelectedBlockVerify,
             },
             selected_service::SelectedService,
             service_list::{default_services, ServiceListWidget},
@@ -324,12 +325,32 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
+                    SelectedService::GetUser {
+                        selected: _,
+                        user_uuid,
+                    } => {
+                        let user_uuid = user_uuid.textarea.lines().first().ok_or_else(|| {
+                            anyhow::anyhow!("Failed to retrieve user uuid from textarea")
+                        })?;
+
+                        let response = app
+                            .get_user_uc
+                            .execute()
+                            .token(app.maybe_token.clone().unwrap_or_default())
+                            .user_uuid(user_uuid.to_owned())
+                            .call()
+                            .await?;
+
+                        app.response_list_widget.push(response);
+                        app.maybe_selected_service = None;
+                        app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
+                    }
                     SelectedService::DeleteUser {
                         selected: _,
                         user_uuid,
                     } => {
                         let user_uuid = user_uuid.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user name from textarea")
+                            anyhow::anyhow!("Failed to retrieve user uuid from textarea")
                         })?;
 
                         let response = app
@@ -429,6 +450,12 @@ where
                                     .insert_str(app.yank_buffer.clone());
                             }
                         },
+                        SelectedService::GetUser {
+                            selected: _,
+                            user_uuid,
+                        } => {
+                            user_uuid.textarea.insert_str(app.yank_buffer.clone());
+                        }
                         SelectedService::DeleteUser {
                             selected: _,
                             user_uuid,
@@ -509,6 +536,7 @@ where
                         SelectedService::ResendVerification { selected, .. } => selected.advance(),
                         SelectedService::Login { selected, .. } => selected.advance(),
                         SelectedService::CreateUser { selected, .. } => selected.advance(),
+                        SelectedService::GetUser { selected, .. } => selected.advance(),
                         SelectedService::DeleteUser { selected, .. } => selected.advance(),
                         SelectedService::QueryBusinessListings { selected, .. } => {
                             selected.advance()
@@ -527,6 +555,7 @@ where
                         SelectedService::ResendVerification { selected, .. } => selected.previous(),
                         SelectedService::Login { selected, .. } => selected.previous(),
                         SelectedService::CreateUser { selected, .. } => selected.previous(),
+                        SelectedService::GetUser { selected, .. } => selected.previous(),
                         SelectedService::DeleteUser { selected, .. } => selected.previous(),
                         SelectedService::QueryBusinessListings { selected, .. } => {
                             selected.previous()
@@ -612,6 +641,14 @@ where
                     }
                     SelectedBlockCreateUser::CorporationName => {
                         corporation_name.textarea.input(event);
+                    }
+                },
+                SelectedService::GetUser {
+                    selected,
+                    user_uuid,
+                } => match selected {
+                    SelectedBlockGetUser::UserUuid => {
+                        user_uuid.textarea.input(event);
                     }
                 },
                 SelectedService::DeleteUser {

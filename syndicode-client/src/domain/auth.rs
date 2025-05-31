@@ -25,10 +25,15 @@ pub struct LoginUserReq {
 
 pub trait AuthenticationRepository {
     async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<DomainResponse>;
+
     async fn verifiy_user(&mut self, req: VerifyUserReq) -> anyhow::Result<DomainResponse>;
+
     async fn resend_verification(
         &mut self,
         req: ResendVerificationReq,
     ) -> anyhow::Result<DomainResponse>;
+
     async fn login_user(&mut self, req: LoginUserReq) -> anyhow::Result<(String, DomainResponse)>;
+
+    async fn get_current_user(&mut self, token: String) -> anyhow::Result<DomainResponse>;
 }

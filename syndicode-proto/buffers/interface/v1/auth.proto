@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package syndicode_interface_v1;
 
+import "interface/v1/shared.proto";
+
 // Handles user authentication and registration.
 service AuthService {
   // Registers a new user and their corporation.
@@ -13,6 +15,9 @@ service AuthService {
 
   // Authenticates a user and returns a JWT token.
   rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Retrieves the currently authenticated user's information.
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (syndicode_interface_v1.GetUserResponse);
 }
 
 // Request to register a new user.
@@ -80,3 +85,5 @@ message LoginResponse {
   string jwt = 1;
 }
 
+// Request message for retrieving the current authenticated user.
+message GetCurrentUserRequest {}

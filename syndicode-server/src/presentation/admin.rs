@@ -1,9 +1,10 @@
 use super::{
-    common::{check_rate_limit, uuid_from_metadata},
+    common::{check_rate_limit, parse_uuid, uuid_from_metadata},
     error::PresentationError,
 };
 use crate::{
     application::{
+        admin::get_user::GetUserUseCase,
         admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
         ports::{
             crypto::PasswordHandler,
@@ -19,7 +20,7 @@ use bon::Builder;
 use std::{result::Result, sync::Arc};
 use syndicode_proto::syndicode_interface_v1::{
     admin_service_server::AdminService, CreateUserRequest, CreateUserResponse, DeleteUserRequest,
-    DeleteUserResponse, UserRole as ProtoUserRole,
+    DeleteUserResponse, GetUserRequest, GetUserResponse, UserRole as ProtoUserRole,
 };
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
@@ -36,6 +37,7 @@ where
     config: Arc<Config>,
     limit: Arc<R>,
     create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
+    get_user_uc: Arc<GetUserUseCase<USR>>,
     delete_user_uc: Arc<DeleteUserUseCase<USR>>,
 }
 
@@ -130,5 +132,49 @@ where
             Ok(_) => Ok(Response::new(DeleteUserResponse {})),
             Err(err) => Err(PresentationError::from(err).into()),
         }
+    }
+
+    async fn get_user(
+        &self,
+        request: Request<GetUserRequest>,
+    ) -> Result<Response<GetUserResponse>, Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            &self.config.ip_address_header,
+            LimiterCategory::Auth,
+        )
+        .await?;
+
+        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
+            Ok(uuid) => uuid,
+            Err(status) => return Err(status),
+        };
+
+        let request = request.into_inner();
+
+        let user_uuid = parse_uuid(request.user_uuid.as_str())?;
+
+        let user = match self
+            .get_user_uc
+            .execute()
+            .req_user_uuid(req_user_uuid)
+            .user_uuid(user_uuid)
+            .call()
+            .await
+        {
+            Ok(user) => user,
+            Err(err) => {
+                return Err(PresentationError::from(err).into());
+            }
+        };
+
+        Ok(Response::new(GetUserResponse {
+            user_uuid: user.uuid.to_string(),
+            user_name: user.name.into_inner(),
+            email: user.email.into_inner(),
+            user_role: user.role.into(),
+            status: user.status.to_string(),
+        }))
     }
 }

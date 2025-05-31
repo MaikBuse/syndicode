@@ -32,8 +32,10 @@ pub enum ServiceAction {
     VerifyRegistration,
     ResendVerification,
     Login,
+    GetCurrentUser,
     // Administration Category (Example)
     CreateUser,
+    GetUser,
     DeleteUser,
     // Game Category
     PlayStream,
@@ -49,6 +51,8 @@ impl Display for ServiceAction {
             ServiceAction::VerifyRegistration => write!(f, "Verify User Registration"),
             ServiceAction::ResendVerification => write!(f, "Resend Verification Code"),
             ServiceAction::Login => write!(f, "Login User"),
+            ServiceAction::GetCurrentUser => write!(f, "Get Current User"),
+            ServiceAction::GetUser => write!(f, "Get User"),
             ServiceAction::CreateUser => write!(f, "Create User"),
             ServiceAction::DeleteUser => write!(f, "Delete User"),
             ServiceAction::PlayStream => write!(f, "Setup the game stream"),
@@ -196,27 +200,28 @@ impl ServiceListWidget {
 /// Provides a default set of categorized services.
 #[builder]
 pub fn default_services(is_logged_in: bool, is_stream_active: bool) -> Vec<ServiceCategory> {
-    let mut service_categories = vec![
-        ServiceCategory {
-            name: "🔒 Authorization".to_string(),
-            items: vec![
-                ServiceItem::new(ServiceAction::Register),
-                ServiceItem::new(ServiceAction::VerifyRegistration),
-                ServiceItem::new(ServiceAction::ResendVerification),
-                ServiceItem::new(ServiceAction::Login),
-            ],
-        },
-        ServiceCategory {
-            name: "⚙️Administration".to_string(),
-            items: vec![
-                ServiceItem::new(ServiceAction::CreateUser),
-                ServiceItem::new(ServiceAction::DeleteUser),
-            ],
-        },
+    let mut auth_items = vec![
+        ServiceItem::new(ServiceAction::Register),
+        ServiceItem::new(ServiceAction::VerifyRegistration),
+        ServiceItem::new(ServiceAction::ResendVerification),
+        ServiceItem::new(ServiceAction::Login),
     ];
 
+    let mut admin_items: Vec<ServiceItem> = Vec::new();
+
+    let mut game_items: Vec<ServiceItem> = Vec::new();
+
     if is_logged_in {
-        let mut game_items = vec![ServiceItem::new(ServiceAction::PlayStream)];
+        auth_items.push(ServiceItem::new(ServiceAction::GetCurrentUser));
+
+        let mut logged_in_admin_items = vec![
+            ServiceItem::new(ServiceAction::CreateUser),
+            ServiceItem::new(ServiceAction::DeleteUser),
+            ServiceItem::new(ServiceAction::GetUser),
+        ];
+        admin_items.append(&mut logged_in_admin_items);
+
+        game_items.push(ServiceItem::new(ServiceAction::PlayStream));
 
         if is_stream_active {
             let mut streaming_game_items = vec![
@@ -227,11 +232,26 @@ pub fn default_services(is_logged_in: bool, is_stream_active: bool) -> Vec<Servi
 
             game_items.append(&mut streaming_game_items);
         }
+    }
 
-        service_categories.push(ServiceCategory {
-            name: "🕹️ Game".to_string(),
-            items: game_items,
-        });
+    let mut service_categories = vec![ServiceCategory {
+        name: "🔒 Authorization".to_string(),
+        items: auth_items,
+    }];
+
+    if is_logged_in {
+        let mut logged_in_service_categories = vec![
+            ServiceCategory {
+                name: "⚙️Administration".to_string(),
+                items: admin_items,
+            },
+            ServiceCategory {
+                name: "🕹️ Game".to_string(),
+                items: game_items,
+            },
+        ];
+
+        service_categories.append(&mut logged_in_service_categories);
     }
 
     service_categories
