@@ -9,6 +9,7 @@ use crate::{
                 SelectedBlockRegister, SelectedBlockResend, SelectedBlockVerify,
             },
             selected_service::SelectedService,
+            service_list::{default_services, ServiceListWidget},
         },
     },
 };
@@ -267,6 +268,13 @@ where
 
                         app.response_list_widget.push(response);
                         app.maybe_selected_service = None;
+
+                        let categories = default_services()
+                            .is_stream_active(false)
+                            .is_logged_in(true)
+                            .call();
+                        app.service_list_widget = ServiceListWidget::new(categories);
+
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
                     SelectedService::CreateUser {

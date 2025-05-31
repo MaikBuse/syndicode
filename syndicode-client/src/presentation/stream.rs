@@ -96,6 +96,10 @@ impl StreamHandler {
             // Main loop for processing stream updates
             loop {
                 tokio::select! {
+                    _ = stop_signal_clone.notified() => {
+                        tracing::debug!("[Stream] Stop signal received. Stopping processing of server updates.");
+                        break;
+                    }
                     maybe_stream_result = stream_arc.next() => {
                         if let Some(stream_result) = maybe_stream_result {
                             match stream_result {
@@ -134,10 +138,6 @@ impl StreamHandler {
                         } else {
                             break;
                         }
-                    }
-                    _ = stop_signal_clone.notified() => {
-                        tracing::debug!("[Stream] Stop signal received. Stopping processing of server updates.");
-                        break;
                     }
                 }
             }

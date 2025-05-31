@@ -1,54 +1,40 @@
-use super::app::AppEvent;
-use ratatui::crossterm::event::{Event, KeyCode};
-use tokio::sync::mpsc;
+use std::sync::Arc;
 
+use super::app::AppEvent;
+use tokio::sync::{mpsc, Notify};
+
+#[derive(Debug)]
 pub struct InputReader {
-    just_pressed_esc: bool,
-    should_exit: bool,
+    shutdown_signal: Arc<Notify>,
 }
 
 impl InputReader {
-    pub fn new() -> Self {
-        InputReader {
-            just_pressed_esc: false,
-            should_exit: false,
-        }
+    pub fn new(shutdown_signal: Arc<Notify>) -> Self {
+        InputReader { shutdown_signal }
     }
 
-    pub async fn read_input_events(mut self, tx: mpsc::Sender<AppEvent>) {
+    pub async fn read_input_events(self, tx: mpsc::Sender<AppEvent>) {
         'read_input_loop: loop {
-            // Spawn the blocking read operation on a dedicated thread
-            // so it doesn't block the async runtime.
-            let event_result = tokio::task::spawn_blocking(ratatui::crossterm::event::read).await;
-
-            match event_result {
-                Ok(Ok(event)) => {
-                    if let Event::Key(key_event) = event {
-                        if self.just_pressed_esc && key_event.code == KeyCode::Char('y') {
-                            self.should_exit = true;
+            let event_fut = tokio::task::spawn_blocking(ratatui::crossterm::event::read);
+            tokio::select! {
+                _ = self.shutdown_signal.notified() => {
+                    // Received shutdown signal, break the loop
+                    break 'read_input_loop;
+                }
+                event_result = event_fut => {
+                    match event_result {
+                        Ok(Ok(event)) => {
+                            if tx.send(AppEvent::Crossterm(event)).await.is_err() {
+                                break;
+                            }
                         }
-
-                        self.just_pressed_esc = key_event.code == KeyCode::Esc;
+                        Ok(Err(_io_err)) => {
+                            break;
+                        }
+                        Err(_join_err) => {
+                            break;
+                        }
                     }
-
-                    // spawn_blocking finished successfully, and read() was Ok
-                    if tx.send(AppEvent::Crossterm(event)).await.is_err() {
-                        // Receiver (event_rx in main) has been dropped,
-                        // indicating the main app loop has exited. So, we should also exit.
-                        break;
-                    }
-
-                    if self.should_exit {
-                        break 'read_input_loop;
-                    }
-                }
-                Ok(Err(_io_err)) => {
-                    // crossterm::event::read() returned an IO error.
-                    break; // Exit loop on IO error
-                }
-                Err(_join_err) => {
-                    // The spawn_blocking task panicked or was cancelled (e.g. by runtime shutdown).
-                    break; // Exit loop if the blocking task fails
                 }
             }
         }

@@ -1,6 +1,7 @@
 use crate::presentation::theme::{
     ACCENT_DARK_PURPLE, CYBER_BG, CYBER_FG, CYBER_PINK, CYBER_YELLOW,
 };
+use bon::builder;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -36,6 +37,7 @@ pub enum ServiceAction {
     DeleteUser,
     // Game Category
     PlayStream,
+    GetCorporation,
     QueryBusinessListings,
     AcquireListedBusiness,
 }
@@ -50,6 +52,7 @@ impl Display for ServiceAction {
             ServiceAction::CreateUser => write!(f, "Create User"),
             ServiceAction::DeleteUser => write!(f, "Delete User"),
             ServiceAction::PlayStream => write!(f, "Setup the game stream"),
+            ServiceAction::GetCorporation => write!(f, "Get your corporation"),
             ServiceAction::QueryBusinessListings => write!(f, "Query business listings"),
             ServiceAction::AcquireListedBusiness => write!(f, "Acquire listed business"),
         }
@@ -191,8 +194,9 @@ impl ServiceListWidget {
 }
 
 /// Provides a default set of categorized services.
-pub fn default_services() -> Vec<ServiceCategory> {
-    vec![
+#[builder]
+pub fn default_services(is_logged_in: bool, is_stream_active: bool) -> Vec<ServiceCategory> {
+    let mut service_categories = vec![
         ServiceCategory {
             name: "🔒 Authorization".to_string(),
             items: vec![
@@ -209,15 +213,28 @@ pub fn default_services() -> Vec<ServiceCategory> {
                 ServiceItem::new(ServiceAction::DeleteUser),
             ],
         },
-        ServiceCategory {
-            name: "🕹️ Game".to_string(),
-            items: vec![
-                ServiceItem::new(ServiceAction::PlayStream),
+    ];
+
+    if is_logged_in {
+        let mut game_items = vec![ServiceItem::new(ServiceAction::PlayStream)];
+
+        if is_stream_active {
+            let mut streaming_game_items = vec![
+                ServiceItem::new(ServiceAction::GetCorporation),
                 ServiceItem::new(ServiceAction::QueryBusinessListings),
                 ServiceItem::new(ServiceAction::AcquireListedBusiness),
-            ],
-        },
-    ]
+            ];
+
+            game_items.append(&mut streaming_game_items);
+        }
+
+        service_categories.push(ServiceCategory {
+            name: "🕹️ Game".to_string(),
+            items: game_items,
+        });
+    }
+
+    service_categories
 }
 
 impl StatefulWidget for &ServiceListWidget {

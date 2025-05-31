@@ -3,7 +3,10 @@ use crate::{
     presentation::{
         app::{App, CurrentScreen, CurrentScreenMain},
         widget::{
-            service::{selected_service::SelectedService, service_list::ServiceAction},
+            service::{
+                selected_service::SelectedService,
+                service_list::{default_services, ServiceAction, ServiceListWidget},
+            },
             vim::Mode,
         },
     },
@@ -104,7 +107,13 @@ where
         {
             if let ServiceAction::PlayStream = service_action {
                 if let Some(token) = app.maybe_token.clone() {
-                    let server_updates_stream = app.play_stream_uc.execute(token).await.unwrap();
+                    let server_updates_stream = match app.play_stream_uc.execute(token).await {
+                        Ok(inner) => inner,
+                        Err(err) => {
+                            tracing::error!("Failed to retrieve play stream: {}", err);
+                            return;
+                        }
+                    };
 
                     app.stream_handler
                         .set_server_updates_stream(server_updates_stream)
@@ -112,8 +121,22 @@ where
 
                     app.stream_handler.signal_start_processing();
 
+                    let categories = default_services()
+                        .is_stream_active(true)
+                        .is_logged_in(true)
+                        .call();
+                    app.service_list_widget = ServiceListWidget::new(categories);
                     app.is_stream_active = true;
                 }
+                return;
+            }
+
+            if let ServiceAction::GetCorporation = service_action {
+                if let Err(err) = app.get_corporation_uc.execute().await {
+                    tracing::error!("Failed to retrieve corporation: {}", err);
+                    return;
+                }
+
                 return;
             }
 

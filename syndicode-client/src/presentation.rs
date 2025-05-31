@@ -21,7 +21,7 @@ use event::InputReader;
 use ratatui::widgets::ListState;
 use std::sync::Arc;
 use stream::StreamHandler;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{mpsc, Mutex, Notify};
 use widget::exit::ExitPopupWidget;
 use widget::response_detail::ResponseDetailWidget;
 use widget::response_list::ResponseListWidget;
@@ -41,11 +41,16 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let mut terminal = ratatui::init();
 
     // Event channel for input events from InputReader
+    // Event channel for input events from InputReader
     let (app_event_tx, mut app_event_rx) = mpsc::channel(10);
+    let app_event_tx_clone = app_event_tx.clone();
 
-    let input_reader = InputReader::new();
+    let shutdown_signal = Arc::new(Notify::new());
+    let input_reader = InputReader::new(Arc::clone(&shutdown_signal));
     // Spawn a task to read input events and send them through the channel
-    let read_input_handle = tokio::spawn(input_reader.read_input_events(app_event_tx.clone()));
+    let read_input_handle = tokio::spawn(async move {
+        input_reader.read_input_events(app_event_tx_clone).await;
+    });
 
     // Initialize Use Cases
     let register_uc = RegisterUseCase::builder()
@@ -69,6 +74,10 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let play_stream_uc = PlayStreamUseCase::builder()
         .game_repo(grpc_handler.clone())
         .build();
+    let get_corporation_uc =
+        crate::application::game::get_corporation::GetCorporationUseCase::builder()
+            .game_repo(grpc_handler.clone())
+            .build();
     let query_business_listings_uc = QueryBusinessListingsUseCase::builder()
         .game_repo(grpc_handler.clone())
         .build();
@@ -84,7 +93,10 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let response_detail_widget = ResponseDetailWidget;
     let service_detail_widget = ServiceDetailWidget;
     let exit_popup_widget = ExitPopupWidget;
-    let categories = default_services();
+    let categories = default_services()
+        .is_stream_active(false)
+        .is_logged_in(false)
+        .call();
     let service_list_widget = ServiceListWidget::new(categories);
 
     // Vim
@@ -112,9 +124,11 @@ pub async fn run_cli() -> anyhow::Result<()> {
         .create_user_uc(create_user_uc)
         .delete_user_uc(delete_user_uc)
         .play_stream_uc(play_stream_uc)
+        .get_corporation_uc(get_corporation_uc)
         .query_business_listings_uc(query_business_listings_uc)
         .acquire_business_listing_uc(acquire_listed_business_uc)
         .is_stream_active(false)
+        .input_reader_shutdown_signal(shutdown_signal)
         .build();
 
     // Spawn the task that listens to server game updates.

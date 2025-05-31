@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::{
     input::handle_crossterm_event,
     stream::StreamHandler,
@@ -22,6 +24,7 @@ use crate::{
         },
         game::{
             acquire_listed_business::AcquireListedBusinessUseCase,
+            get_corporation::GetCorporationUseCase,
             query_business_listings::QueryBusinessListingsUseCase, stream::PlayStreamUseCase,
         },
     },
@@ -34,7 +37,7 @@ use crate::{
 };
 use bon::Builder;
 use ratatui::{widgets::ListState, DefaultTerminal};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Notify};
 use tui_textarea::TextArea;
 
 pub enum AppEvent {
@@ -78,6 +81,7 @@ where
     pub should_exit: bool,
     pub stream_handler: StreamHandler,
     pub maybe_response_detail_textarea: Option<TextArea<'a>>,
+    pub input_reader_shutdown_signal: Arc<Notify>,
     pub response_detail_vim: Vim,
     pub maybe_selected_service: Option<SelectedService<'a>>,
     pub service_list_widget: ServiceListWidget,
@@ -94,6 +98,7 @@ where
     pub create_user_uc: CreateUserUseCase<ADMIN>,
     pub delete_user_uc: DeleteUserUseCase<ADMIN>,
     pub play_stream_uc: PlayStreamUseCase<GAME>,
+    pub get_corporation_uc: GetCorporationUseCase<GAME>,
     pub query_business_listings_uc: QueryBusinessListingsUseCase<GAME>,
     pub acquire_business_listing_uc: AcquireListedBusinessUseCase<GAME>,
 }
@@ -150,6 +155,8 @@ where
 
             if self.should_exit {
                 tracing::info!("App::run: Exiting loop due to should_exit flag.");
+
+                self.input_reader_shutdown_signal.notify_one();
 
                 if self.stream_handler.is_processing().await {
                     self.stream_handler.signal_stop_processing();
