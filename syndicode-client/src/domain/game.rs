@@ -17,6 +17,8 @@ pub struct QueryBusinessListingsDomainRequest {
 }
 
 pub trait GameRepository {
+    async fn get_corporation(&mut self) -> anyhow::Result<()>;
+
     async fn play_stream(&mut self, token: String) -> anyhow::Result<Streaming<GameUpdate>>;
 
     async fn query_business_listings(

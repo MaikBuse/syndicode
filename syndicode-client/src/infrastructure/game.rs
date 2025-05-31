@@ -1,7 +1,9 @@
 use super::grpc::GrpcHandler;
 use crate::domain::game::{GameRepository, QueryBusinessListingsDomainRequest};
 use syndicode_proto::{
-    syndicode_economy_v1::{AcquireListedBusinessRequest, QueryBusinessListingsRequest},
+    syndicode_economy_v1::{
+        AcquireListedBusinessRequest, GetCorporationRequest, QueryBusinessListingsRequest,
+    },
     syndicode_interface_v1::{player_action::Action, GameUpdate, PlayerAction},
 };
 use tokio::sync::mpsc::{self};
@@ -30,6 +32,21 @@ impl GameRepository for GrpcHandler {
             }
             Err(status) => Err(anyhow::anyhow!("Error calling play_stream: {}", status)),
         }
+    }
+
+    async fn get_corporation(&mut self) -> anyhow::Result<()> {
+        let Some(client_action_tx) = self.maybe_client_action_tx.clone() else {
+            return Err(anyhow::anyhow!(
+                "Failed to retrieve client action sender from grpc handler"
+            ));
+        };
+
+        let player_action = PlayerAction {
+            request_uuid: Uuid::now_v7().to_string(),
+            action: Some(Action::GetCorporation(GetCorporationRequest {})),
+        };
+
+        Ok(client_action_tx.send(player_action).await?)
     }
 
     async fn query_business_listings(
