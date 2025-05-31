@@ -103,7 +103,7 @@ impl GameState {
 
     // Convenience (less needed now)
     pub fn ref_mut_corporation_by_user(&mut self, user_uuid: &Uuid) -> Option<&mut Corporation> {
-        let uuid = self.get_corporation_uuid_by_user(user_uuid)?.clone();
+        let uuid = *self.get_corporation_uuid_by_user(user_uuid)?;
         self.ref_mut_corporation(&uuid)
     }
 }

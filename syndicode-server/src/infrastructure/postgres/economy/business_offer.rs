@@ -6,7 +6,7 @@ use crate::{
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
+    infrastructure::postgres::uow::PgTransactionContext,
 };
 use sqlx::{PgPool, Postgres};
 use std::sync::Arc;

@@ -19,7 +19,7 @@ impl PgUserRepository {
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         user: &User,
     ) -> RepositoryResult<()> {
-        let user_role: i16 = user.role.clone().into();
+        let user_role: i16 = user.role.into();
         let user_name = user.name.clone().into_inner();
         let user_email = user.email.clone().into_inner();
         let user_status = user.status.to_string();
@@ -119,7 +119,7 @@ impl PgUserRepository {
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         user: &User,
     ) -> RepositoryResult<()> {
-        let user_role: i16 = user.role.clone().into();
+        let user_role: i16 = user.role.into();
         let user_name = user.name.clone().into_inner();
         let user_email = user.email.clone().into_inner();
         let user_status = user.status.to_string();

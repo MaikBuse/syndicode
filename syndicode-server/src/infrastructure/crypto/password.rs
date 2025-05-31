@@ -23,7 +23,7 @@ impl PasswordHandler for CryptoService {
         user_password_hash: &str,
         provided_password: String,
     ) -> anyhow::Result<()> {
-        let parsed_hash = match PasswordHash::new(&user_password_hash) {
+        let parsed_hash = match PasswordHash::new(user_password_hash) {
             Ok(password_hash) => password_hash,
             Err(err) => {
                 return Err(anyhow::anyhow!(
