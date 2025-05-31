@@ -11,3 +11,8 @@ build:
 [group('cargo')]
 run:
   cargo run -p syndicode-client
+
+# Check the formatting
+[group('cargo')]
+fmt:
+  cargo fmt --manifest-path syndicode-client/Cargo.toml

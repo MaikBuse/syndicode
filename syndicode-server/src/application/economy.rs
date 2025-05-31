@@ -6,4 +6,3 @@ pub mod list_businesses;
 pub mod list_corporations;
 pub mod list_markets;
 pub mod query_business_listings;
-
