@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.9.0](https://github.com/MaikBuse/syndicode/compare/v0.8.1...v0.9.0) (2025-05-31)
+
+
+### Features
+
+* add checks for fmt and clippy ([7c8da50](https://github.com/MaikBuse/syndicode/commit/7c8da50c16e4a012a51ce0e5518f69d9f8afa7f7))
+* add instructions to resend verification mail and login ([f6b87a9](https://github.com/MaikBuse/syndicode/commit/f6b87a99a411db6e1866c551a1076d47862b3df3))
+* change licensing to cc ([5ee0a87](https://github.com/MaikBuse/syndicode/commit/5ee0a871706a743f8511a56b3ddf43a3781397fa))
+* **ci:** improve caching ([c96645f](https://github.com/MaikBuse/syndicode/commit/c96645f7242059e0454a58511f25bc3b585e7f1e))
+* **client:** Acquire business listings ([70763e8](https://github.com/MaikBuse/syndicode/commit/70763e8f94f28ccb3598c810491e488bb28fcb10))
+* **client:** add get corporation ([3c5d742](https://github.com/MaikBuse/syndicode/commit/3c5d7429eb973c916157752a3ed7f13bcd10e7ea))
+* **client:** display in stream errors ([6639c32](https://github.com/MaikBuse/syndicode/commit/6639c32204fb2d61dae8a85c20703c809fb79f1a))
+* **client:** improve error handling on connection failure ([c411969](https://github.com/MaikBuse/syndicode/commit/c411969f6b0f069a629b55cebfcb0928353e7180))
+* **client:** improve logging ([6b27aef](https://github.com/MaikBuse/syndicode/commit/6b27aefa1d95dcc8889015ced22b79fd9658b684))
+* **client:** improve shutdown mechanics ([8d0e117](https://github.com/MaikBuse/syndicode/commit/8d0e11707a83d9d918bcba6929fdecd8068e60fe))
+* **client:** introducing admin requests ([efd4617](https://github.com/MaikBuse/syndicode/commit/efd4617c28fe8aa6139ae36560dee2cea5940be2))
+* **client:** introducing response detail view ([bb62168](https://github.com/MaikBuse/syndicode/commit/bb621682cec88c1291f5bd6c43c295b8717a5b36))
+* **client:** mask password inputs ([2b0241f](https://github.com/MaikBuse/syndicode/commit/2b0241f3d3fc1ff9ae351d55f6ccc663d641f642))
+* introducing basic economy gameloop ([7faf385](https://github.com/MaikBuse/syndicode/commit/7faf38511769202bfe71ffe11d7517b1f0f16e9a))
+* introducing get user service ([d7dd5bb](https://github.com/MaikBuse/syndicode/commit/d7dd5bbb2af64e52388f3afb0d2aa92aef719ae2))
+* introducing grpcs tui client ([19dcb83](https://github.com/MaikBuse/syndicode/commit/19dcb837b88d2d4643ee373058d5a767d4301b13))
+* query business listings by multiple parameters ([a7cfc30](https://github.com/MaikBuse/syndicode/commit/a7cfc3074597f8421c8414824f0dc77a46090055))
+* send game tick notifications to clients ([46ad925](https://github.com/MaikBuse/syndicode/commit/46ad92530863903fdcda4a1b87a1b3ebbafb0c39))
+* **server:** improved error handling by introducing a PresentationError ([5385004](https://github.com/MaikBuse/syndicode/commit/5385004f435efd317908a5c38efd82d2d5a44bb9))
+* **server:** return stream errors as game updates ([6b38f21](https://github.com/MaikBuse/syndicode/commit/6b38f216c4a64608aaae51ff1dfc5d693467404d))
+
+
+### Bug Fixes
+
+* **client:** remove active line underscore ([ad2643b](https://github.com/MaikBuse/syndicode/commit/ad2643bff74ed9fec344ea5b6acd50d9617f8b9a))
+* **client:** return empty uuids on request ([d08c3a2](https://github.com/MaikBuse/syndicode/commit/d08c3a2759d357c9b10945d7a33cf204f8b4f58d))
+* create user unit tests ([e0c2506](https://github.com/MaikBuse/syndicode/commit/e0c2506ec4e88bd7927ad40b70bd946cf1e4af2d))
+* port and protocoll of grpcurl call ([32987a0](https://github.com/MaikBuse/syndicode/commit/32987a0bd70c4519a27edfb7d9ddbd6a956842d7))
+* spelling mistake ([a8e9a76](https://github.com/MaikBuse/syndicode/commit/a8e9a7662a55df88bdb9d6a9c4d8b815df136715))
+
 ## [0.8.1](https://github.com/MaikBuse/syndicode/compare/v0.8.0...v0.8.1) (2025-04-20)
 
 
