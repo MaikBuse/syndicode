@@ -14,23 +14,38 @@ jobs:
     name: Build & Test syndicode-server
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        rust: [stable]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install protoc
+      - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            syndicode-server/target
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.rust }}-
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           components: clippy, rustfmt
 
       - name: Check formatting
         run: cargo fmt --manifest-path syndicode-server/Cargo.toml -- --check
 
       - name: Lint with Clippy
-        run: cargo clippy --manifest-path syndicode-server/Cargo.toml --all-targets --all-features
+        run: cargo clippy --manifest-path syndicode-server/Cargo.toml --all-targets --all-features -- -D warnings
 
       - name: Build
         run: cargo build --manifest-path syndicode-server/Cargo.toml --verbose
