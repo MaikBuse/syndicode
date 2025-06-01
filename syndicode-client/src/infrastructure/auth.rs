@@ -1,18 +1,18 @@
 use super::grpc::GrpcHandler;
 use crate::domain::{
-    auth::{
+    auth::repository::{
         AuthenticationRepository, LoginUserReq, RegisterUserReq, ResendVerificationReq,
         VerifyUserReq,
     },
-    response::{DomainResponse, ResponseType},
+    response::DomainResponse,
 };
 use syndicode_proto::syndicode_interface_v1::{
-    GetCurrentUserRequest, LoginRequest, RegisterRequest, ResendVerificationEmailRequest,
-    VerifyUserRequest,
+    GetCurrentUserRequest, GetUserResponse, LoginRequest, LoginResponse, RegisterRequest,
+    ResendVerificationEmailRequest, VerifyUserRequest,
 };
-use time::OffsetDateTime;
 use tonic::Request;
 
+#[tonic::async_trait]
 impl AuthenticationRepository for GrpcHandler {
     async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<DomainResponse> {
         let mut request = Request::new(RegisterRequest {
@@ -54,7 +54,7 @@ impl AuthenticationRepository for GrpcHandler {
         self.response_from_result(result)
     }
 
-    async fn login_user(&mut self, req: LoginUserReq) -> anyhow::Result<(String, DomainResponse)> {
+    async fn login_user(&mut self, req: LoginUserReq) -> anyhow::Result<LoginResponse> {
         let mut request = Request::new(LoginRequest {
             user_name: req.user_name,
             user_password: req.user_password,
@@ -62,43 +62,25 @@ impl AuthenticationRepository for GrpcHandler {
 
         self.add_ip_metadata(request.metadata_mut())?;
 
-        let result = self.auth_client.login(request).await;
-
-        match result {
-            Ok(response) => {
-                let message = format!("{:#?}", response);
-                let jwt = response.into_inner().jwt;
-
-                Ok((
-                    jwt,
-                    DomainResponse::builder()
-                        .response_type(ResponseType::Success)
-                        .code("OK".to_string())
-                        .message(message)
-                        .timestamp(OffsetDateTime::now_utc())
-                        .build(),
-                ))
-            }
-            Err(status) => Ok((
-                "".to_string(),
-                DomainResponse::builder()
-                    .response_type(ResponseType::Error)
-                    .code(status.code().description().to_string())
-                    .message(format!("{:#?}", status.message()))
-                    .timestamp(OffsetDateTime::now_utc())
-                    .build(),
-            )),
-        }
+        Ok(self
+            .auth_client
+            .login(request)
+            .await
+            .map_err(|status| anyhow::anyhow!("{}", status))?
+            .into_inner())
     }
 
-    async fn get_current_user(&mut self, token: String) -> anyhow::Result<DomainResponse> {
+    async fn get_current_user(&mut self, token: String) -> anyhow::Result<GetUserResponse> {
         let mut request = Request::new(GetCurrentUserRequest {});
 
         self.add_ip_metadata(request.metadata_mut())?;
         self.add_token_metadata(request.metadata_mut(), token)?;
 
-        let result = self.auth_client.get_current_user(request).await;
-
-        self.response_from_result(result)
+        Ok(self
+            .auth_client
+            .get_current_user(request)
+            .await
+            .map_err(|status| anyhow::anyhow!("{}", status))?
+            .into_inner())
     }
 }

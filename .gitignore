@@ -2,7 +2,8 @@
 /target
 
 # dotenv
-.env
+/.env
 
 # client
 syndicode-client.log
+/client_config.toml

@@ -1,5 +1,8 @@
 use crate::{
-    domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository},
+    domain::{
+        admin::AdminRepository, auth::repository::AuthenticationRepository, game::GameRepository,
+        response::DomainResponse,
+    },
     presentation::{
         app::{App, CurrentScreen, CurrentScreenMain},
         widget::{
@@ -108,17 +111,16 @@ where
             match service_action {
                 ServiceAction::GetCurrentUser => {
                     if let Some(token) = app.maybe_token.clone() {
-                        match app.get_current_user_uc.execute().token(token).call().await {
-                            Ok(response) => {
-                                app.response_list_widget.push(response);
-                            }
-                            Err(err) => {
-                                tracing::error!(
-                                    "Failed to retrieve the current user with error: {}",
-                                    err
-                                );
-                            }
-                        };
+                        let response: DomainResponse = app
+                            .get_current_user_uc
+                            .execute()
+                            .token(token)
+                            .call()
+                            .await
+                            .into();
+
+                        app.response_list_widget.push(response);
+
                         return;
                     }
                 }

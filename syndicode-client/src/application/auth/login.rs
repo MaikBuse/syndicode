@@ -1,9 +1,7 @@
-use crate::domain::{
-    auth::{AuthenticationRepository, LoginUserReq},
-    response::DomainResponse,
-};
+use crate::domain::auth::repository::{AuthenticationRepository, LoginUserReq};
 use bon::{bon, Builder};
 use std::sync::Arc;
+use syndicode_proto::syndicode_interface_v1::LoginResponse;
 use tokio::sync::Mutex;
 
 #[derive(Builder, Debug)]
@@ -24,7 +22,7 @@ where
         &mut self,
         user_name: String,
         user_password: String,
-    ) -> anyhow::Result<(String, DomainResponse)> {
+    ) -> anyhow::Result<LoginResponse> {
         let req = LoginUserReq {
             user_name,
             user_password,

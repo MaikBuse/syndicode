@@ -7,6 +7,11 @@ help:
 build:
   cargo build -p syndicode-client
 
+# Test the client crate
+[group('cargo')]
+test:
+  cargo test -p syndicode-client
+
 # Run the client crate
 [group('cargo')]
 run:

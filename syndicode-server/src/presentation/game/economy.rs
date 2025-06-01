@@ -5,7 +5,7 @@ use crate::{
             get_corporation::GetCorporationUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
         },
-        get_game_tick::GetGameTickUseCase,
+        game::get_game_tick::GetGameTickUseCase,
         ports::{game_tick::GameTickRepository, queuer::ActionQueueable},
     },
     domain::economy::{

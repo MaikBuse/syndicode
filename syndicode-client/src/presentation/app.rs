@@ -34,7 +34,7 @@ use crate::{
     },
     domain::{
         admin::AdminRepository,
-        auth::AuthenticationRepository,
+        auth::repository::AuthenticationRepository,
         game::GameRepository,
         response::{DomainResponse, ResponseType},
     },

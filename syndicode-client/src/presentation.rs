@@ -37,7 +37,7 @@ pub async fn run_cli() -> anyhow::Result<()> {
 
     // Initialize gRPC handler (shared among use cases)
     let grpc_handler = Arc::new(Mutex::new(
-        GrpcHandler::new(config.grpc.auth_service_address).await?,
+        GrpcHandler::new(config.grpc.server_address).await?,
     ));
 
     let mut terminal = ratatui::init();

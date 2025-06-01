@@ -1,6 +1,6 @@
 use crate::{
     application::{
-        get_game_tick::GetGameTickUseCase,
+        game::get_game_tick::GetGameTickUseCase,
         ports::{game_tick::GameTickRepository, queuer::ActionQueueable},
         warfare::{list_units_by_user::ListUnitsByUserUseCase, spawn_unit::SpawnUnitUseCase},
     },

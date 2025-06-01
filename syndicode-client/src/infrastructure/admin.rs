@@ -10,6 +10,7 @@ use crate::domain::{
 
 use super::grpc::GrpcHandler;
 
+#[tonic::async_trait]
 impl AdminRepository for GrpcHandler {
     async fn create_user(
         &mut self,

@@ -1,5 +1,7 @@
 use crate::{
-    domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository},
+    domain::{
+        admin::AdminRepository, auth::repository::AuthenticationRepository, game::GameRepository,
+    },
     presentation::{
         app::{App, CurrentScreen, CurrentScreenMain},
         widget::service::{
@@ -256,19 +258,21 @@ where
                                 anyhow::anyhow!("Failed to retrieve user password from textarea")
                             })?;
 
-                        let (jwt, response) = app
+                        let result = app
                             .login_uc
                             .execute()
                             .user_name(user_name.to_owned())
                             .user_password(user_password.to_owned())
                             .call()
-                            .await?;
+                            .await;
 
-                        app.maybe_token = Some(jwt);
-                        app.maybe_username = Some(user_name.to_owned());
+                        if let Ok(login_response) = &result {
+                            app.maybe_token = Some(login_response.jwt.clone());
+                            app.maybe_username = Some(user_name.to_owned());
+                        }
 
-                        app.response_list_widget.push(response);
                         app.maybe_selected_service = None;
+                        app.response_list_widget.push(result.into());
 
                         let categories = default_services()
                             .is_stream_active(false)

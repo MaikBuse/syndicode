@@ -2,7 +2,9 @@ use super::{
     app::{App, CurrentScreen},
     widget::main_layout::MainLayoutWidget,
 };
-use crate::domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository};
+use crate::domain::{
+    admin::AdminRepository, auth::repository::AuthenticationRepository, game::GameRepository,
+};
 use ratatui::{
     layout::Margin,
     widgets::{StatefulWidget, Widget},

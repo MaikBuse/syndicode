@@ -8,6 +8,7 @@ pub struct CreateUserDomainRequest {
     pub corporation_name: String,
 }
 
+#[tonic::async_trait]
 pub trait AdminRepository {
     async fn create_user(
         &mut self,

@@ -1,5 +1,7 @@
 use crate::{
-    domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository},
+    domain::{
+        admin::AdminRepository, auth::repository::AuthenticationRepository, game::GameRepository,
+    },
     presentation::app::{App, CurrentScreen, CurrentScreenMain},
 };
 use ratatui::crossterm::event::{Event, KeyCode};

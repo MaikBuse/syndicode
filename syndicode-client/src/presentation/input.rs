@@ -4,7 +4,9 @@ mod response_detail;
 mod service_detail;
 
 use super::{app::CurrentScreen, App};
-use crate::domain::{admin::AdminRepository, auth::AuthenticationRepository, game::GameRepository};
+use crate::domain::{
+    admin::AdminRepository, auth::repository::AuthenticationRepository, game::GameRepository,
+};
 use exit::handle_exit;
 use main::handle_main;
 use ratatui::crossterm::event::Event;

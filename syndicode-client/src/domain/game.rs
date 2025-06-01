@@ -16,6 +16,7 @@ pub struct QueryBusinessListingsDomainRequest {
     pub offset: Option<i64>,
 }
 
+#[tonic::async_trait]
 pub trait GameRepository {
     async fn get_corporation(&mut self) -> anyhow::Result<()>;
 

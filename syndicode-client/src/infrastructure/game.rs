@@ -11,6 +11,7 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Streaming};
 use uuid::Uuid;
 
+#[tonic::async_trait]
 impl GameRepository for GrpcHandler {
     async fn play_stream(&mut self, token: String) -> anyhow::Result<Streaming<GameUpdate>> {
         let (client_action_tx, client_action_rx) = mpsc::channel::<PlayerAction>(10);

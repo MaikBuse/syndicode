@@ -9,6 +9,24 @@ pub struct DomainResponse {
     pub response_type: ResponseType,
 }
 
+impl<T> From<anyhow::Result<T>> for DomainResponse
+where
+    T: std::fmt::Debug,
+{
+    fn from(value: anyhow::Result<T>) -> Self {
+        let code = match value.is_ok() {
+            true => "OK".to_string(),
+            false => "ERR".to_string(),
+        };
+        DomainResponse::builder()
+            .response_type(value.is_ok().into())
+            .code(code)
+            .message(format!("{:#?}", value))
+            .timestamp(OffsetDateTime::now_utc())
+            .build()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResponseType {
     Success,

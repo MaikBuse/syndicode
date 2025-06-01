@@ -1,5 +1,5 @@
 use crate::domain::{
-    auth::{AuthenticationRepository, ResendVerificationReq},
+    auth::repository::{AuthenticationRepository, ResendVerificationReq},
     response::DomainResponse,
 };
 use bon::{bon, Builder};

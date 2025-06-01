@@ -1,5 +1,5 @@
 use crate::domain::{
-    auth::{AuthenticationRepository, RegisterUserReq},
+    auth::repository::{AuthenticationRepository, RegisterUserReq},
     response::DomainResponse,
 };
 use bon::{bon, Builder};

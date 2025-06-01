@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use bon::Builder;
 
-use crate::application::error::ApplicationResult;
-
-use super::ports::game_tick::GameTickRepository;
+use crate::application::{error::ApplicationResult, ports::game_tick::GameTickRepository};
 
 #[derive(Builder)]
 pub struct GetGameTickUseCase<GTR>
