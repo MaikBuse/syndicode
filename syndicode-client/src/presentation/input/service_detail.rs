@@ -323,9 +323,9 @@ where
                             .user_role(maybe_user_role.unwrap_or_default())
                             .corporation_name(corporation_name.to_owned())
                             .call()
-                            .await?;
+                            .await;
 
-                        app.response_list_widget.push(response);
+                        app.response_list_widget.push(response.into());
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
@@ -343,9 +343,9 @@ where
                             .token(app.maybe_token.clone().unwrap_or_default())
                             .user_uuid(user_uuid.to_owned())
                             .call()
-                            .await?;
+                            .await;
 
-                        app.response_list_widget.push(response);
+                        app.response_list_widget.push(response.into());
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
@@ -363,9 +363,9 @@ where
                             .token(app.maybe_token.clone().unwrap_or_default())
                             .user_uuid(user_uuid.to_owned())
                             .call()
-                            .await?;
+                            .await;
 
-                        app.response_list_widget.push(response);
+                        app.response_list_widget.push(response.into());
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }

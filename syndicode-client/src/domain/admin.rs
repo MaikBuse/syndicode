@@ -1,4 +1,6 @@
-use super::response::DomainResponse;
+use syndicode_proto::syndicode_interface_v1::{
+    CreateUserResponse, DeleteUserResponse, GetUserResponse,
+};
 
 pub struct CreateUserDomainRequest {
     pub user_name: String,
@@ -14,17 +16,17 @@ pub trait AdminRepository {
         &mut self,
         token: String,
         req: CreateUserDomainRequest,
-    ) -> anyhow::Result<DomainResponse>;
+    ) -> anyhow::Result<CreateUserResponse>;
 
     async fn get_user(
         &mut self,
         token: String,
         user_uuid: String,
-    ) -> anyhow::Result<DomainResponse>;
+    ) -> anyhow::Result<GetUserResponse>;
 
     async fn delete_user(
         &mut self,
         token: String,
         user_uuid: String,
-    ) -> anyhow::Result<DomainResponse>;
+    ) -> anyhow::Result<DeleteUserResponse>;
 }

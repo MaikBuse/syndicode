@@ -1,12 +1,10 @@
 use syndicode_proto::syndicode_interface_v1::{
-    CreateUserRequest, DeleteUserRequest, GetUserRequest,
+    CreateUserRequest, CreateUserResponse, DeleteUserRequest, DeleteUserResponse, GetUserRequest,
+    GetUserResponse,
 };
 use tonic::Request;
 
-use crate::domain::{
-    admin::{AdminRepository, CreateUserDomainRequest},
-    response::DomainResponse,
-};
+use crate::domain::admin::{AdminRepository, CreateUserDomainRequest};
 
 use super::grpc::GrpcHandler;
 
@@ -16,7 +14,7 @@ impl AdminRepository for GrpcHandler {
         &mut self,
         token: String,
         req: CreateUserDomainRequest,
-    ) -> anyhow::Result<DomainResponse> {
+    ) -> anyhow::Result<CreateUserResponse> {
         let mut request = Request::new(CreateUserRequest {
             user_name: req.user_name,
             user_password: req.user_password,
@@ -28,38 +26,42 @@ impl AdminRepository for GrpcHandler {
         self.add_ip_metadata(request.metadata_mut())?;
         self.add_token_metadata(request.metadata_mut(), token)?;
 
-        let result = self.admin_client.create_user(request).await;
-
-        self.response_from_result(result)
-    }
-
-    async fn delete_user(
-        &mut self,
-        token: String,
-        user_uuid: String,
-    ) -> anyhow::Result<DomainResponse> {
-        let mut request = Request::new(DeleteUserRequest { user_uuid });
-
-        self.add_ip_metadata(request.metadata_mut())?;
-        self.add_token_metadata(request.metadata_mut(), token)?;
-
-        let result = self.admin_client.delete_user(request).await;
-
-        self.response_from_result(result)
+        Ok(self
+            .admin_client
+            .create_user(request)
+            .await
+            .map_err(|status| anyhow::anyhow!("{}", status))?
+            .into_inner())
     }
 
     async fn get_user(
         &mut self,
         token: String,
         user_uuid: String,
-    ) -> anyhow::Result<DomainResponse> {
+    ) -> anyhow::Result<GetUserResponse> {
         let mut request = Request::new(GetUserRequest { user_uuid });
 
         self.add_ip_metadata(request.metadata_mut())?;
         self.add_token_metadata(request.metadata_mut(), token)?;
 
-        let result = self.admin_client.get_user(request).await;
+        Ok(self.admin_client.get_user(request).await?.into_inner())
+    }
 
-        self.response_from_result(result)
+    async fn delete_user(
+        &mut self,
+        token: String,
+        user_uuid: String,
+    ) -> anyhow::Result<DeleteUserResponse> {
+        let mut request = Request::new(DeleteUserRequest { user_uuid });
+
+        self.add_ip_metadata(request.metadata_mut())?;
+        self.add_token_metadata(request.metadata_mut(), token)?;
+
+        Ok(self
+            .admin_client
+            .delete_user(request)
+            .await
+            .map_err(|status| anyhow::anyhow!("{}", status))?
+            .into_inner())
     }
 }

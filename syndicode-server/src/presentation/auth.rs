@@ -4,10 +4,10 @@ use super::{
 };
 use crate::{
     application::{
-        admin::{create_user::CreateUserUseCase, get_user::GetUserUseCase},
+        admin::get_user::GetUserUseCase,
         auth::{
-            login::LoginUseCase, resend_verification::ResendVerificationUseCase,
-            verify_user::VerifyUserUseCase,
+            login::LoginUseCase, register_user::RegisterUserUseCase,
+            resend_verification::ResendVerificationUseCase, verify_user::VerifyUserUseCase,
         },
         ports::{
             crypto::{JwtHandler, PasswordHandler},
@@ -17,7 +17,7 @@ use crate::{
         },
     },
     config::Config,
-    domain::user::{model::role::UserRole, repository::UserRepository},
+    domain::user::repository::UserRepository,
 };
 use bon::Builder;
 use std::sync::Arc;
@@ -41,7 +41,7 @@ where
     config: Arc<Config>,
     limit: Arc<R>,
     get_user_uc: Arc<GetUserUseCase<USR>>,
-    create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
+    register_user_uc: Arc<RegisterUserUseCase<P, UOW, VS>>,
     login_uc: Arc<LoginUseCase<P, J, USR>>,
     verify_user_uc: Arc<VerifyUserUseCase<UOW>>,
     resend_verification_uc: Arc<ResendVerificationUseCase<UOW, VS>>,
@@ -72,12 +72,11 @@ where
         let request = request.into_inner();
 
         match self
-            .create_user_uc
+            .register_user_uc
             .execute()
             .user_name(request.user_name)
             .user_email(request.email)
             .password(request.user_password)
-            .user_role(UserRole::Player)
             .corporation_name(request.corporation_name)
             .call()
             .await

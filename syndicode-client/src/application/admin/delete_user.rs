@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use bon::{bon, Builder};
+use syndicode_proto::syndicode_interface_v1::DeleteUserResponse;
 use tokio::sync::Mutex;
 
-use crate::domain::{admin::AdminRepository, response::DomainResponse};
+use crate::domain::admin::AdminRepository;
 
 #[derive(Builder, Debug)]
 pub struct DeleteUserUseCase<ADMIN>
@@ -23,7 +24,7 @@ where
         &mut self,
         token: String,
         user_uuid: String,
-    ) -> anyhow::Result<DomainResponse> {
+    ) -> anyhow::Result<DeleteUserResponse> {
         self.admin_repository
             .lock()
             .await

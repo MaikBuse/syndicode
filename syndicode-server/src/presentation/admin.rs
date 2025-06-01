@@ -10,7 +10,6 @@ use crate::{
             crypto::PasswordHandler,
             limiter::{LimiterCategory, RateLimitEnforcer},
             uow::UnitOfWork,
-            verification::VerificationSendable,
         },
     },
     config::Config,
@@ -26,29 +25,27 @@ use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct AdminPresenter<R, P, UOW, USR, VS>
+pub struct AdminPresenter<R, P, UOW, USR>
 where
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
-    VS: VerificationSendable + 'static,
 {
     config: Arc<Config>,
     limit: Arc<R>,
-    create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
+    create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
     get_user_uc: Arc<GetUserUseCase<USR>>,
     delete_user_uc: Arc<DeleteUserUseCase<USR>>,
 }
 
 #[async_trait]
-impl<R, P, UOW, USR, VS> AdminService for AdminPresenter<R, P, UOW, USR, VS>
+impl<R, P, UOW, USR> AdminService for AdminPresenter<R, P, UOW, USR>
 where
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
-    VS: VerificationSendable + 'static,
 {
     async fn create_user(
         &self,
@@ -82,7 +79,7 @@ where
         match self
             .create_user_uc
             .execute()
-            .maybe_req_user_uuid(req_user_uuid)
+            .req_user_uuid(req_user_uuid)
             .user_name(request.user_name)
             .password(request.user_password)
             .user_email(request.user_email)

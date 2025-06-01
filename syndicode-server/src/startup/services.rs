@@ -5,8 +5,8 @@ use crate::{
             delete_user::DeleteUserUseCase, get_user::GetUserUseCase,
         },
         auth::{
-            login::LoginUseCase, resend_verification::ResendVerificationUseCase,
-            verify_user::VerifyUserUseCase,
+            login::LoginUseCase, register_user::RegisterUserUseCase,
+            resend_verification::ResendVerificationUseCase, verify_user::VerifyUserUseCase,
         },
         economy::{
             acquire_listed_business::AcquireListedBusinessUseCase,
@@ -131,12 +131,12 @@ where
     pub login_uc: Arc<LoginUseCase<P, J, USR>>,
     pub bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
     pub bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
-    pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR, VS>>,
+    pub create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
     pub delete_user_uc: Arc<DeleteUserUseCase<USR>>,
     pub list_units_uc: Arc<ListUnitsUseCase<UNT>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
-    pub admin_presenter: AdminPresenter<R, P, UOW, USR, VS>,
+    pub admin_presenter: AdminPresenter<R, P, UOW, USR>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS>,
 }
 
@@ -174,6 +174,13 @@ impl DefaultAppState {
         );
 
         // Auth use cases
+        let register_user_uc = Arc::new(
+            RegisterUserUseCase::builder()
+                .uow(uow.clone())
+                .pw(crypto.clone())
+                .verification(sendable.clone())
+                .build(),
+        );
         let login_uc = Arc::new(LoginUseCase::new(
             crypto.clone(),
             crypto.clone(),
@@ -196,7 +203,6 @@ impl DefaultAppState {
             CreateUserUseCase::builder()
                 .uow(uow.clone())
                 .pw(crypto.clone())
-                .verification(sendable.clone())
                 .user_repo(user_service.clone())
                 .build(),
         );
@@ -320,7 +326,7 @@ impl DefaultAppState {
         let auth_presenter = AuthPresenter::builder()
             .config(config.clone())
             .limit(valkey.clone())
-            .create_user_uc(create_user_uc.clone())
+            .register_user_uc(register_user_uc)
             .get_user_uc(get_user_uc)
             .login_uc(login_uc.clone())
             .verify_user_uc(verify_user_uc.clone())

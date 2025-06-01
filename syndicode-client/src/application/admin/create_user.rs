@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
 use bon::{bon, Builder};
+use syndicode_proto::syndicode_interface_v1::CreateUserResponse;
 use tokio::sync::Mutex;
 
-use crate::domain::{
-    admin::{AdminRepository, CreateUserDomainRequest},
-    response::DomainResponse,
-};
+use crate::domain::admin::{AdminRepository, CreateUserDomainRequest};
 
 #[derive(Builder, Debug)]
 pub struct CreateUserUseCase<ADMIN>
@@ -30,7 +28,7 @@ where
         user_email: String,
         user_role: i32,
         corporation_name: String,
-    ) -> anyhow::Result<DomainResponse> {
+    ) -> anyhow::Result<CreateUserResponse> {
         let req = CreateUserDomainRequest {
             user_name,
             user_password,
