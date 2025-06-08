@@ -30,6 +30,7 @@ pub async fn start_server() -> anyhow::Result<()> {
             config.instance_id.clone(),
             LeaderElectionConfig::new(config.leader_lock_ttl),
             LimiterConfig {
+                disable_rate_limitting: config.disable_rate_limitting,
                 middleware_max_req: 150,
                 middleware_window_secs: 60,
                 game_stream_max_req: 100,

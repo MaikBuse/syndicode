@@ -77,6 +77,27 @@ pub struct GetCorporationResponse {
     pub corporation: ::core::option::Option<Corporation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CreateCorporationResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+    /// Corporation that has been created.
+    #[prost(message, optional, tag = "2")]
+    pub corporation: ::core::option::Option<Corporation>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DeleteCorporationResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+    /// UUID of the user the corporation belonged to.
+    #[prost(string, tag = "2")]
+    pub user_uuid: ::prost::alloc::string::String,
+    /// UUID of the corporation that has been deleted.
+    #[prost(string, tag = "3")]
+    pub corporation_uuid: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AcquireListedBusinessRequest {
     /// UUID of the business listing.
     #[prost(string, tag = "1")]

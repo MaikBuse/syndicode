@@ -19,6 +19,14 @@ impl CorporationName {
 
         Ok(Self(name))
     }
+
+    pub fn unchecked(name: String) -> Self {
+        Self(name)
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0.as_str()
+    }
 }
 
 impl Deref for CorporationName {

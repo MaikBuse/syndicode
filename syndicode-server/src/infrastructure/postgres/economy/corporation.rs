@@ -4,7 +4,7 @@ use crate::{
             model::Corporation,
             repository::{CorporationRepository, CorporationTxRepository, GetCorporationOutcome},
         },
-        repository::RepositoryResult,
+        repository::{RepositoryError, RepositoryResult},
     },
     infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
 };
@@ -16,16 +16,13 @@ use uuid::Uuid;
 pub struct PgCorporationRepository;
 
 impl PgCorporationRepository {
-    /// Inserts a new state record for a corporation at a specific game tick.
-    /// This is used when advancing the game state from N to N+1.
-    /// The Corporation input should contain the state calculated for the *new* tick.
-    pub async fn insert_corporation(
+    pub async fn create_corporation(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         corporation: &Corporation,
         game_tick: i64,
     ) -> RepositoryResult<()> {
-        sqlx::query!(
+        let result = sqlx::query!(
             r#"
             INSERT INTO corporations (
                 game_tick,
@@ -43,17 +40,24 @@ impl PgCorporationRepository {
             corporation.cash_balance
         )
         .execute(executor)
-        .await?;
+        .await;
+
+        if let Err(err) = result {
+            tracing::warn!("Failed to create new corporation with error: {}", err);
+
+            return Err(err.into());
+        }
 
         Ok(())
     }
 
-    /// This leverages PostgreSQL's UNNEST function for efficiency.
+    /// Inserts the new state corporations at a specific game tick.
+    /// This is used when advancing the game state from N to N+1.
     pub async fn insert_corporations_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        corporations: Vec<Corporation>, // Take ownership for efficiency
-        game_tick: i64,                 // Use i64 to match insert_corporation and DB schema
+        corporations: Vec<Corporation>,
+        game_tick: i64,
     ) -> RepositoryResult<()> {
         // If there are no corporations, we don't need to do anything.
         if corporations.is_empty() {
@@ -129,7 +133,11 @@ impl PgCorporationRepository {
             game_tick
         )
         .fetch_one(executor)
-        .await?;
+        .await
+        .map_err(|err| match err {
+            sqlx::Error::RowNotFound => todo!(),
+            _ => RepositoryError::from(err),
+        })?;
 
         Ok(corporation)
     }
@@ -160,6 +168,40 @@ impl PgCorporationRepository {
         )
         .fetch_one(executor)
         .await?;
+
+        Ok(corporation)
+    }
+
+    /// Retrieves the state of a specific corporation (by its name) at a given game tick.
+    pub async fn get_corporation_by_name_at_tick(
+        &self,
+        executor: impl sqlx::Executor<'_, Database = Postgres>,
+        corporation_name: String,
+        game_tick: i64,
+    ) -> RepositoryResult<Corporation> {
+        // Return Option<>
+        let corporation = sqlx::query_as!(
+            Corporation,
+            r#"
+            SELECT
+                uuid,
+                user_uuid,
+                name,
+                cash_balance
+            FROM corporations
+            WHERE
+                name = $1
+                AND game_tick = $2
+            "#,
+            corporation_name,
+            game_tick
+        )
+        .fetch_one(executor)
+        .await
+        .map_err(|err| match err {
+            sqlx::Error::RowNotFound => RepositoryError::NotFound,
+            _ => RepositoryError::from(err),
+        })?;
 
         Ok(corporation)
     }
@@ -234,7 +276,7 @@ impl CorporationRepository for PgCorporationService {
             .await?;
 
         self.corporation_repo
-            .insert_corporation(&*self.pool, corporation, game_tick)
+            .create_corporation(&*self.pool, corporation, game_tick)
             .await
     }
 
@@ -272,6 +314,20 @@ impl CorporationRepository for PgCorporationService {
             .await
     }
 
+    async fn get_corporation_by_name(
+        &self,
+        corporation_name: String,
+    ) -> RepositoryResult<Corporation> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&*self.pool)
+            .await?;
+
+        self.corporation_repo
+            .get_corporation_by_name_at_tick(&*self.pool, corporation_name, game_tick)
+            .await
+    }
+
     async fn list_corporations_in_tick(
         &self,
         game_tick: i64,
@@ -284,14 +340,14 @@ impl CorporationRepository for PgCorporationService {
 
 #[tonic::async_trait]
 impl CorporationTxRepository for PgTransactionContext<'_, '_> {
-    async fn insert_corporation(&mut self, corporation: &Corporation) -> RepositoryResult<()> {
+    async fn create_corporation(&mut self, corporation: &Corporation) -> RepositoryResult<()> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&mut **self.tx)
             .await?;
 
         self.corporation_repo
-            .insert_corporation(&mut **self.tx, corporation, game_tick)
+            .create_corporation(&mut **self.tx, corporation, game_tick)
             .await
     }
 
@@ -317,6 +373,20 @@ impl CorporationTxRepository for PgTransactionContext<'_, '_> {
 
         self.corporation_repo
             .get_corporation_by_uuid_at_tick(&mut **self.tx, corporation_uuid, game_tick)
+            .await
+    }
+
+    async fn get_corporation_by_name(
+        &mut self,
+        corporation_name: String,
+    ) -> RepositoryResult<Corporation> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&mut **self.tx)
+            .await?;
+
+        self.corporation_repo
+            .get_corporation_by_name_at_tick(&mut **self.tx, corporation_name, game_tick)
             .await
     }
 

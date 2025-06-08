@@ -12,6 +12,7 @@ use crate::{
             acquire_listed_business::AcquireListedBusinessUseCase,
             bootstrap_economy::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
             list_business_listings::ListBusinessListingUseCase,
+            list_business_offers::ListBusinessOffersUseCase,
             list_businesses::ListBusinessesUseCase, list_corporations::ListCorporationsUseCase,
             list_markets::ListMarketsUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
@@ -31,7 +32,7 @@ use crate::{
         },
         processor::GameTickProcessor,
         warfare::{
-            list_units::ListUnitsUseCase, list_units_by_user::ListUnitsByUserUseCase,
+            list_units::ListUnitsUseCase, list_units_by_corporation::ListUnitsByCorporationUseCase,
             spawn_unit::SpawnUnitUseCase,
         },
     },
@@ -51,7 +52,8 @@ use crate::{
         postgres::{
             economy::{
                 business::PgBusinessService, business_listing::PgBusinessListingService,
-                corporation::PgCorporationService, market::PgMarketService,
+                business_offer::PgBusinessOfferService, corporation::PgCorporationService,
+                market::PgMarketService,
             },
             game_tick::PgGameTickService,
             init::PgInitializationService,
@@ -87,6 +89,7 @@ pub type DefaultAppState = AppState<
         PgMarketService,
         PgBusinessService,
         PgBusinessListingService,
+        PgBusinessOfferService,
     >,
     CryptoService,
     CryptoService,
@@ -127,8 +130,8 @@ where
     pub bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
     pub bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
-    pub admin_presenter: AdminPresenter<R, P, UOW, USR>,
-    pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS>,
+    pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
+    pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
 }
 
 impl DefaultAppState {
@@ -156,6 +159,7 @@ impl DefaultAppState {
         let market_service = Arc::new(PgMarketService::new(pg_pool.clone()));
         let business_service = Arc::new(PgBusinessService::new(pg_pool.clone()));
         let business_listing_service = Arc::new(PgBusinessListingService::new(pg_pool.clone()));
+        let business_offer_service = Arc::new(PgBusinessOfferService::new(pg_pool.clone()));
 
         // System use cases
         let get_game_tick_uc = Arc::new(
@@ -170,6 +174,8 @@ impl DefaultAppState {
                 .uow(uow.clone())
                 .pw(crypto.clone())
                 .verification(sendable.clone())
+                .corp_repo(corporation_service.clone())
+                .action_queuer(valkey.clone())
                 .build(),
         );
         let login_uc = Arc::new(LoginUseCase::new(
@@ -192,14 +198,17 @@ impl DefaultAppState {
         );
         let create_user_uc = Arc::new(
             CreateUserUseCase::builder()
-                .uow(uow.clone())
                 .pw(crypto.clone())
                 .user_repo(user_service.clone())
+                .action_queuer(valkey.clone())
+                .corp_repo(corporation_service.clone())
                 .build(),
         );
         let delete_user_uc = Arc::new(
             DeleteUserUseCase::builder()
                 .user_repo(user_service.clone())
+                .action_queuer(valkey.clone())
+                .corporation_repo(corporation_service.clone())
                 .build(),
         );
 
@@ -209,8 +218,8 @@ impl DefaultAppState {
                 .unit_repository(unit_service.clone())
                 .build(),
         );
-        let list_units_by_user_uc = Arc::new(
-            ListUnitsByUserUseCase::builder()
+        let list_units_by_corporation_uc = Arc::new(
+            ListUnitsByCorporationUseCase::builder()
                 .unit_repository(unit_service.clone())
                 .build(),
         );
@@ -266,6 +275,11 @@ impl DefaultAppState {
                 .business_listing_repo(business_listing_service.clone())
                 .build(),
         );
+        let list_business_offers_uc = Arc::new(
+            ListBusinessOffersUseCase::builder()
+                .business_offer_repo(business_offer_service.clone())
+                .build(),
+        );
         let query_business_listings_uc = Arc::new(
             QueryBusinessListingsUseCase::builder()
                 .business_listing_repo(business_listing_service.clone())
@@ -288,6 +302,7 @@ impl DefaultAppState {
                 .list_markets_uc(list_markets_uc.clone())
                 .list_businesses_uc(list_businesses_uc.clone())
                 .list_business_listings_uc(list_business_listings_uc.clone())
+                .list_business_offers_uc(list_business_offers_uc.clone())
                 .build(),
         );
 
@@ -297,7 +312,7 @@ impl DefaultAppState {
             .limit(valkey.clone())
             .user_channels(user_channels.clone())
             .get_game_tick_uc(get_game_tick_uc.clone())
-            .list_units_by_user_uc(list_units_by_user_uc.clone())
+            .list_units_by_corporation_uc(list_units_by_corporation_uc.clone())
             .outcome_store_reader(valkey.clone())
             .spawn_unit_uc(spawn_unit_uc.clone())
             .get_corporation_uc(get_corporation_uc.clone())

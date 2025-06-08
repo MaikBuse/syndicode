@@ -20,7 +20,9 @@ use crate::{
             outcome::OutcomeStoreReader,
             queuer::ActionQueueable,
         },
-        warfare::{list_units_by_user::ListUnitsByUserUseCase, spawn_unit::SpawnUnitUseCase},
+        warfare::{
+            list_units_by_corporation::ListUnitsByCorporationUseCase, spawn_unit::SpawnUnitUseCase,
+        },
     },
     config::Config,
     domain::{
@@ -38,7 +40,10 @@ use bon::{builder, Builder};
 use economy::{acquire_listed_business, get_corporation, query_business_listings};
 use std::{pin::Pin, str::FromStr, sync::Arc};
 use syndicode_proto::{
-    syndicode_economy_v1::{AcquireListedBusinessResponse, Business},
+    syndicode_economy_v1::{
+        AcquireListedBusinessResponse, Business, CreateCorporationResponse,
+        DeleteCorporationResponse,
+    },
     syndicode_interface_v1::{
         game_service_server::GameService, game_update::Update, player_action::Action,
         ActionFailedResponse, GameUpdate, PlayerAction,
@@ -73,7 +78,7 @@ where
     pub user_channels: UserChannels,
     pub get_game_tick_uc: Arc<GetGameTickUseCase<GTR>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
-    pub list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
+    pub list_units_by_corporation_uc: Arc<ListUnitsByCorporationUseCase<UNT>>,
     pub spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
     pub acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
     pub query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
@@ -123,7 +128,7 @@ where
         // Clone Arcs needed for the spawned tasks.
         let get_game_tick_uc = Arc::clone(&self.get_game_tick_uc);
         let get_corporation_uc = Arc::clone(&self.get_corporation_uc);
-        let list_units_by_user_uc = Arc::clone(&self.list_units_by_user_uc);
+        let list_units_by_corporation_uc = Arc::clone(&self.list_units_by_corporation_uc);
         let acquire_listed_business_uc = Arc::clone(&self.acquire_listed_business_uc);
         let query_business_listings_uc = Arc::clone(&self.query_business_listings_uc);
         let spawn_unit_uc = Arc::clone(&self.spawn_unit_uc);
@@ -173,7 +178,7 @@ where
                                 .tx(&user_channel_tx_arc_for_action_task) // Pass a reference to the sender
                                 .get_game_tick_uc(get_game_tick_uc.clone())
                                 .get_corporation_uc(get_corporation_uc.clone())
-                                .list_units_by_user_uc(list_units_by_user_uc.clone())
+                                .list_units_by_corporation_uc(list_units_by_corporation_uc.clone())
                                 .spawn_unit_uc(spawn_unit_uc.clone())
                                 .acquire_listed_business_uc(acquire_listed_business_uc.clone())
                                 .query_business_listings_uc(query_business_listings_uc.clone())
@@ -316,7 +321,7 @@ async fn process_stream_action<Q, UNT, CRP, GTR, BL>(
     user_uuid: Uuid,
     get_game_tick_uc: Arc<GetGameTickUseCase<GTR>>,
     get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
-    list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
+    list_units_by_corporation_uc: Arc<ListUnitsByCorporationUseCase<UNT>>,
     spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
     acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
     query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
@@ -356,12 +361,12 @@ where
                 .call()
                 .await
         }
-        Action::ListUnit(_) => {
+        Action::ListUnit(req) => {
             list_units()
                 .get_game_tick_uc(get_game_tick_uc)
-                .req_user_uuid(user_uuid)
+                .corporation_uuid(req.corporation_uuid)
                 .request_uuid(request_uuid)
-                .list_units_by_user_uc(list_units_by_user_uc)
+                .list_units_by_corporation_uc(list_units_by_corporation_uc)
                 .call()
                 .await
         }
@@ -397,6 +402,7 @@ async fn send_specific_result(
     match rmp_serde::from_slice::<DomainActionOutcome>(payload_bytes) {
         Ok(outcome) => {
             let game_update = outcome_to_grpc_update(outcome);
+
             tx.send(Ok(game_update)).await
         }
         Err(err) => {
@@ -409,8 +415,8 @@ async fn send_specific_result(
 fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
     let (update, game_tick) = match outcome {
         DomainActionOutcome::UnitSpawned {
-            user_uuid,
             unit_uuid,
+            corporation_uuid,
             tick_effective,
             request_uuid,
             ..
@@ -419,7 +425,7 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
                 request_uuid: request_uuid.to_string(),
                 unit: Some(Unit {
                     uuid: unit_uuid.to_string(),
-                    user_uuid: user_uuid.to_string(),
+                    corporation_uuid: corporation_uuid.to_string(),
                 }),
             };
             (Update::SpawnUnit(response), tick_effective)
@@ -427,12 +433,12 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
         DomainActionOutcome::ListedBusinessAcquired {
             request_uuid,
             tick_effective,
-            user_uuid: _,
             business_uuid,
             market_uuid,
             owning_corporation_uuid,
             name,
             operational_expenses,
+            ..
         } => {
             let response = AcquireListedBusinessResponse {
                 request_uuid: request_uuid.to_string(),
@@ -445,6 +451,41 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
                 }),
             };
             (Update::AcquireListedBusiness(response), tick_effective)
+        }
+        DomainActionOutcome::CorporationCreated {
+            request_uuid,
+            tick_effective,
+            corporation_uuid,
+            user_uuid,
+            corporation_name,
+            corporation_balance,
+            ..
+        } => {
+            let response = CreateCorporationResponse {
+                request_uuid: request_uuid.to_string(),
+                corporation: Some(syndicode_proto::syndicode_economy_v1::Corporation {
+                    uuid: corporation_uuid.to_string(),
+                    user_uuid: user_uuid.to_string(),
+                    name: corporation_name,
+                    balance: corporation_balance,
+                }),
+            };
+
+            (Update::CreateCorporation(response), tick_effective)
+        }
+        DomainActionOutcome::CorporationDeleted {
+            tick_effective,
+            user_uuid,
+            corporation_uuid,
+            request_uuid,
+            ..
+        } => {
+            let response = DeleteCorporationResponse {
+                request_uuid: request_uuid.to_string(),
+                user_uuid: user_uuid.to_string(),
+                corporation_uuid: corporation_uuid.to_string(),
+            };
+            (Update::DeleteCorporation(response), tick_effective)
         }
         DomainActionOutcome::ActionFailed {
             reason,

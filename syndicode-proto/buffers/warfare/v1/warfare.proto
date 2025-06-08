@@ -14,7 +14,10 @@ message SpawnUnitResponse {
 }
 
 // Request to list all units owned by a player.
-message ListUnitsRequest {}
+message ListUnitsRequest {
+  // UUID of the corporation owning the units.
+  string corporation_uuid = 1;
+}
 
 // Response containing a list of the player's units.
 message ListUnitsResponse {
@@ -29,6 +32,6 @@ message Unit {
   // UUID of the unit.
   string uuid = 1;
 
-  // UUID of the user who owns the unit.
-  string user_uuid = 2;
+  // UUID of the corporation which owns the unit.
+  string corporation_uuid = 2;
 }

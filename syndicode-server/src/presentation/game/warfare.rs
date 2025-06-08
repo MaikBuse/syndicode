@@ -2,7 +2,9 @@ use crate::{
     application::{
         game::get_game_tick::GetGameTickUseCase,
         ports::{game_tick::GameTickRepository, queuer::ActionQueueable},
-        warfare::{list_units_by_user::ListUnitsByUserUseCase, spawn_unit::SpawnUnitUseCase},
+        warfare::{
+            list_units_by_corporation::ListUnitsByCorporationUseCase, spawn_unit::SpawnUnitUseCase,
+        },
     },
     domain::unit::repository::UnitRepository,
     presentation::error::PresentationError,
@@ -51,17 +53,27 @@ where
 #[builder]
 pub async fn list_units<GTR, UNT>(
     get_game_tick_uc: Arc<GetGameTickUseCase<GTR>>,
-    list_units_by_user_uc: Arc<ListUnitsByUserUseCase<UNT>>,
-    req_user_uuid: Uuid,
+    list_units_by_corporation_uc: Arc<ListUnitsByCorporationUseCase<UNT>>,
+    corporation_uuid: String,
     request_uuid: Uuid,
 ) -> Result<GameUpdate, Status>
 where
     GTR: GameTickRepository,
     UNT: UnitRepository,
 {
-    match list_units_by_user_uc
+    let Ok(corporation_uuid) = Uuid::parse_str(&corporation_uuid) else {
+        let game_tick = get_game_tick_uc.execute().await.unwrap_or_default();
+
+        let game_update =
+            PresentationError::InvalidArgument("Invalid corporation UUID".to_string())
+                .into_game_update(game_tick, request_uuid.to_string());
+
+        return Ok(game_update);
+    };
+
+    match list_units_by_corporation_uc
         .execute()
-        .user_uuid(req_user_uuid)
+        .corporation_uuid(corporation_uuid)
         .call()
         .await
     {
@@ -70,7 +82,7 @@ where
             for u in outcome.units {
                 unit_infos.push(Unit {
                     uuid: u.uuid.to_string(),
-                    user_uuid: u.user_uuid.to_string(),
+                    corporation_uuid: u.corporation_uuid.to_string(),
                 });
             }
 

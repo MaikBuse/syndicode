@@ -13,8 +13,12 @@ pub struct SpawnUnitResponse {
     pub unit: ::core::option::Option<Unit>,
 }
 /// Request to list all units owned by a player.
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct ListUnitsRequest {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ListUnitsRequest {
+    /// UUID of the corporation owning the units.
+    #[prost(string, tag = "1")]
+    pub corporation_uuid: ::prost::alloc::string::String,
+}
 /// Response containing a list of the player's units.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListUnitsResponse {
@@ -31,7 +35,7 @@ pub struct Unit {
     /// UUID of the unit.
     #[prost(string, tag = "1")]
     pub uuid: ::prost::alloc::string::String,
-    /// UUID of the user who owns the unit.
+    /// UUID of the corporation which owns the unit.
     #[prost(string, tag = "2")]
-    pub user_uuid: ::prost::alloc::string::String,
+    pub corporation_uuid: ::prost::alloc::string::String,
 }

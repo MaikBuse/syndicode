@@ -7,21 +7,23 @@ use crate::{
     },
     saga_step,
 };
+use bon::builder;
 use uuid::Uuid;
 
+#[builder]
 pub fn handle_acquire_listed_business(
     state: &mut GameState,
     action: &QueuedActionPayload,
     business_listing_uuid: Uuid,
     next_game_tick: i64,
+    req_user_uuid: Uuid,
 ) -> Result<DomainActionOutcome, ActionError> {
     // --- 1. Pre-Saga Checks and Data Gathering (Immutable) ---
-    let req_corporation_uuid = *state
-        .get_corporation_uuid_by_user(&action.user_uuid)
-        .ok_or(ActionError::RequestingCorporationNotFoundByUser {
-            // Use specific error
-            user_uuid: action.user_uuid,
-        })?;
+    let req_corporation_uuid = *state.get_corporation_uuid_by_user(&req_user_uuid).ok_or(
+        ActionError::RequestingCorporationNotFoundByUser {
+            user_uuid: req_user_uuid,
+        },
+    )?;
 
     // Clone original listing *before* the saga starts for potential compensation
     let original_listing = *state.ref_business_listing(&business_listing_uuid).ok_or(
@@ -181,8 +183,7 @@ pub fn handle_acquire_listed_business(
     );
 
     // --- Execute the Saga ---
-    // The executor now returns Result<(), ActionError> if any forward step fails
-    executor.execute()?; // Use ? to propagate ActionError if execution fails
+    executor.execute()?;
 
     // --- 3. Post-Saga: Construct Success Outcome ---
     // If execute() returned Ok, the state changes are committed.
@@ -198,7 +199,7 @@ pub fn handle_acquire_listed_business(
     Ok(DomainActionOutcome::ListedBusinessAcquired {
         request_uuid: action.request_uuid,
         tick_effective: next_game_tick,
-        user_uuid: action.user_uuid,
+        req_user_uuid,
         business_uuid,
         market_uuid: final_business.market_uuid,
         owning_corporation_uuid: final_business.owning_corporation_uuid.ok_or_else(|| {
@@ -266,6 +267,7 @@ mod tests {
             vec![],
             vec![business.clone()],
             vec![listing],
+            vec![],
         );
 
         (
@@ -282,7 +284,7 @@ mod tests {
         // Changed param name
         QueuedActionPayload {
             request_uuid: Uuid::now_v7(),
-            user_uuid,
+            req_user_uuid: user_uuid,
             details: ActionDetails::AcquireListedBusiness {
                 business_listing_uuid,
             },
@@ -312,7 +314,13 @@ mod tests {
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
 
-        let result = handle_acquire_listed_business(&mut state, &action, listing_uuid, tick);
+        let result = handle_acquire_listed_business()
+            .state(&mut state)
+            .action(&action)
+            .business_listing_uuid(listing_uuid)
+            .next_game_tick(tick)
+            .req_user_uuid(buyer_user_uuid)
+            .call();
 
         // Assert success
         assert!(result.is_ok());
@@ -371,7 +379,13 @@ mod tests {
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
 
-        let result = handle_acquire_listed_business(&mut state, &action, listing_uuid, tick);
+        let result = handle_acquire_listed_business()
+            .state(&mut state)
+            .action(&action)
+            .business_listing_uuid(listing_uuid)
+            .next_game_tick(tick)
+            .req_user_uuid(buyer_user_uuid)
+            .call();
 
         // Assert failure with specific error
         assert!(
@@ -413,8 +427,13 @@ mod tests {
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
 
-        let result =
-            handle_acquire_listed_business(&mut state, &action, non_existent_listing_uuid, tick);
+        let result = handle_acquire_listed_business()
+            .state(&mut state)
+            .action(&action)
+            .business_listing_uuid(non_existent_listing_uuid)
+            .next_game_tick(tick)
+            .req_user_uuid(buyer_user_uuid)
+            .call();
 
         assert!(
             matches!(result, Err(ActionError::BusinessListingNotFound { listing_uuid }) if listing_uuid == non_existent_listing_uuid)
@@ -429,7 +448,13 @@ mod tests {
         let action = create_test_action(non_existent_user_uuid, business_uuid);
         let tick = 10;
 
-        let result = handle_acquire_listed_business(&mut state, &action, listing_uuid, tick);
+        let result = handle_acquire_listed_business()
+            .state(&mut state)
+            .action(&action)
+            .business_listing_uuid(listing_uuid)
+            .next_game_tick(tick)
+            .req_user_uuid(non_existent_user_uuid)
+            .call();
 
         assert!(matches!(
             result,
@@ -460,7 +485,13 @@ mod tests {
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
 
-        let result = handle_acquire_listed_business(&mut state, &action, listing_uuid, tick);
+        let result = handle_acquire_listed_business()
+            .state(&mut state)
+            .action(&action)
+            .business_listing_uuid(listing_uuid)
+            .next_game_tick(tick)
+            .req_user_uuid(buyer_user_uuid)
+            .call();
 
         // Assert failure occurred during the saga's "Credit Seller" step
         assert!(matches!(
@@ -518,7 +549,13 @@ mod tests {
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
 
-        let result = handle_acquire_listed_business(&mut state, &action, listing_uuid, tick);
+        let result = handle_acquire_listed_business()
+            .state(&mut state)
+            .action(&action)
+            .business_listing_uuid(listing_uuid)
+            .next_game_tick(tick)
+            .req_user_uuid(buyer_user_uuid)
+            .call();
 
         // Assert failure occurred during the pre-saga checks phase
         // The saga does not start, so no rollback is needed or tested here.
@@ -579,7 +616,13 @@ mod tests {
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
 
-        let result = handle_acquire_listed_business(&mut state, &action, listing_uuid, tick);
+        let result = handle_acquire_listed_business()
+            .state(&mut state)
+            .action(&action)
+            .business_listing_uuid(listing_uuid)
+            .next_game_tick(tick)
+            .req_user_uuid(buyer_user_uuid)
+            .call();
 
         // Assert success
         assert!(result.is_ok());
@@ -608,4 +651,4 @@ mod tests {
         );
         // No change to seller cash as there was no seller
     }
-} // End tests module
+}

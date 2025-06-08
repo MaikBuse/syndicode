@@ -44,6 +44,9 @@ pub enum RepositoryError {
     #[error("The database returned with a violation of a unique/primary key constraint")]
     UniqueConstraint,
 
+    #[error("The database failed to return a result for the provided query")]
+    NotFound,
+
     #[error(transparent)]
     Migration(#[from] sqlx::migrate::MigrateError),
 

@@ -29,11 +29,11 @@ impl PgUnitRepository {
         // Pre-allocate capacity for efficiency.
         let count = units.len();
         let mut uuids = Vec::with_capacity(count);
-        let mut user_uuids = Vec::with_capacity(count);
+        let mut corporation_uuids = Vec::with_capacity(count);
 
         for unit in units {
             uuids.push(unit.uuid);
-            user_uuids.push(unit.user_uuid);
+            corporation_uuids.push(unit.corporation_uuid);
         }
 
         // Execute the bulk insert query using UNNEST
@@ -42,16 +42,16 @@ impl PgUnitRepository {
             INSERT INTO units (
                 game_tick,
                 uuid,
-                user_uuid
+                corporation_uuid
             )
             SELECT
                 $1 as game_tick,
                 unnest($2::UUID[]) as uuid,
-                unnest($3::UUID[]) as user_uuid
+                unnest($3::UUID[]) as corporation_uuid
             "#,
             game_tick,
             &uuids,
-            &user_uuids,
+            &corporation_uuids,
         )
         .execute(executor)
         .await?;
@@ -69,7 +69,7 @@ impl PgUnitRepository {
             r#"
             SELECT
                 uuid,
-                user_uuid
+                corporation_uuid
             FROM units
             WHERE
                 game_tick = $1
@@ -82,12 +82,12 @@ impl PgUnitRepository {
         Ok(units)
     }
 
-    /// Retrieves all units (UUID and owner UUID) belonging to a specific user
+    /// Retrieves all units (UUID and owner UUID) belonging to a specific corporation
     /// at a given game tick.
-    pub async fn list_user_units_at_tick(
+    pub async fn list_corporation_units_at_tick(
         &self,
         executor: impl Executor<'_, Database = Postgres>,
-        user_uuid: Uuid,
+        corporation_uuid: Uuid,
         game_tick: i64,
     ) -> RepositoryResult<Vec<Unit>> {
         let units = sqlx::query_as!(
@@ -95,13 +95,13 @@ impl PgUnitRepository {
             r#"
             SELECT
                 uuid,
-                user_uuid
+                corporation_uuid
             FROM units
             WHERE
-                user_uuid = $1
+                corporation_uuid = $1
                 AND game_tick = $2
             "#,
-            user_uuid,
+            corporation_uuid,
             game_tick
         )
         .fetch_all(executor)
@@ -125,7 +125,7 @@ impl PgUnitRepository {
             r#"
             SELECT
                 uuid,
-                user_uuid
+                corporation_uuid
             FROM units
             WHERE
                 uuid = $1
@@ -184,7 +184,10 @@ impl UnitRepository for PgUnitService {
             .await
     }
 
-    async fn list_units_by_user(&self, user_uuid: Uuid) -> RepositoryResult<ListUnitsOutcome> {
+    async fn list_units_by_corporation(
+        &self,
+        corporation_uuid: Uuid,
+    ) -> RepositoryResult<ListUnitsOutcome> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&*self.pool)
@@ -192,7 +195,7 @@ impl UnitRepository for PgUnitService {
 
         let units = self
             .unit_repo
-            .list_user_units_at_tick(&*self.pool, user_uuid, game_tick)
+            .list_corporation_units_at_tick(&*self.pool, corporation_uuid, game_tick)
             .await?;
 
         Ok(ListUnitsOutcome { game_tick, units })
@@ -212,14 +215,17 @@ impl UnitTxRespository for PgTransactionContext<'_, '_> {
             .await
     }
 
-    async fn list_units_by_user(&mut self, user_uuid: Uuid) -> RepositoryResult<Vec<Unit>> {
+    async fn list_units_by_corporation(
+        &mut self,
+        corporation_uuid: Uuid,
+    ) -> RepositoryResult<Vec<Unit>> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&mut **self.tx)
             .await?;
 
         self.unit_repo
-            .list_user_units_at_tick(&mut **self.tx, user_uuid, game_tick)
+            .list_corporation_units_at_tick(&mut **self.tx, corporation_uuid, game_tick)
             .await
     }
 

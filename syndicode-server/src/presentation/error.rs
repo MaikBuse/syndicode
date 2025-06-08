@@ -62,20 +62,23 @@ pub(super) enum PresentationError {
 impl From<ApplicationError> for PresentationError {
     fn from(err: ApplicationError) -> Self {
         match err {
-            ApplicationError::UserNotPending => Self::FailedPrecondition,
+            ApplicationError::CorporationForUserNotFound | ApplicationError::UserNotPending => {
+                Self::FailedPrecondition
+            }
             ApplicationError::VerificationCodeExpired => Self::DeadlineExceeded,
             ApplicationError::PasswordTooShort(_)
             | ApplicationError::PasswordTooLong(_)
             | ApplicationError::EmailInvalid(_)
             | ApplicationError::UserNameTooLong(_)
             | ApplicationError::UserNameTooShort(_)
+            | ApplicationError::CorporationNameAlreadyTaken
             | ApplicationError::CorporationNameTooShort(_)
             | ApplicationError::CorporationNameTooLong(_)
             | ApplicationError::VerificationCodeFalse
             | ApplicationError::UniqueConstraint => Self::InvalidArgument(err.to_string()),
-            ApplicationError::WrongUserCredentials
-            | ApplicationError::MissingAuthentication
-            | ApplicationError::UserInactive => Self::Unauthenticated,
+            ApplicationError::WrongUserCredentials | ApplicationError::UserInactive => {
+                Self::Unauthenticated
+            }
             ApplicationError::Unauthorized => Self::PermissionDenied,
             ApplicationError::Limitation(_)
             | ApplicationError::Database(_)

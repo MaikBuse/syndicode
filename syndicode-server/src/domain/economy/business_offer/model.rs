@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+#[derive(Clone, Copy)]
 pub struct BusinessOffer {
     pub uuid: Uuid,
     pub business_uuid: Uuid,

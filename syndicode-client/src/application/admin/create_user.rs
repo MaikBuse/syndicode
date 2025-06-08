@@ -23,6 +23,7 @@ where
     pub async fn execute(
         &mut self,
         token: String,
+        request_uuid: String,
         user_name: String,
         user_password: String,
         user_email: String,
@@ -30,6 +31,7 @@ where
         corporation_name: String,
     ) -> anyhow::Result<CreateUserResponse> {
         let req = CreateUserDomainRequest {
+            request_uuid,
             user_name,
             user_password,
             user_email,

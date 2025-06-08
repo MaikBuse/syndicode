@@ -10,7 +10,7 @@ build:
 # Test the client crate
 [group('cargo')]
 test:
-  cargo test -p syndicode-client
+  cargo test -p syndicode-client -- --test-threads=1
 
 # Run the client crate
 [group('cargo')]

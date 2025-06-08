@@ -17,6 +17,7 @@ use crate::{
     },
 };
 use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers};
+use uuid::Uuid;
 
 pub(super) async fn handle_service_detail<AUTH, ADMIN, GAME>(
     app: &mut App<'_, AUTH, ADMIN, GAME>,
@@ -269,16 +270,16 @@ where
                         if let Ok(login_response) = &result {
                             app.maybe_token = Some(login_response.jwt.clone());
                             app.maybe_username = Some(user_name.to_owned());
+
+                            let categories = default_services()
+                                .is_stream_active(false)
+                                .is_logged_in(true)
+                                .call();
+                            app.service_list_widget = ServiceListWidget::new(categories);
                         }
 
                         app.maybe_selected_service = None;
                         app.response_list_widget.push(result.into());
-
-                        let categories = default_services()
-                            .is_stream_active(false)
-                            .is_logged_in(true)
-                            .call();
-                        app.service_list_widget = ServiceListWidget::new(categories);
 
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
@@ -313,9 +314,12 @@ where
                                 anyhow::anyhow!("Failed to retrieve corporation name from textarea")
                             })?;
 
+                        let request_uuid = Uuid::now_v7();
+
                         let response = app
                             .create_user_uc
                             .execute()
+                            .request_uuid(request_uuid.to_string())
                             .token(app.maybe_token.clone().unwrap_or_default())
                             .user_name(user_name.to_owned())
                             .user_password(user_password.to_owned())
@@ -357,10 +361,13 @@ where
                             anyhow::anyhow!("Failed to retrieve user uuid from textarea")
                         })?;
 
+                        let request_uuid = Uuid::now_v7().to_string();
+
                         let response = app
                             .delete_user_uc
                             .execute()
                             .token(app.maybe_token.clone().unwrap_or_default())
+                            .request_uuid(request_uuid)
                             .user_uuid(user_uuid.to_owned())
                             .call()
                             .await;

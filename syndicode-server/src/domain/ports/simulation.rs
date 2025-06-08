@@ -12,8 +12,8 @@ pub trait Simulationable: Send + Sync {
     fn calculate_next_state(
         &self,
         next_game_tick: i64,
-        msg_act_slice: Vec<(String, QueuedActionPayload)>,
-        message_ids: &mut Vec<String>,
+        id_act_slice: Vec<(String, QueuedActionPayload)>,
+        action_ids: &mut Vec<String>,
         state: &mut GameState,
     ) -> Vec<DomainActionOutcome>;
 }

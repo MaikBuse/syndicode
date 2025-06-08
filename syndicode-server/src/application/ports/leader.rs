@@ -17,9 +17,6 @@ pub enum LeaderElectionError {
 
     #[error("Cannot release/refresh lock for key '{key}' as it is not held by this instance ('{instance_id}') or has expired.")]
     NotHoldingLock { key: String, instance_id: String },
-
-    #[error("An unexpected error occurred: {0}")]
-    Unexpected(String),
 }
 
 pub type LeaderElectionResult<T> = Result<T, LeaderElectionError>;

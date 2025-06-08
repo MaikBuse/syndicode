@@ -12,12 +12,15 @@ use crate::{
         ports::{
             crypto::{JwtHandler, PasswordHandler},
             limiter::{LimiterCategory, RateLimitEnforcer},
+            queuer::ActionQueueable,
             uow::UnitOfWork,
             verification::VerificationSendable,
         },
     },
     config::Config,
-    domain::user::repository::UserRepository,
+    domain::{
+        economy::corporation::repository::CorporationRepository, user::repository::UserRepository,
+    },
 };
 use bon::Builder;
 use std::sync::Arc;
@@ -29,7 +32,7 @@ use syndicode_proto::syndicode_interface_v1::{
 use tonic::{Request, Response, Status};
 
 #[derive(Builder)]
-pub struct AuthPresenter<R, P, J, UOW, USR, VS>
+pub struct AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>
 where
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
@@ -37,18 +40,20 @@ where
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
     VS: VerificationSendable + 'static,
+    Q: ActionQueueable + 'static,
+    CRP: CorporationRepository + 'static,
 {
     config: Arc<Config>,
     limit: Arc<R>,
     get_user_uc: Arc<GetUserUseCase<USR>>,
-    register_user_uc: Arc<RegisterUserUseCase<P, UOW, VS>>,
+    register_user_uc: Arc<RegisterUserUseCase<Q, UOW, P, VS, CRP>>,
     login_uc: Arc<LoginUseCase<P, J, USR>>,
     verify_user_uc: Arc<VerifyUserUseCase<UOW>>,
     resend_verification_uc: Arc<ResendVerificationUseCase<UOW, VS>>,
 }
 
 #[tonic::async_trait]
-impl<R, P, J, UOW, USR, VS> AuthService for AuthPresenter<R, P, J, UOW, USR, VS>
+impl<R, P, J, UOW, USR, VS, Q, CRP> AuthService for AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>
 where
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
@@ -56,6 +61,8 @@ where
     UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
     VS: VerificationSendable + 'static,
+    Q: ActionQueueable + 'static,
+    CRP: CorporationRepository + 'static,
 {
     async fn register(
         &self,

@@ -1,6 +1,7 @@
 use super::{
     economy::{
-        list_business_listings::ListBusinessListingUseCase, list_businesses::ListBusinessesUseCase,
+        list_business_listings::ListBusinessListingUseCase,
+        list_business_offers::ListBusinessOffersUseCase, list_businesses::ListBusinessesUseCase,
         list_corporations::ListCorporationsUseCase, list_markets::ListMarketsUseCase,
     },
     ports::{
@@ -19,6 +20,7 @@ use crate::{
         economy::{
             business::{model::Business, repository::BusinessRepository},
             business_listing::{model::BusinessListing, repository::BusinessListingRepository},
+            business_offer::repository::BusinessOfferRepository,
             corporation::{model::Corporation, repository::CorporationRepository},
             market::{model::Market, repository::MarketRepository},
         },
@@ -34,7 +36,7 @@ use std::sync::Arc;
 use tokio::sync::OnceCell;
 
 #[derive(Builder)]
-pub struct GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
+pub struct GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO>
 where
     INI: InitializationRepository,
     S: Simulationable,
@@ -48,6 +50,7 @@ where
     MRK: MarketRepository,
     BSN: BusinessRepository,
     BL: BusinessListingRepository,
+    BO: BusinessOfferRepository,
 {
     init_check_cell: OnceCell<()>, // Stores Ok(()) on successful check
     init_repo: Arc<INI>,
@@ -62,10 +65,11 @@ where
     list_markets_uc: Arc<ListMarketsUseCase<MRK>>,
     list_businesses_uc: Arc<ListBusinessesUseCase<BSN>>,
     list_business_listings_uc: Arc<ListBusinessListingUseCase<BL>>,
+    list_business_offers_uc: Arc<ListBusinessOffersUseCase<BO>>,
 }
 
-impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
-    GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
+impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO>
+    GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO>
 where
     INI: InitializationRepository,
     S: Simulationable,
@@ -79,6 +83,7 @@ where
     MRK: MarketRepository,
     BSN: BusinessRepository,
     BL: BusinessListingRepository,
+    BO: BusinessOfferRepository,
 {
     // Helper to serialize the outcome into bytes for storage
     fn serialize_outcome_for_delivery(
@@ -107,8 +112,8 @@ where
 }
 
 #[tonic::async_trait]
-impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL> GameTickProcessable
-    for GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL>
+impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO> GameTickProcessable
+    for GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO>
 where
     INI: InitializationRepository,
     S: Simulationable,
@@ -122,6 +127,7 @@ where
     MRK: MarketRepository,
     BSN: BusinessRepository,
     BL: BusinessListingRepository,
+    BO: BusinessOfferRepository,
 {
     async fn process_next_tick(&self) -> ProcessorResult<i64> {
         // 0. CHECK DATABASE INITIALIZATION
@@ -141,6 +147,10 @@ where
             .list_business_listings_uc
             .execute(current_game_tick)
             .await?;
+        let business_offers_vec = self
+            .list_business_offers_uc
+            .execute(current_game_tick)
+            .await?;
 
         let mut game_state = GameState::build(
             units_vec,
@@ -148,21 +158,22 @@ where
             markets_vec,
             businesses_vec,
             business_listings_vec,
+            business_offers_vec,
         );
 
         // 2. Pull Actions
-        let msg_act_slice = self.action_puller.pull_all_available_actions().await?;
-        let act_msg_count = msg_act_slice.len();
+        let id_act_slice = self.action_puller.pull_all_available_actions().await?;
+        let act_msg_count = id_act_slice.len();
 
-        tracing::debug!(num_actions = msg_act_slice.len(), "Pulled actions.");
+        tracing::debug!(num_actions = id_act_slice.len(), "Pulled actions.");
 
         // 3. Calculate State N+1
-        let mut messages_ids: Vec<String> = Vec::with_capacity(msg_act_slice.len());
+        let mut action_ids: Vec<String> = Vec::with_capacity(id_act_slice.len());
 
         let action_outcomes = self.simulation.calculate_next_state(
             next_game_tick,
-            msg_act_slice,
-            &mut messages_ids,
+            id_act_slice,
+            &mut action_ids,
             &mut game_state,
         );
 
@@ -176,7 +187,8 @@ where
         let business_listings: Vec<BusinessListing> =
             game_state.business_listings_map.into_values().collect();
 
-        self.uow
+        let action_outcomes = self
+            .uow
             .execute(move |ctx| {
                 Box::pin(async move {
                     // Units
@@ -207,19 +219,21 @@ where
                     // Update game tick state
                     ctx.update_current_game_tick(next_game_tick).await?;
 
-                    Ok(())
+                    Ok(action_outcomes)
                 })
             })
             .await?;
 
         tracing::debug!("Atomically wrote next state.");
 
-        // 5. Acknowledge processed actions
+        // 5. Handle domain events
+
+        // 6. Acknowledge processed actions
         if act_msg_count != 0 {
-            let message_count = messages_ids.len();
+            let message_count = action_ids.len();
 
             self.action_puller
-                .acknowledge_actions(messages_ids)
+                .acknowledge_actions(action_ids)
                 .await
                 .context("Failed to acknowledge actions")?;
 
@@ -237,24 +251,8 @@ where
             // Need to map outcome back to its request_uuid
             // This requires the SimulationService/Handlers to pass it through
             for outcome in action_outcomes {
-                // Assuming outcome includes request_uuid and user_uuid
-                let (request_uuid, user_uuid) = match &outcome {
-                    DomainActionOutcome::UnitSpawned {
-                        request_uuid,
-                        user_uuid,
-                        ..
-                    } => (*request_uuid, *user_uuid),
-                    DomainActionOutcome::ListedBusinessAcquired {
-                        request_uuid,
-                        user_uuid,
-                        ..
-                    } => (*request_uuid, *user_uuid),
-                    DomainActionOutcome::ActionFailed {
-                        request_uuid,
-                        user_uuid,
-                        ..
-                    } => (*request_uuid, *user_uuid),
-                };
+                let request_uuid = outcome.get_request_uuid();
+                let user_uuid = outcome.get_req_user_uuid();
 
                 // a. Store the full outcome/payload
                 // Serialize the specific data needed for the final response

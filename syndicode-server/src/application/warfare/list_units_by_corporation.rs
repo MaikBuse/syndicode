@@ -7,7 +7,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct ListUnitsByUserUseCase<UNT>
+pub struct ListUnitsByCorporationUseCase<UNT>
 where
     UNT: UnitRepository,
 {
@@ -15,12 +15,15 @@ where
 }
 
 #[bon]
-impl<UNT> ListUnitsByUserUseCase<UNT>
+impl<UNT> ListUnitsByCorporationUseCase<UNT>
 where
     UNT: UnitRepository,
 {
     #[builder]
-    pub async fn execute(&self, user_uuid: Uuid) -> ApplicationResult<ListUnitsOutcome> {
-        Ok(self.unit_repository.list_units_by_user(user_uuid).await?)
+    pub async fn execute(&self, corporation_uuid: Uuid) -> ApplicationResult<ListUnitsOutcome> {
+        Ok(self
+            .unit_repository
+            .list_units_by_corporation(corporation_uuid)
+            .await?)
     }
 }

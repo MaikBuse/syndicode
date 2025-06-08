@@ -3,7 +3,7 @@ use crate::{
     config::Config,
     infrastructure::{
         crypto::CryptoService,
-        postgres::{uow::PostgresUnitOfWork, user::PgUserService},
+        postgres::{economy::corporation::PgCorporationService, user::PgUserService},
         valkey::ValkeyStore,
     },
     presentation::{admin::AdminPresenter, middleware::MiddlewareLayer},
@@ -28,7 +28,13 @@ pub async fn start_grpc_services(
     let (health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter
         .set_serving::<AdminServiceServer<
-            AdminPresenter<ValkeyStore, CryptoService, PostgresUnitOfWork, PgUserService>,
+            AdminPresenter<
+                ValkeyStore,
+                ValkeyStore,
+                CryptoService,
+                PgUserService,
+                PgCorporationService,
+            >,
         >>()
         .await;
 

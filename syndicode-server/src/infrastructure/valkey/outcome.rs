@@ -9,7 +9,7 @@ use uuid::Uuid;
 const PAYLOAD_KEY: &str = "syndicode:results:payload";
 const CLIENT_KEY: &str = "syndicode:results:client";
 
-const OUTCOME_TTL: Duration = Duration::from_secs(300);
+const OUTCOME_TTL: Duration = Duration::from_secs(30);
 
 pub const GAME_TICK_NOTIFICATION_CHANNEL: &str = "syndicode:game_tick";
 

@@ -27,7 +27,7 @@ where
     pub async fn execute(&self, request_uuid: Uuid, req_user_uuid: Uuid) -> ApplicationResult<i64> {
         let action = QueuedActionPayload::builder()
             .request_uuid(request_uuid)
-            .user_uuid(req_user_uuid)
+            .req_user_uuid(req_user_uuid)
             .details(ActionDetails::SpawnUnit)
             .build();
 
@@ -39,7 +39,7 @@ where
                 );
             }
             Err(err) => {
-                tracing::error!("Failed to enqueue SpawnUnit action: {:?}", err);
+                tracing::error!("Failed to enqueue SpawnUnit action with error: {:?}", err);
 
                 return Err(err.into());
             }

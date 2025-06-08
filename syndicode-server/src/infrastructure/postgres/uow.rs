@@ -118,9 +118,10 @@ impl UnitOfWork for PostgresUnitOfWork {
             Err(error) => {
                 // Rollback the original transaction `tx`
                 if let Err(rollback_err) = tx.rollback().await {
-                    eprintln!(
+                    tracing::error!(
                         "Failed to rollback transaction after error: {:?}. Rollback error: {}",
-                        error, rollback_err
+                        error,
+                        rollback_err
                     );
                 }
                 Err(error)

@@ -2,6 +2,13 @@ syntax = "proto3";
 
 package syndicode_interface_v1;
 
+// Acknowledges receipt and queuing of a player command.
+message ActionInitResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+}
+
+
 // Enum for sorting direction
 enum SortDirection {
   SORT_DIRECTION_UNSPECIFIED = 0;

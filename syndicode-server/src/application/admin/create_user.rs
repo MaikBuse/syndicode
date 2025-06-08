@@ -1,10 +1,11 @@
 use crate::{
     application::{
+        action::{ActionDetails, QueuedActionPayload},
         error::{ApplicationError, ApplicationResult},
-        ports::{crypto::PasswordHandler, uow::UnitOfWork},
+        ports::{crypto::PasswordHandler, queuer::ActionQueueable},
     },
     domain::{
-        economy::corporation::model::{name::CorporationName, Corporation},
+        economy::corporation::{model::name::CorporationName, repository::CorporationRepository},
         repository::RepositoryError,
         user::{
             model::{
@@ -20,27 +21,31 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct CreateUserUseCase<P, UOW, USR>
+pub struct CreateUserUseCase<Q, P, USR, CRP>
 where
+    Q: ActionQueueable,
     P: PasswordHandler,
-    UOW: UnitOfWork,
     USR: UserRepository,
+    CRP: CorporationRepository,
 {
     pw: Arc<P>,
-    uow: Arc<UOW>,
     user_repo: Arc<USR>,
+    corp_repo: Arc<CRP>,
+    action_queuer: Arc<Q>,
 }
 
 #[bon]
-impl<P, UOW, USR> CreateUserUseCase<P, UOW, USR>
+impl<Q, P, USR, CRP> CreateUserUseCase<Q, P, USR, CRP>
 where
+    Q: ActionQueueable,
     P: PasswordHandler,
-    UOW: UnitOfWork,
     USR: UserRepository,
+    CRP: CorporationRepository,
 {
     #[builder]
     pub async fn execute(
         &self,
+        request_uuid: Uuid,
         req_user_uuid: Uuid,
         user_name: String,
         password: String,
@@ -54,9 +59,28 @@ where
 
         // check authorization
         let req_user = self.user_repo.get_user(req_user_uuid).await?;
-        if req_user.role != UserRole::Admin {
+        if req_user.role != UserRole::Admin || req_user.status != UserStatus::Active {
             return Err(ApplicationError::Unauthorized);
         }
+
+        // Check the syntactical validity of the corporation name
+        let corporation_name = CorporationName::new(corporation_name)?;
+
+        // Check if the corporation name is already taken
+        match self
+            .corp_repo
+            .get_corporation_by_name(corporation_name.to_string())
+            .await
+        {
+            Ok(_) => {
+                return Err(ApplicationError::CorporationNameAlreadyTaken);
+            }
+            Err(err) => match err {
+                // This is the expected result, since we don't want the name to be taken yet
+                RepositoryError::NotFound => {}
+                _ => return Err(ApplicationError::from(err)),
+            },
+        };
 
         let password_hash = self.pw.hash_user_password(user_password)?;
 
@@ -69,34 +93,42 @@ where
             status: UserStatus::Active,
         };
 
-        let user_created = self
-            .uow
-            .execute(|ctx| {
-                Box::pin(async move {
-                    let user_to_create = user.clone();
+        if let Err(err) = self.user_repo.create_user(&user).await {
+            match err {
+                RepositoryError::UniqueConstraint => {
+                    return Err(ApplicationError::UniqueConstraint)
+                }
+                _ => return Err(ApplicationError::from(err)),
+            }
+        };
 
-                    if let Err(err) = ctx.create_user(&user_to_create).await {
-                        match err {
-                            RepositoryError::UniqueConstraint => {
-                                return Err(ApplicationError::UniqueConstraint)
-                            }
-                            _ => return Err(ApplicationError::from(err)),
-                        }
-                    }
-
-                    let corporation_name = CorporationName::new(corporation_name)?;
-
-                    let corporation = Corporation::new(user_to_create.uuid, corporation_name);
-
-                    ctx.insert_corporation(&corporation)
-                        .await
-                        .map_err(ApplicationError::from)?;
-
-                    Ok(user_to_create)
-                })
+        let action = QueuedActionPayload::builder()
+            .request_uuid(request_uuid)
+            .req_user_uuid(req_user_uuid)
+            .details(ActionDetails::CreateCorporation {
+                user_uuid: user.uuid,
+                corporation_name,
             })
-            .await?;
+            .build();
 
-        Ok(user_created)
+        // Queue an action to create the user's corporation
+        match self.action_queuer.enqueue_action(action).await {
+            Ok(entry_id) => {
+                tracing::debug!(
+                    "Successfully enqueued CreateCorporation action with ID: {}",
+                    entry_id
+                );
+            }
+            Err(err) => {
+                tracing::error!(
+                    "Failed to enqueue CreateCorporation action with error: {:?}",
+                    err
+                );
+
+                return Err(err.into());
+            }
+        };
+
+        Ok(user)
     }
 }

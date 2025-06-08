@@ -1,3 +1,6 @@
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 use crate::application::action::QueuedActionPayload;
 
 #[derive(thiserror::Error, Debug)]
@@ -18,6 +21,7 @@ pub enum QueueError {
 pub type QueueResult<T> = Result<T, QueueError>;
 
 /// Trait defining the port for an action queue.
+#[cfg_attr(test, automock)]
 #[tonic::async_trait]
 pub trait ActionQueueable: Send + Sync {
     async fn enqueue_action(&self, action: QueuedActionPayload) -> QueueResult<String>;

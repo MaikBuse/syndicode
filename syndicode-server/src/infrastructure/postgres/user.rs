@@ -47,6 +47,8 @@ impl PgUserRepository {
         .execute(executor)
         .await
         {
+            tracing::error!("[Postgres] Failed to create user with error: {}", err);
+
             match err {
                 sqlx::Error::Database(database_error) => match database_error.is_unique_violation()
                 {
@@ -182,6 +184,10 @@ impl PgUserService {
 
 #[tonic::async_trait]
 impl UserRepository for PgUserService {
+    async fn create_user(&self, user: &User) -> RepositoryResult<()> {
+        self.user_repo.create_user(&*self.pool, user).await
+    }
+
     async fn get_user(&self, user_uuid: Uuid) -> RepositoryResult<User> {
         self.user_repo.get_user(&*self.pool, user_uuid).await
     }
@@ -190,10 +196,6 @@ impl UserRepository for PgUserService {
         self.user_repo
             .get_user_by_name(&*self.pool, user_name)
             .await
-    }
-
-    async fn create_user(&self, user: &User) -> RepositoryResult<()> {
-        self.user_repo.create_user(&*self.pool, user).await
     }
 
     async fn delete_user(&self, user_uuid: Uuid) -> RepositoryResult<()> {

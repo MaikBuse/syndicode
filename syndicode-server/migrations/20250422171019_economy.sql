@@ -9,10 +9,7 @@ CREATE TABLE IF NOT EXISTS corporations (
 
     PRIMARY KEY (game_tick, uuid),
 
-    -- Ensures a user controls only one corporation state per tick (logically should be only one corp per user ever)
-    UNIQUE (game_tick, user_uuid),
-
-    CONSTRAINT fk_user FOREIGN KEY (user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+    UNIQUE (game_tick, name)
 );
 
 -- Index for finding corporation state quickly by its persistent ID and tick

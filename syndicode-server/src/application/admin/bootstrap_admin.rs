@@ -74,7 +74,7 @@ where
 
                     let corporation = Corporation::new(user_to_create.uuid, corporation_name);
 
-                    ctx.insert_corporation(&corporation)
+                    ctx.create_corporation(&corporation)
                         .await
                         .map_err(ApplicationError::from)?;
 

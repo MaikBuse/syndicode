@@ -68,6 +68,24 @@ message GetCorporationResponse {
   Corporation corporation = 2;
 }
 
+message CreateCorporationResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+
+  // Corporation that has been created.
+  Corporation corporation = 2;
+}
+
+message DeleteCorporationResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+
+  // UUID of the user the corporation belonged to.
+  string user_uuid = 2;
+  // UUID of the corporation that has been deleted.
+  string corporation_uuid = 3;
+}
+
 message AcquireListedBusinessRequest {
   // UUID of the business listing.
   string business_listing_uuid = 1;

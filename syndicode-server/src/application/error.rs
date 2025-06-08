@@ -11,6 +11,12 @@ pub enum ApplicationError {
     #[error("The database returned with a violation of a unique/primary key constraint")]
     UniqueConstraint,
 
+    #[error("Failed to retrieve the corporation of the provided user")]
+    CorporationForUserNotFound,
+
+    #[error("The provided corporation name is already taken")]
+    CorporationNameAlreadyTaken,
+
     #[error("The provided corporation name can't be longer than {0} characters")]
     CorporationNameTooLong(usize),
 
@@ -40,9 +46,6 @@ pub enum ApplicationError {
 
     #[error("The requesting user is not authorized to perform this action")]
     Unauthorized,
-
-    #[error("User authentication is missing")]
-    MissingAuthentication,
 
     #[error("The provided credentials are wrong")]
     WrongUserCredentials,

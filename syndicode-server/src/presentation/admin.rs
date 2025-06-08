@@ -4,16 +4,21 @@ use super::{
 };
 use crate::{
     application::{
-        admin::get_user::GetUserUseCase,
-        admin::{create_user::CreateUserUseCase, delete_user::DeleteUserUseCase},
+        admin::{
+            create_user::CreateUserUseCase, delete_user::DeleteUserUseCase,
+            get_user::GetUserUseCase,
+        },
         ports::{
             crypto::PasswordHandler,
             limiter::{LimiterCategory, RateLimitEnforcer},
-            uow::UnitOfWork,
+            queuer::ActionQueueable,
         },
     },
     config::Config,
-    domain::user::{model::role::UserRole, repository::UserRepository},
+    domain::{
+        economy::corporation::repository::CorporationRepository,
+        user::{model::role::UserRole, repository::UserRepository},
+    },
 };
 use bon::Builder;
 use std::{result::Result, sync::Arc};
@@ -25,27 +30,29 @@ use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct AdminPresenter<R, P, UOW, USR>
+pub struct AdminPresenter<Q, R, P, USR, CRP>
 where
+    Q: ActionQueueable + 'static,
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
-    UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
+    CRP: CorporationRepository + 'static,
 {
     config: Arc<Config>,
     limit: Arc<R>,
-    create_user_uc: Arc<CreateUserUseCase<P, UOW, USR>>,
+    create_user_uc: Arc<CreateUserUseCase<Q, P, USR, CRP>>,
     get_user_uc: Arc<GetUserUseCase<USR>>,
-    delete_user_uc: Arc<DeleteUserUseCase<USR>>,
+    delete_user_uc: Arc<DeleteUserUseCase<Q, USR, CRP>>,
 }
 
 #[async_trait]
-impl<R, P, UOW, USR> AdminService for AdminPresenter<R, P, UOW, USR>
+impl<Q, R, P, USR, CRP> AdminService for AdminPresenter<Q, R, P, USR, CRP>
 where
+    Q: ActionQueueable + 'static,
     R: RateLimitEnforcer + 'static,
     P: PasswordHandler + 'static,
-    UOW: UnitOfWork + 'static,
     USR: UserRepository + 'static,
+    CRP: CorporationRepository + 'static,
 {
     async fn create_user(
         &self,
@@ -76,9 +83,12 @@ where
             ProtoUserRole::Admin => UserRole::Admin,
         };
 
+        let request_uuid = parse_uuid(request.request_uuid.as_str())?;
+
         match self
             .create_user_uc
             .execute()
+            .request_uuid(request_uuid)
             .req_user_uuid(req_user_uuid)
             .user_name(request.user_name)
             .password(request.user_password)
@@ -100,33 +110,6 @@ where
                     user_role,
                 }))
             }
-            Err(err) => Err(PresentationError::from(err).into()),
-        }
-    }
-
-    async fn delete_user(
-        &self,
-        request: Request<DeleteUserRequest>,
-    ) -> Result<Response<DeleteUserResponse>, Status> {
-        check_rate_limit(
-            self.limit.clone(),
-            request.metadata(),
-            &self.config.ip_address_header,
-            LimiterCategory::Admin,
-        )
-        .await?;
-
-        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
-            Ok(uuid) => uuid,
-            Err(status) => return Err(status),
-        };
-
-        let Ok(user_uuid) = Uuid::parse_str(request.into_inner().user_uuid.as_str()) else {
-            return Err(Status::invalid_argument("Failed to parse user uuid"));
-        };
-
-        match self.delete_user_uc.execute(req_user_uuid, user_uuid).await {
-            Ok(_) => Ok(Response::new(DeleteUserResponse {})),
             Err(err) => Err(PresentationError::from(err).into()),
         }
     }
@@ -173,5 +156,48 @@ where
             user_role: user.role.into(),
             status: user.status.to_string(),
         }))
+    }
+
+    async fn delete_user(
+        &self,
+        request: Request<DeleteUserRequest>,
+    ) -> Result<Response<DeleteUserResponse>, Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            &self.config.ip_address_header,
+            LimiterCategory::Admin,
+        )
+        .await?;
+
+        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
+            Ok(uuid) => uuid,
+            Err(status) => return Err(status),
+        };
+
+        let request = request.into_inner();
+
+        let Ok(user_uuid) = Uuid::parse_str(request.user_uuid.as_str()) else {
+            return Err(Status::invalid_argument("Failed to parse user UUID"));
+        };
+
+        let Ok(request_uuid) = Uuid::parse_str(request.request_uuid.as_str()) else {
+            return Err(Status::invalid_argument("Failed to parse request UUID"));
+        };
+
+        match self
+            .delete_user_uc
+            .execute()
+            .req_user_uuid(req_user_uuid)
+            .user_uuid(user_uuid)
+            .request_uuid(request_uuid)
+            .call()
+            .await
+        {
+            Ok(_) => Ok(Response::new(DeleteUserResponse {
+                user_uuid: user_uuid.to_string(),
+            })),
+            Err(err) => Err(PresentationError::from(err).into()),
+        }
     }
 }

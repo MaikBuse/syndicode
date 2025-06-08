@@ -1,8 +1,8 @@
 use crate::{
     application::error::{ApplicationError, ApplicationResult},
-    domain::{
-        user::repository::UserRepository,
-        user::{model::role::UserRole, model::User},
+    domain::user::{
+        model::{role::UserRole, status::UserStatus, User},
+        repository::UserRepository,
     },
 };
 use bon::{bon, Builder};
@@ -27,7 +27,7 @@ where
         if req_user_uuid != user_uuid {
             let req_user = self.user_repo.get_user(req_user_uuid).await?;
 
-            if req_user.role != UserRole::Admin {
+            if req_user.role != UserRole::Admin || req_user.status != UserStatus::Active {
                 return Err(ApplicationError::Unauthorized);
             }
         }

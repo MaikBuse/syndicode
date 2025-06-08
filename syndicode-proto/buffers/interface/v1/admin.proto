@@ -18,20 +18,23 @@ service AdminService {
 
 //Request to create a user account with a specific role and corporation.
 message CreateUserRequest {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+
   //Username of the new user.
-  string user_name = 1;
+  string user_name = 2;
 
   //Password for the new user.
-  string user_password = 2;
+  string user_password = 3;
 
   // The email address used to contact the user.
-  string user_email = 3;
+  string user_email = 4;
 
   //Role to assign to the new user.
-  syndicode_interface_v1.UserRole user_role = 4;
+  syndicode_interface_v1.UserRole user_role = 5;
 
   //Name of the user's corporation.
-  string corporation_name = 5;
+  string corporation_name = 6;
 }
 
 //Response after a user account is created.
@@ -54,10 +57,15 @@ message GetUserRequest {
 
 //Request to delete a user by UUID.
 message DeleteUserRequest {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+
   //UUID of the user to delete.
-  string user_uuid = 1;
+  string user_uuid = 2;
 }
 
-//Response after a user has been deleted.
-message DeleteUserResponse {}
-
+//Response after a user account is deleted.
+message DeleteUserResponse {
+  //UUID of the deleted user.
+  string user_uuid = 1;
+}

@@ -1,22 +1,30 @@
 use crate::domain::{
     economy::{
         business::model::Business, business_listing::model::BusinessListing,
-        corporation::model::Corporation, market::model::Market,
+        business_offer::model::BusinessOffer, corporation::model::Corporation,
+        market::model::Market,
     },
     unit::model::Unit,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 pub struct GameState {
+    // Game State Maps
     pub units_map: HashMap<Uuid, Unit>,
     pub corporations_map: HashMap<Uuid, Corporation>,
     pub markets_map: HashMap<Uuid, Market>,
     pub businesses_map: HashMap<Uuid, Business>,
     pub business_listings_map: HashMap<Uuid, BusinessListing>,
+    pub business_offers_map: HashMap<Uuid, BusinessOffer>,
 
     // Indices
     pub corporation_uuid_by_user_uuid: HashMap<Uuid, Uuid>,
+    pub corporation_names: HashSet<String>,
+    pub business_uuids_by_corporation_uuid: HashMap<Uuid, Vec<Uuid>>,
+    pub business_listing_uuids_by_corporation_uuid: HashMap<Uuid, Vec<Uuid>>,
+    pub business_offer_uuids_by_corporation_uuid: HashMap<Uuid, Vec<Uuid>>,
+    pub unit_uuids_by_corporation_uuid: HashMap<Uuid, Vec<Uuid>>,
 }
 
 impl GameState {
@@ -26,19 +34,35 @@ impl GameState {
         markets_vec: Vec<Market>,
         businesses_vec: Vec<Business>,
         business_listings_vec: Vec<BusinessListing>,
+        business_offers_vec: Vec<BusinessOffer>,
     ) -> Self {
         let mut units_map = HashMap::with_capacity(units_vec.len());
         let mut corporations_map = HashMap::with_capacity(corporations_vec.len());
         let mut markets_map = HashMap::with_capacity(markets_vec.len());
         let mut businesses_map = HashMap::with_capacity(businesses_vec.len());
         let mut business_listings_map = HashMap::with_capacity(business_listings_vec.len());
+        let mut business_offers_map = HashMap::with_capacity(business_offers_vec.len());
+
+        let mut corporation_names = HashSet::with_capacity(corporations_vec.len());
         let mut corporation_uuid_by_user_uuid = HashMap::with_capacity(corporations_vec.len());
+        let mut business_uuids_by_corporation_uuid = HashMap::with_capacity(corporations_vec.len());
+        let mut business_listing_uuids_by_corporation_uuid =
+            HashMap::with_capacity(corporations_vec.len());
+        let mut business_offer_uuids_by_corporation_uuid =
+            HashMap::with_capacity(corporations_vec.len());
+        let mut unit_uuids_by_corporation_uuid = HashMap::with_capacity(corporations_vec.len());
 
         for unit in units_vec {
+            let unit_uuids: &mut Vec<Uuid> = unit_uuids_by_corporation_uuid
+                .entry(unit.corporation_uuid)
+                .or_default();
+            unit_uuids.push(unit.uuid);
+
             units_map.insert(unit.uuid, unit);
         }
 
         for corporation in corporations_vec {
+            corporation_names.insert(corporation.name.to_string());
             corporation_uuid_by_user_uuid.insert(corporation.user_uuid, corporation.uuid);
             corporations_map.insert(corporation.uuid, corporation);
         }
@@ -48,20 +72,50 @@ impl GameState {
         }
 
         for business in businesses_vec {
+            if let Some(owning_corporation_uuid) = business.owning_corporation_uuid {
+                let business_uuids: &mut Vec<Uuid> = business_uuids_by_corporation_uuid
+                    .entry(owning_corporation_uuid)
+                    .or_default();
+                business_uuids.push(business.uuid);
+            }
+
             businesses_map.insert(business.uuid, business);
         }
 
         for business_listing in business_listings_vec {
+            if let Some(seller_corporation_uuid) = business_listing.seller_corporation_uuid {
+                let business_listing_uuids: &mut Vec<Uuid> =
+                    business_listing_uuids_by_corporation_uuid
+                        .entry(seller_corporation_uuid)
+                        .or_default();
+                business_listing_uuids.push(business_listing.uuid);
+            }
+
             business_listings_map.insert(business_listing.uuid, business_listing);
+        }
+
+        for business_offer in business_offers_vec {
+            let business_offer_uuids = business_offer_uuids_by_corporation_uuid
+                .entry(business_offer.offering_corporation_uuid)
+                .or_insert(Vec::new());
+            business_offer_uuids.push(business_offer.uuid);
+
+            business_offers_map.insert(business_offer.uuid, business_offer);
         }
 
         Self {
             units_map,
             corporations_map,
             corporation_uuid_by_user_uuid,
+            corporation_names,
             markets_map,
             businesses_map,
             business_listings_map,
+            business_offers_map,
+            business_uuids_by_corporation_uuid,
+            business_listing_uuids_by_corporation_uuid,
+            business_offer_uuids_by_corporation_uuid,
+            unit_uuids_by_corporation_uuid,
         }
     }
 
@@ -99,11 +153,5 @@ impl GameState {
     }
     pub fn ref_business_listing(&self, uuid: &Uuid) -> Option<&BusinessListing> {
         self.business_listings_map.get(uuid)
-    }
-
-    // Convenience (less needed now)
-    pub fn ref_mut_corporation_by_user(&mut self, user_uuid: &Uuid) -> Option<&mut Corporation> {
-        let uuid = *self.get_corporation_uuid_by_user(user_uuid)?;
-        self.ref_mut_corporation(&uuid)
     }
 }

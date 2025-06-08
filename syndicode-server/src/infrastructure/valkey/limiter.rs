@@ -8,6 +8,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[tonic::async_trait]
 impl RateLimitEnforcer for ValkeyStore {
     async fn check(&self, category: LimiterCategory, ip_address: &str) -> LimitationResult<()> {
+        if self.limiter_config.disable_rate_limitting {
+            return Ok(());
+        }
+
         let mut conn = self.conn.clone();
 
         let key = format!("syndicode:rate_limit:{}:{}", category, ip_address);

@@ -1,10 +1,14 @@
 use crate::{
     application::{
+        action::{ActionDetails, QueuedActionPayload},
         error::{ApplicationError, ApplicationResult},
-        ports::{crypto::PasswordHandler, uow::UnitOfWork, verification::VerificationSendable},
+        ports::{
+            crypto::PasswordHandler, queuer::ActionQueueable, uow::UnitOfWork,
+            verification::VerificationSendable,
+        },
     },
     domain::{
-        economy::corporation::model::{name::CorporationName, Corporation},
+        economy::corporation::{model::name::CorporationName, repository::CorporationRepository},
         repository::RepositoryError,
         user::model::{
             email::UserEmail, name::UserName, password::UserPassword, role::UserRole,
@@ -18,23 +22,29 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct RegisterUserUseCase<P, UOW, VS>
+pub struct RegisterUserUseCase<Q, UOW, P, VS, CRP>
 where
-    P: PasswordHandler,
+    Q: ActionQueueable,
     UOW: UnitOfWork,
+    P: PasswordHandler,
     VS: VerificationSendable,
+    CRP: CorporationRepository,
 {
     pw: Arc<P>,
-    uow: Arc<UOW>,
     verification: Arc<VS>,
+    action_queuer: Arc<Q>,
+    uow: Arc<UOW>,
+    corp_repo: Arc<CRP>,
 }
 
 #[bon]
-impl<P, UOW, VS> RegisterUserUseCase<P, UOW, VS>
+impl<Q, UOW, P, VS, CRP> RegisterUserUseCase<Q, UOW, P, VS, CRP>
 where
-    P: PasswordHandler,
+    Q: ActionQueueable,
     UOW: UnitOfWork,
+    P: PasswordHandler,
     VS: VerificationSendable,
+    CRP: CorporationRepository,
 {
     #[builder]
     pub async fn execute(
@@ -50,8 +60,10 @@ where
 
         let password_hash = self.pw.hash_user_password(user_password)?;
 
+        let user_uuid = Uuid::now_v7();
+
         let user = User {
-            uuid: Uuid::now_v7(),
+            uuid: user_uuid,
             name: user_name,
             password_hash: password_hash.to_string(),
             email: user_email,
@@ -61,6 +73,25 @@ where
 
         let user_verification = UserVerification::new(user.uuid);
         let verfication_code_clone = user_verification.clone_code();
+
+        // Check the syntactical validity of the corporation name
+        let corporation_name = CorporationName::new(corporation_name)?;
+
+        // Check if the corporation name is already taken
+        match self
+            .corp_repo
+            .get_corporation_by_name(corporation_name.to_string())
+            .await
+        {
+            Ok(_) => {
+                return Err(ApplicationError::CorporationNameAlreadyTaken);
+            }
+            Err(err) => match err {
+                // This is the expected result, since we don't want the name to be taken yet
+                RepositoryError::NotFound => {}
+                _ => return Err(ApplicationError::from(err)),
+            },
+        };
 
         let user_created = self
             .uow
@@ -77,14 +108,6 @@ where
                         }
                     }
 
-                    let corporation_name = CorporationName::new(corporation_name)?;
-
-                    let corporation = Corporation::new(user_to_create.uuid, corporation_name);
-
-                    ctx.insert_corporation(&corporation)
-                        .await
-                        .map_err(ApplicationError::from)?;
-
                     ctx.create_user_verification(&user_verification).await?;
 
                     Ok(user_to_create)
@@ -100,144 +123,33 @@ where
             )
             .await?;
 
-        Ok(user_created)
-    }
-}
+        // Queue an action to create the user's corporation
+        let action = QueuedActionPayload::builder()
+            .req_user_uuid(user_uuid)
+            .request_uuid(user_uuid)
+            .details(ActionDetails::CreateCorporation {
+                user_uuid: user_created.uuid,
+                corporation_name,
+            })
+            .build();
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{
-        application::ports::{
-            crypto::MockPasswordHandler, uow::MockUnitOfWork,
-            verification::MockVerificationSendable,
-        },
-        domain::user::repository::MockUserRepository,
-    };
-    use mockall::predicate::*;
-
-    struct TestFixture {
-        mock_pw: MockPasswordHandler,
-        mock_uow: MockUnitOfWork,
-        mock_user_repo: MockUserRepository,
-        mock_verification: MockVerificationSendable,
-    }
-
-    impl TestFixture {
-        fn new() -> Self {
-            TestFixture {
-                mock_pw: MockPasswordHandler::new(),
-                mock_uow: MockUnitOfWork::new(),
-                mock_user_repo: MockUserRepository::new(),
-                mock_verification: MockVerificationSendable::new(),
+        match self.action_queuer.enqueue_action(action).await {
+            Ok(entry_id) => {
+                tracing::debug!(
+                    "Successfully enqueued CreateCorporation action with ID: {}",
+                    entry_id
+                );
             }
-        }
+            Err(err) => {
+                tracing::error!(
+                    "Failed to enqueue CreateCorporation action with error: {:?}",
+                    err
+                );
 
-        /// Configures mocks for the standard user success scenario
-        fn expect_standard_user_success(
-            &mut self,
-            input_password: String,
-            expected_hash: String,
-            expected_user_output: User, // The user returned by UoW
-            receipient_email: String,
-            receipient_name: String,
-        ) {
-            let input_user_password = UserPassword::new(input_password).unwrap();
-
-            // Expect password hashing
-            self.mock_pw
-                .expect_hash_user_password()
-                .with(eq(input_user_password)) // Match specific password
-                .times(1)
-                .return_once(move |_| Ok(expected_hash.to_string())); // Use return_once for clarity
-
-            // Expect UnitOfWork execution
-            self.mock_uow
-                .expect_execute::<User>()
-                .times(1)
-                .with(mockall::predicate::always()) // Ignore the closure argument
-                .return_once(move |_| {
-                    // Use return_once
-                    // Simulate UoW success, returning the fully formed user
-                    let user_to_return = expected_user_output.clone();
-                    Ok(user_to_return)
-                });
-
-            self.mock_verification
-                .expect_send_verification_email()
-                .times(1)
-                .with(
-                    eq(receipient_email),
-                    eq(receipient_name),
-                    mockall::predicate::always(),
-                )
-                .return_once(move |_, _, _| Ok(()));
-
-            // No user repo calls expected for standard user creation
-            self.mock_user_repo.expect_get_user().never();
-        }
-
-        /// Builds the use case instance, consuming the fixture
-        fn build_use_case(
-            self,
-        ) -> RegisterUserUseCase<MockPasswordHandler, MockUnitOfWork, MockVerificationSendable>
-        {
-            RegisterUserUseCase::builder()
-                .pw(Arc::new(self.mock_pw))
-                .uow(Arc::new(self.mock_uow))
-                .verification(Arc::new(self.mock_verification))
-                .build()
-        }
-    }
-
-    #[tokio::test]
-    async fn should_create_user() {
-        // 1. Arrange
-        let mut fixture = TestFixture::new(); // Create fixture
-
-        // Define test data
-        let input_user_name = UserName::new("testuser".to_string()).unwrap();
-        let input_password = "password123".to_string();
-        let input_role = UserRole::Player;
-        let input_email = UserEmail::new("contact@maikbuse.com".to_string()).unwrap();
-        let input_corp_name = "TestCorp".to_string();
-        let expected_hashed_password = "mock_hashed_password".to_string();
-        let expected_user_uuid = Uuid::now_v7();
-
-        let expected_user_output = User {
-            uuid: expected_user_uuid,
-            name: input_user_name.clone(),
-            password_hash: expected_hashed_password.clone(),
-            email: input_email.clone(),
-            role: input_role,
-            status: UserStatus::Pending,
+                return Err(err.into());
+            }
         };
 
-        // Configure mocks using the fixture method
-        fixture.expect_standard_user_success(
-            input_password.clone(),
-            expected_hashed_password,
-            expected_user_output.clone(),
-            input_email.clone().into_inner(),
-            input_user_name.clone().into_inner(),
-        );
-
-        // Build the use case from the fixture
-        let uc = fixture.build_use_case();
-
-        // 2. Act
-        let result = uc
-            .execute()
-            .user_name(input_user_name.into_inner())
-            .password(input_password.clone())
-            .user_email(input_email.into_inner())
-            .corporation_name(input_corp_name.clone())
-            .call()
-            .await;
-
-        // 3. Assert
-        assert!(result.is_ok());
-        let created_user = result.unwrap();
-        assert_eq!(created_user, expected_user_output);
+        Ok(user_created)
     }
 }

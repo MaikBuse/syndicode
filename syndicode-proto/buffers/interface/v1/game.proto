@@ -5,6 +5,7 @@ package syndicode_interface_v1;
 import "google/protobuf/timestamp.proto";
 import "economy/v1/economy.proto";
 import "warfare/v1/warfare.proto";
+import "interface/v1/shared.proto";
 
 // Main entry point for player actions and game updates.
 service GameService {
@@ -61,19 +62,20 @@ message GameUpdate {
 
     // Response containing queried business listings.
     syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 9; 
-  }
-}
 
-// Acknowledges receipt and queuing of a player command.
-message ActionInitResponse {
-  // UUID generated on the client to match the response with the initial request.
-  string request_uuid = 1;
+    // Response containing the newly created corporation.
+    syndicode_economy_v1.CreateCorporationResponse create_corporation = 10;
+
+    // Response notifying about the deletion of a corporation..
+    syndicode_economy_v1.DeleteCorporationResponse delete_corporation = 11;
+  }
 }
 
 // Response returned for actions that failed to process.
 message ActionFailedResponse {
   // UUID generated on the client to match the response with the initial request.
   string request_uuid = 1;
+
   // The reason why the action failed to process.
   string reason = 2;
 }

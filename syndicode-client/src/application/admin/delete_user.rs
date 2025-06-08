@@ -4,7 +4,7 @@ use bon::{bon, Builder};
 use syndicode_proto::syndicode_interface_v1::DeleteUserResponse;
 use tokio::sync::Mutex;
 
-use crate::domain::admin::AdminRepository;
+use crate::domain::admin::{AdminRepository, DeleteUserDomainRequest};
 
 #[derive(Builder, Debug)]
 pub struct DeleteUserUseCase<ADMIN>
@@ -23,12 +23,18 @@ where
     pub async fn execute(
         &mut self,
         token: String,
+        request_uuid: String,
         user_uuid: String,
     ) -> anyhow::Result<DeleteUserResponse> {
+        let req = DeleteUserDomainRequest {
+            request_uuid,
+            user_uuid,
+        };
+
         self.admin_repository
             .lock()
             .await
-            .delete_user(token, user_uuid)
+            .delete_user(token, req)
             .await
     }
 }

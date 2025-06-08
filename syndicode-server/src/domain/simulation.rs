@@ -7,7 +7,9 @@ use crate::application::action::{ActionDetails, QueuedActionPayload};
 use bon::builder;
 use game_state::GameState;
 use handlers::{
-    acquire_listed_business::handle_acquire_listed_business, spawn_unit::handle_spawn_unit,
+    acquire_listed_business::handle_acquire_listed_business,
+    create_corporation::handle_create_corporation, delete_corporation::handle_delete_corporation,
+    spawn_unit::handle_spawn_unit,
 };
 use thiserror::Error;
 use uuid::Uuid;
@@ -17,8 +19,23 @@ pub enum ActionError {
     #[error("User '{user_uuid}' not associated with any corporation.")]
     RequestingCorporationNotFoundByUser { user_uuid: Uuid },
 
+    #[error("Business '{business_uuid}' not found.")]
+    BusinessNotFound { business_uuid: Uuid },
+
     #[error("Business listing '{listing_uuid}' not found.")]
     BusinessListingNotFound { listing_uuid: Uuid },
+
+    #[error("Unit '{unit_uuid}' not found.")]
+    UnitNotFound { unit_uuid: Uuid },
+
+    #[error("Business offer '{offer_uuid}' not found.")]
+    BusinessOfferNotFound { offer_uuid: Uuid },
+
+    #[error("Corporation'{corporation_uuid}' not found.")]
+    CorporationNotFound { corporation_uuid: Uuid },
+
+    #[error("Corporation'{corporation_uuid}' was not captured.")]
+    CorporationNotCaptured { corporation_uuid: Uuid },
 
     #[error("Corporation '{corporation_uuid}' required for checks phase not found.")]
     CorporationNotFoundDuringChecks { corporation_uuid: Uuid },
@@ -40,21 +57,9 @@ pub enum ActionError {
         step_description: &'static str, // e.g., "Debit Buyer", "Credit Seller"
     },
 
-    #[error("Saga execution failed during step '{step_description}': {reason}")]
-    SagaStepFailed {
-        step_description: &'static str,
-        reason: String, // For errors other than missing entities
-    },
-
-    // Add other specific errors as needed, e.g., for spawn_unit
-    #[error("Spawn Unit handler failed: {0}")]
-    SpawnUnitError(String), // Example for other handlers
-
     #[error("An internal error occurred: {0}")]
     InternalError(String),
 }
-
-// Remove the old struct ActionError and its From implementations
 
 pub struct SimulationService;
 
@@ -62,44 +67,62 @@ impl Simulationable for SimulationService {
     fn calculate_next_state(
         &self,
         next_game_tick: i64,
-        msg_act_slice: Vec<(String, QueuedActionPayload)>,
-        message_ids: &mut Vec<String>,
+        mut id_act_slice: Vec<(String, QueuedActionPayload)>,
+        action_ids: &mut Vec<String>,
         state: &mut GameState,
     ) -> Vec<DomainActionOutcome> {
-        let mut outcomes: Vec<DomainActionOutcome> = Vec::with_capacity(msg_act_slice.len());
+        let mut outcomes: Vec<DomainActionOutcome> = Vec::with_capacity(id_act_slice.len());
 
-        let report_failure = |outcomes: &mut Vec<DomainActionOutcome>,
-                              user_uuid: Uuid,
-                              request_uuid: Uuid,
-                              action_string: String,
-                              reason: String, // Use the error's Display string
-                              tick_processed: i64| {
-            failure_outcome()
-                .outcomes(outcomes)
-                .user_uuid(user_uuid)
-                .request_uuid(request_uuid)
-                .action(action_string)
-                .reason(reason)
-                .tick_processed(tick_processed)
-                .call();
-        };
+        // Sort the actions so that they are executed in the correct order
+        id_act_slice.sort_by(|(_, a_action), (_, b_action)| {
+            a_action
+                .details
+                .get_order()
+                .cmp(&b_action.details.get_order())
+        });
 
-        for (message_id, action) in msg_act_slice.into_iter() {
-            message_ids.push(message_id);
+        for (action_id, action) in id_act_slice.into_iter() {
+            action_ids.push(action_id.clone());
             let action_string = action.details.to_string();
-            let user_uuid = action.user_uuid;
+            let req_user_uuid = action.req_user_uuid;
             let request_uuid = action.request_uuid;
 
-            let result = match action.details {
-                ActionDetails::SpawnUnit => handle_spawn_unit(state, &action, next_game_tick),
+            let result = match &action.details {
+                ActionDetails::CreateCorporation {
+                    user_uuid,
+                    corporation_name,
+                } => handle_create_corporation()
+                    .state(state)
+                    .corporation_name(corporation_name.to_owned())
+                    .action(&action)
+                    .next_game_tick(next_game_tick)
+                    .user_uuid(*user_uuid)
+                    .req_user_uuid(req_user_uuid)
+                    .call(),
+                ActionDetails::DeleteCorporation { corporation_uuid } => {
+                    handle_delete_corporation()
+                        .state(state)
+                        .action(&action)
+                        .next_game_tick(next_game_tick)
+                        .corporation_uuid(*corporation_uuid)
+                        .req_user_uuid(req_user_uuid)
+                        .call()
+                }
+                ActionDetails::SpawnUnit => handle_spawn_unit()
+                    .state(state)
+                    .action(&action)
+                    .next_game_tick(next_game_tick)
+                    .req_user_uuid(req_user_uuid)
+                    .call(),
                 ActionDetails::AcquireListedBusiness {
                     business_listing_uuid,
-                } => handle_acquire_listed_business(
-                    state,
-                    &action,
-                    business_listing_uuid,
-                    next_game_tick,
-                ),
+                } => handle_acquire_listed_business()
+                    .state(state)
+                    .action(&action)
+                    .business_listing_uuid(*business_listing_uuid)
+                    .next_game_tick(next_game_tick)
+                    .req_user_uuid(req_user_uuid)
+                    .call(),
             };
 
             match result {
@@ -109,36 +132,36 @@ impl Simulationable for SimulationService {
                 // Match on the specific ActionError enum
                 Err(error) => {
                     // Use the error's Display implementation for the reason string
-                    report_failure(
-                        &mut outcomes,
-                        user_uuid,
-                        request_uuid,
-                        action_string,
-                        error.to_string(), // Get reason string from the error itself
-                        next_game_tick,
-                    );
+                    failure_outcome()
+                        .outcomes(&mut outcomes)
+                        .req_user_uuid(req_user_uuid)
+                        .request_uuid(request_uuid)
+                        .action(action_string)
+                        .reason(error.to_string())
+                        .tick_processed(next_game_tick)
+                        .call();
                 }
             }
         }
         outcomes
     }
-} // End impl Simulationable
+}
 
 #[builder]
 fn failure_outcome(
     outcomes: &mut Vec<DomainActionOutcome>,
-    user_uuid: Uuid,
+    req_user_uuid: Uuid,
     request_uuid: Uuid,
     action: String,
     reason: String,
     tick_processed: i64,
 ) {
     // Log the failure - changed to warn level
-    tracing::warn!(%user_uuid, %request_uuid, %tick_processed, %action, %reason, "Action failed");
+    tracing::warn!(%req_user_uuid, %request_uuid, %tick_processed, %action, %reason, "Action failed");
 
     // Push the failure outcome into the outcomes vector
     outcomes.push(DomainActionOutcome::ActionFailed {
-        user_uuid,
+        req_user_uuid,
         request_uuid,
         reason, // The reason is now the formatted error message
         tick_processed,

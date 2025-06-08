@@ -157,6 +157,7 @@ impl LeaderElectionConfig {
 
 #[derive(Clone, Debug)]
 pub struct LimiterConfig {
+    pub disable_rate_limitting: bool,
     pub middleware_max_req: usize,
     pub middleware_window_secs: usize,
     pub game_stream_max_req: usize,

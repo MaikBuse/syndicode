@@ -12,6 +12,7 @@ pub struct Config {
     pub leader_lock_ttl: usize,
     pub leader_lock_refresh_interval: Duration,
     pub non_leader_acquisition_retry_internal: Duration,
+    pub disable_rate_limitting: bool,
 }
 
 impl Config {
@@ -25,6 +26,8 @@ impl Config {
         let leader_lock_refresh_interval = int_from_env("LEADER_LOCK_REFRESH")?;
         let non_leader_acquisition_retry_internal = int_from_env("NON_LEADER_RETRY")?;
 
+        let disable_rate_limitting = read_env_var("DISABLE_RATE_LIMITING")?.parse::<bool>()?;
+
         Ok(Self {
             instance_id,
             ip_address_header,
@@ -34,6 +37,7 @@ impl Config {
             non_leader_acquisition_retry_internal: Duration::from_millis(
                 non_leader_acquisition_retry_internal,
             ),
+            disable_rate_limitting,
         })
     }
 }

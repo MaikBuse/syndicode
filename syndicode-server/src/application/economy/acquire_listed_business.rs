@@ -33,7 +33,7 @@ where
     ) -> ApplicationResult<i64> {
         let action = QueuedActionPayload::builder()
             .request_uuid(request_uuid)
-            .user_uuid(req_user_uuid)
+            .req_user_uuid(req_user_uuid)
             .details(ActionDetails::AcquireListedBusiness {
                 business_listing_uuid,
             })
@@ -41,7 +41,7 @@ where
 
         match self.action_queuer.enqueue_action(action).await {
             Ok(entry_id) => {
-                tracing::info!(
+                tracing::debug!(
                     "Successfully enqueued AcquireListedBusiness action with ID: {}",
                     entry_id
                 );

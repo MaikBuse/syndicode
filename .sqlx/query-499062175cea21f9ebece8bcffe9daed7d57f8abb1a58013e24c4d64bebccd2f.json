@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO units (\n                game_tick,\n                uuid,\n                corporation_uuid\n            )\n            SELECT\n                $1 as game_tick,\n                unnest($2::UUID[]) as uuid,\n                unnest($3::UUID[]) as corporation_uuid\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "UuidArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "499062175cea21f9ebece8bcffe9daed7d57f8abb1a58013e24c4d64bebccd2f"
+}
