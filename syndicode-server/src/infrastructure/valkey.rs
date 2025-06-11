@@ -4,6 +4,8 @@ pub mod outcome;
 pub mod puller;
 pub mod queuer;
 
+use std::env;
+
 use crate::{application::ports::limiter::LimiterCategory, utils::read_env_var};
 use anyhow::Context;
 use redis::{aio::MultiplexedConnection, AsyncCommands, Script};
@@ -31,13 +33,19 @@ impl ValkeyStore {
         limiter_config: LimiterConfig,
     ) -> anyhow::Result<Self> {
         let valkey_host = read_env_var("VALKEY_HOST")?;
-        let valkey_password = read_env_var("VALKEY_PASSWORD")?;
 
-        let conn_string = format!(
-            "redis://:{}@{}:6379",
-            urlencoding::encode(valkey_password.as_str()),
-            valkey_host,
-        );
+        let conn_string = match env::var("VALKEY_PASSWORD") {
+            Ok(valkey_password) => {
+                format!(
+                    "redis://:{}@{}:6379",
+                    urlencoding::encode(valkey_password.as_str()),
+                    valkey_host,
+                )
+            }
+            Err(_) => {
+                format!("redis://{}:6379", valkey_host)
+            }
+        };
 
         let client =
             redis::Client::open(conn_string).context("Failed to parse Redis connection string")?;

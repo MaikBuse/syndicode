@@ -1,4 +1,4 @@
-name: Rust CI
+name: Continuous Integration
 
 on:
   push:
@@ -10,45 +10,158 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  ci:
-    name: Build & Test syndicode-server
+  lint:
+    name: Lint & Format
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        rust: [stable]
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
-      - name: Cache cargo registry
-        uses: actions/cache@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            syndicode-server/target
-          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ matrix.rust }}-
-
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
           components: clippy, rustfmt
-
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
       - name: Check formatting
         run: cargo fmt --package syndicode-server --package syndicode-client -- --check
-
-      - name: Lint with Clippy
+      - name: Run Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      - name: Build
-        run: cargo build --manifest-path syndicode-server/Cargo.toml --verbose
+  server-unit-tests:
+    name: Server Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-debug-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-debug-
+      - name: Run Server Unit Tests
+        run: cargo test -p syndicode-server
 
-      - name: Run tests
-        run: cargo test --manifest-path syndicode-server/Cargo.toml --verbose
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [lint, server-unit-tests]
+    services:
+      postgres:
+        image: postgres:17.2
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: secretpassword
+          POSTGRES_DB: syndicode
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
+      valkey:
+        image: valkey/valkey:8.1
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+
+      - name: Build server and client
+        run: cargo build --workspace --release
+        env:
+          SQLX_OFFLINE: true
+
+      - name: Start server in background
+        run: ./target/release/syndicode-server &> server.log &
+        env:
+          # Application Configuration
+          DISABLE_RATE_LIMITING: true
+          JWT_SECRET: "some-super-secret-string-for-ci"
+          ADMIN_EMAIL: "contact@maikbuse.com"
+          ADMIN_PASSWORD: "my-secret-password"
+          IP_ADDRESS_HEADER: "CF-Connecting-IP"
+          GAME_TICK_INTERVAL: 1000
+          LEADER_LOCK_REFRESH: 10000
+          LEADER_LOCK_TTL: 30000
+          NON_LEADER_RETRY: 5000
+
+          # Database Connection
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: secretpassword
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: syndicode
+
+          # Valkey Connection
+          VALKEY_HOST: localhost
+
+          # Debugging
+          RUST_LOG: "syndicode_client=debug,syndicode_server=info,info"
+          RUST_BACKTRACE: 1
+
+          # SMTP Secrets (these will be empty on PRs from forks)
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+
+      - name: Install gRPC Health Probe
+        run: |
+          GRPC_HEALTH_PROBE_VERSION=v0.4.26
+          wget -qO /usr/local/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64
+          chmod +x /usr/local/bin/grpc_health_probe
+
+      - name: Wait for server health (gRPC)
+        run: |
+          echo "Waiting for gRPC server to start..."
+          for i in {1..30}; do
+            if grpc_health_probe -addr=localhost:50051; then
+              echo "gRPC Server is healthy!"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "gRPC Server failed to start in 30 seconds."
+          echo "--- Server Logs ---"
+          cat server.log
+          exit 1
+
+      - name: Run Client Integration Tests
+        run: cargo test -p syndicode-client -- --test-threads=1
+
+      - name: Stop server
+        if: always()
+        run: |
+          echo "Stopping server..."
+          pkill syndicode-server || echo "Server was not running."
