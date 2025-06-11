@@ -74,7 +74,8 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Auth,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let request = request.into_inner();
 
@@ -105,7 +106,8 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Auth,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let request = request.into_inner();
 
@@ -130,7 +132,8 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Auth,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let user = self
             .resend_verification_uc
@@ -154,7 +157,8 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Auth,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let request = request.into_inner();
 
@@ -182,11 +186,12 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Auth,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let req_user_uuid = match uuid_from_metadata(request.metadata()) {
             Ok(uuid) => uuid,
-            Err(status) => return Err(status),
+            Err(status) => return Err(*status),
         };
 
         let user = match self

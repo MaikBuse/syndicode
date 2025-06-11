@@ -42,10 +42,10 @@ jobs:
           components: clippy, rustfmt
 
       - name: Check formatting
-        run: cargo fmt --manifest-path syndicode-server/Cargo.toml -- --check
+        run: cargo fmt --package syndicode-server --package syndicode-client -- --check
 
       - name: Lint with Clippy
-        run: cargo clippy --manifest-path syndicode-server/Cargo.toml --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Build
         run: cargo build --manifest-path syndicode-server/Cargo.toml --verbose

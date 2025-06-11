@@ -114,7 +114,8 @@ where
     BL: BusinessListingRepository,
 {
     let seller_corporation_uuid =
-        parse_maybe_uuid(req.seller_corporation_uuid, "seller corporation uuid")?;
+        parse_maybe_uuid(req.seller_corporation_uuid, "seller corporation uuid")
+            .map_err(|status| *status)?;
 
     match query_business_listings_uc
         .execute()

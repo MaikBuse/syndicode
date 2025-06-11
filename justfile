@@ -33,7 +33,7 @@ fmt:
 # Run clippy linting on the workspace
 [group('cargo')]
 clippy:
-  cargo clippy
+  cargo clippy --all-targets --all-features -- -D warnings
 
 # Apply the clippy suggested fixes
 [group('cargo')]

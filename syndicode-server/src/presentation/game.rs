@@ -104,9 +104,10 @@ where
         let ip_address = ip_address_from_metadata(
             request.metadata(),
             &self.config.ip_address_header.to_lowercase(),
-        )?;
+        )
+        .map_err(|status| *status)?;
 
-        let user_uuid = uuid_from_metadata(request.metadata())?;
+        let user_uuid = uuid_from_metadata(request.metadata()).map_err(|status| *status)?;
 
         // Setup Communication Channel
         let (tx_raw, rx) = mpsc::channel(MPSC_CHANNEL_BUFFER_SIZE);

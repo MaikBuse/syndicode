@@ -64,11 +64,12 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Admin,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let req_user_uuid = match uuid_from_metadata(request.metadata()) {
             Ok(uuid) => uuid,
-            Err(status) => return Err(status),
+            Err(status) => return Err(*status),
         };
 
         let request = request.into_inner();
@@ -83,7 +84,7 @@ where
             ProtoUserRole::Admin => UserRole::Admin,
         };
 
-        let request_uuid = parse_uuid(request.request_uuid.as_str())?;
+        let request_uuid = parse_uuid(request.request_uuid.as_str()).map_err(|status| *status)?;
 
         match self
             .create_user_uc
@@ -124,16 +125,17 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Auth,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let req_user_uuid = match uuid_from_metadata(request.metadata()) {
             Ok(uuid) => uuid,
-            Err(status) => return Err(status),
+            Err(status) => return Err(*status),
         };
 
         let request = request.into_inner();
 
-        let user_uuid = parse_uuid(request.user_uuid.as_str())?;
+        let user_uuid = parse_uuid(request.user_uuid.as_str()).map_err(|status| *status)?;
 
         let user = match self
             .get_user_uc
@@ -168,11 +170,12 @@ where
             &self.config.ip_address_header,
             LimiterCategory::Admin,
         )
-        .await?;
+        .await
+        .map_err(|status| *status)?;
 
         let req_user_uuid = match uuid_from_metadata(request.metadata()) {
             Ok(uuid) => uuid,
-            Err(status) => return Err(status),
+            Err(status) => return Err(*status),
         };
 
         let request = request.into_inner();
