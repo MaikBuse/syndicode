@@ -14,7 +14,7 @@ use crate::{
 #[builder]
 pub fn handle_create_corporation(
     state: &mut GameState,
-    action: &QueuedActionPayload,
+    action_payload: &QueuedActionPayload,
     next_game_tick: i64,
     user_uuid: Uuid,
     mut corporation_name: CorporationName,
@@ -39,7 +39,7 @@ pub fn handle_create_corporation(
         corporation_uuid: corporation.uuid,
         corporation_name: corporation.name.to_string(),
         corporation_balance: corporation.cash_balance,
-        request_uuid: action.request_uuid,
+        request_uuid: action_payload.request_uuid,
         tick_effective: next_game_tick,
         req_user_uuid,
         user_uuid,

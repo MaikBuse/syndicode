@@ -209,10 +209,6 @@ impl UserTxRepository for PgTransactionContext<'_, '_> {
         self.user_repo.create_user(&mut **self.tx, user).await
     }
 
-    async fn get_user(&mut self, user_uuid: Uuid) -> RepositoryResult<User> {
-        self.user_repo.get_user(&mut **self.tx, user_uuid).await
-    }
-
     async fn get_user_by_name(&mut self, user_name: String) -> RepositoryResult<User> {
         self.user_repo
             .get_user_by_name(&mut **self.tx, user_name)
@@ -221,9 +217,5 @@ impl UserTxRepository for PgTransactionContext<'_, '_> {
 
     async fn update_user(&mut self, user: &User) -> RepositoryResult<()> {
         self.user_repo.update_user(&mut **self.tx, user).await
-    }
-
-    async fn delete_user(&mut self, user_uuid: Uuid) -> RepositoryResult<()> {
-        self.user_repo.delete_user(&mut **self.tx, user_uuid).await
     }
 }

@@ -12,7 +12,7 @@ use uuid::Uuid;
 #[builder]
 pub fn handle_spawn_unit(
     state: &mut GameState,
-    action: &QueuedActionPayload,
+    action_payload: &QueuedActionPayload,
     next_game_tick: i64,
     req_user_uuid: Uuid,
 ) -> Result<DomainActionOutcome, ActionError> {
@@ -35,7 +35,7 @@ pub fn handle_spawn_unit(
 
     Ok(DomainActionOutcome::UnitSpawned {
         req_user_uuid,
-        request_uuid: action.request_uuid,
+        request_uuid: action_payload.request_uuid,
         corporation_uuid,
         unit_uuid,
         tick_effective: next_game_tick,

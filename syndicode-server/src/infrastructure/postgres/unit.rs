@@ -110,36 +110,6 @@ impl PgUnitRepository {
         Ok(units)
     }
 
-    /// Retrieves the state (UUID and owner UUID) of a specific unit
-    /// by its UUID at a given game tick.
-    pub async fn get_unit_state_by_uuid_at_tick(
-        &self,
-        executor: impl Executor<'_, Database = Postgres>,
-        unit_uuid: Uuid,
-        game_tick: i64,
-    ) -> RepositoryResult<Option<Unit>> {
-        // Return Option<Unit>
-        // Select only the columns present in the schema and matching the Unit struct
-        let unit = sqlx::query_as!(
-            Unit,
-            r#"
-            SELECT
-                uuid,
-                corporation_uuid
-            FROM units
-            WHERE
-                uuid = $1
-                AND game_tick = $2
-            "#,
-            unit_uuid,
-            game_tick
-        )
-        .fetch_optional(executor)
-        .await?;
-
-        Ok(unit)
-    }
-
     pub async fn delete_units_before_tick(
         &self,
         executor: impl Executor<'_, Database = Postgres>,
@@ -204,31 +174,6 @@ impl UnitRepository for PgUnitService {
 
 #[tonic::async_trait]
 impl UnitTxRespository for PgTransactionContext<'_, '_> {
-    async fn list_units(&mut self) -> RepositoryResult<Vec<Unit>> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&mut **self.tx)
-            .await?;
-
-        self.unit_repo
-            .list_units_in_tick(&mut **self.tx, game_tick)
-            .await
-    }
-
-    async fn list_units_by_corporation(
-        &mut self,
-        corporation_uuid: Uuid,
-    ) -> RepositoryResult<Vec<Unit>> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&mut **self.tx)
-            .await?;
-
-        self.unit_repo
-            .list_corporation_units_at_tick(&mut **self.tx, corporation_uuid, game_tick)
-            .await
-    }
-
     async fn insert_units_in_tick(
         &mut self,
         game_tick: i64,

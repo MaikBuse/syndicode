@@ -5,9 +5,6 @@ use crate::application::action::QueuedActionPayload;
 
 #[derive(thiserror::Error, Debug)]
 pub enum QueueError {
-    #[error("Failed to establish a connection: {0}")]
-    ConnectionError(String),
-
     #[error("Failed to serialize action with msgpack:: {0}")]
     SerializationError(String),
 

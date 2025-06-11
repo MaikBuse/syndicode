@@ -43,12 +43,13 @@ pub struct BusinessListingDetails {
     pub business_uuid: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub business_name: ::prost::alloc::string::String,
-    /// Optional wrapper
     #[prost(message, optional, tag = "4")]
     pub seller_corporation_uuid: ::core::option::Option<::prost::alloc::string::String>,
-    #[prost(int64, tag = "5")]
-    pub asking_price: i64,
+    #[prost(string, tag = "5")]
+    pub market_uuid: ::prost::alloc::string::String,
     #[prost(int64, tag = "6")]
+    pub asking_price: i64,
+    #[prost(int64, tag = "7")]
     pub operational_expenses: i64,
 }
 /// Response containing the list of matching business listings

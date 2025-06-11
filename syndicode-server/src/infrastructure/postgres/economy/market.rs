@@ -8,7 +8,7 @@ use crate::{
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
+    infrastructure::postgres::uow::PgTransactionContext,
 };
 use sqlx::{PgPool, Postgres};
 
@@ -112,7 +112,6 @@ impl PgMarketRepository {
 
 pub struct PgMarketService {
     pool: Arc<PgPool>,
-    game_tick_repo: PgGameTickRepository,
     market_repo: PgMarketRepository,
 }
 
@@ -120,7 +119,6 @@ impl PgMarketService {
     pub fn new(pool: Arc<PgPool>) -> Self {
         Self {
             pool,
-            game_tick_repo: PgGameTickRepository,
             market_repo: PgMarketRepository,
         }
     }

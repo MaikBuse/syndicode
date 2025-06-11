@@ -13,7 +13,7 @@ use uuid::Uuid;
 #[builder]
 pub fn handle_acquire_listed_business(
     state: &mut GameState,
-    action: &QueuedActionPayload,
+    action_payload: &QueuedActionPayload,
     business_listing_uuid: Uuid,
     next_game_tick: i64,
     req_user_uuid: Uuid,
@@ -197,7 +197,7 @@ pub fn handle_acquire_listed_business(
     })?;
 
     Ok(DomainActionOutcome::ListedBusinessAcquired {
-        request_uuid: action.request_uuid,
+        request_uuid: action_payload.request_uuid,
         tick_effective: next_game_tick,
         req_user_uuid,
         business_uuid,
@@ -316,7 +316,7 @@ mod tests {
 
         let result = handle_acquire_listed_business()
             .state(&mut state)
-            .action(&action)
+            .action_payload(&action)
             .business_listing_uuid(listing_uuid)
             .next_game_tick(tick)
             .req_user_uuid(buyer_user_uuid)
@@ -381,7 +381,7 @@ mod tests {
 
         let result = handle_acquire_listed_business()
             .state(&mut state)
-            .action(&action)
+            .action_payload(&action)
             .business_listing_uuid(listing_uuid)
             .next_game_tick(tick)
             .req_user_uuid(buyer_user_uuid)
@@ -429,7 +429,7 @@ mod tests {
 
         let result = handle_acquire_listed_business()
             .state(&mut state)
-            .action(&action)
+            .action_payload(&action)
             .business_listing_uuid(non_existent_listing_uuid)
             .next_game_tick(tick)
             .req_user_uuid(buyer_user_uuid)
@@ -450,7 +450,7 @@ mod tests {
 
         let result = handle_acquire_listed_business()
             .state(&mut state)
-            .action(&action)
+            .action_payload(&action)
             .business_listing_uuid(listing_uuid)
             .next_game_tick(tick)
             .req_user_uuid(non_existent_user_uuid)
@@ -487,7 +487,7 @@ mod tests {
 
         let result = handle_acquire_listed_business()
             .state(&mut state)
-            .action(&action)
+            .action_payload(&action)
             .business_listing_uuid(listing_uuid)
             .next_game_tick(tick)
             .req_user_uuid(buyer_user_uuid)
@@ -551,7 +551,7 @@ mod tests {
 
         let result = handle_acquire_listed_business()
             .state(&mut state)
-            .action(&action)
+            .action_payload(&action)
             .business_listing_uuid(listing_uuid)
             .next_game_tick(tick)
             .req_user_uuid(buyer_user_uuid)
@@ -618,7 +618,7 @@ mod tests {
 
         let result = handle_acquire_listed_business()
             .state(&mut state)
-            .action(&action)
+            .action_payload(&action)
             .business_listing_uuid(listing_uuid)
             .next_game_tick(tick)
             .req_user_uuid(buyer_user_uuid)

@@ -15,17 +15,10 @@ pub struct GetCorporationOutcome {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait CorporationRepository: Send + Sync {
-    async fn insert_corporation(&self, corporation: &Corporation) -> RepositoryResult<()>;
-
     async fn get_corporation_by_user(
         &self,
         user_uuid: Uuid,
     ) -> RepositoryResult<GetCorporationOutcome>;
-
-    async fn get_corporation_by_uuid(
-        &self,
-        corporation_uuid: Uuid,
-    ) -> RepositoryResult<Corporation>;
 
     async fn get_corporation_by_name(
         &self,
@@ -45,15 +38,6 @@ pub trait CorporationTxRepository: Send + Sync {
         game_tick: i64,
         corporations: Vec<Corporation>,
     ) -> RepositoryResult<()>;
-
-    async fn get_corporation_by_user(&mut self, user_uuid: Uuid) -> RepositoryResult<Corporation>;
-
-    async fn get_corporation_by_uuid(&mut self, uuid: Uuid) -> RepositoryResult<Corporation>;
-
-    async fn get_corporation_by_name(
-        &mut self,
-        corporation_name: String,
-    ) -> RepositoryResult<Corporation>;
 
     async fn delete_corporations_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64>;
 }

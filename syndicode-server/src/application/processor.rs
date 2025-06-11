@@ -20,7 +20,7 @@ use crate::{
         economy::{
             business::{model::Business, repository::BusinessRepository},
             business_listing::{model::BusinessListing, repository::BusinessListingRepository},
-            business_offer::repository::BusinessOfferRepository,
+            business_offer::{model::BusinessOffer, repository::BusinessOfferRepository},
             corporation::{model::Corporation, repository::CorporationRepository},
             market::{model::Market, repository::MarketRepository},
         },
@@ -162,17 +162,17 @@ where
         );
 
         // 2. Pull Actions
-        let id_act_slice = self.action_puller.pull_all_available_actions().await?;
-        let act_msg_count = id_act_slice.len();
+        let queued_actions = self.action_puller.pull_all_available_actions().await?;
+        let act_msg_count = queued_actions.len();
 
-        tracing::debug!(num_actions = id_act_slice.len(), "Pulled actions.");
+        tracing::debug!(num_actions = queued_actions.len(), "Pulled actions.");
 
         // 3. Calculate State N+1
-        let mut action_ids: Vec<String> = Vec::with_capacity(id_act_slice.len());
+        let mut action_ids: Vec<String> = Vec::with_capacity(queued_actions.len());
 
         let action_outcomes = self.simulation.calculate_next_state(
             next_game_tick,
-            id_act_slice,
+            queued_actions,
             &mut action_ids,
             &mut game_state,
         );
@@ -186,6 +186,8 @@ where
         let businesses: Vec<Business> = game_state.businesses_map.into_values().collect();
         let business_listings: Vec<BusinessListing> =
             game_state.business_listings_map.into_values().collect();
+        let business_offers: Vec<BusinessOffer> =
+            game_state.business_offers_map.into_values().collect();
 
         let action_outcomes = self
             .uow
@@ -214,6 +216,12 @@ where
                     ctx.insert_business_listings_in_tick(next_game_tick, business_listings)
                         .await?;
                     ctx.delete_business_listings_before_tick(current_game_tick)
+                        .await?;
+
+                    // Business Offers
+                    ctx.insert_business_offers_in_tick(next_game_tick, business_offers)
+                        .await?;
+                    ctx.delete_business_offers_before_tick(current_game_tick)
                         .await?;
 
                     // Update game tick state

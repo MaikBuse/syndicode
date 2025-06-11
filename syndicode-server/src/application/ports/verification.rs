@@ -16,9 +16,6 @@ pub enum VerificationSendableError {
 
     #[error("Failed to parse recipient email address: {0}")]
     ParseRecipient(String),
-
-    #[error("An unexpected error occurred: {0}")]
-    Unexpected(String),
 }
 
 pub type VerificationSendableResult<T> = Result<T, VerificationSendableError>;

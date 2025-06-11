@@ -1,14 +1,20 @@
 use uuid::Uuid;
 #[derive(thiserror::Error, Debug)]
 pub enum OutcomeError {
-    #[error("Failed to establish a connection: {0}")]
-    ConnectionError(String),
-
-    #[error("Failed to serialize action with msgpack:: {0}")]
-    SerializationError(String),
-
-    #[error("Failed to enqueue action: {0}")]
+    #[error("Failed to enqueue outcome: {0}")]
     EnqueueFailed(String),
+
+    #[error("Failed to dequeue outcome: {0}")]
+    DequeueFailed(String),
+
+    #[error("Failed to delete outcome: {0}")]
+    DeletionFailed(String),
+
+    #[error("Failed to publish the readiness of an outcome: {0}")]
+    PublishingOutcomeFailed(String),
+
+    #[error("Failed to publish the progression of the game tick: {0}")]
+    PublishingGametickFailed(String),
 
     #[error("An unexpected queue error occurred: {0}")]
     Unexpected(#[from] anyhow::Error),

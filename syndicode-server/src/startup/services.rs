@@ -148,7 +148,7 @@ impl DefaultAppState {
         let uow = Arc::new(PostgresUnitOfWork::new(Arc::clone(&pg_pool)));
 
         // Email Handler
-        let sendable = Arc::new(EmailHandler::new());
+        let sendable = Arc::new(EmailHandler::new()?);
 
         // Database Services
         let init_service = Arc::new(PgInitializationService::new(pg_pool.clone()));

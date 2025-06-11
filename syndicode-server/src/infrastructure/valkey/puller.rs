@@ -2,19 +2,15 @@ use super::{
     ValkeyStore, ACTION_CONSUMER_GROUP, ACTION_STREAM_KEY, BATCH_PULL_SIZE, PAYLOAD_FIELD,
 };
 use crate::application::{
-    action::QueuedActionPayload,
+    action::{QueuedAction, QueuedActionPayload},
     ports::puller::{ActionPullable, PullError, PullResult},
 };
 use redis::{streams::StreamReadReply, AsyncCommands, Value};
 
-// Private helper function to avoid code duplication
 impl ValkeyStore {
     /// Fetches a batch of actions using XREADGROUP. Internal helper.
-    /// Returns message IDs along with actions.
-    async fn pull_actions_batch(
-        &self,
-        count: usize,
-    ) -> PullResult<Vec<(String, QueuedActionPayload)>> {
+    /// Returns action IDs along with actions.
+    async fn pull_actions_batch(&self, count: usize) -> PullResult<Vec<QueuedAction>> {
         let mut conn = self.conn.clone();
 
         let opts = redis::streams::StreamReadOptions::default()
@@ -41,9 +37,12 @@ impl ValkeyStore {
                 match payload_value {
                     Some(Value::BulkString(payload_bytes)) => {
                         match rmp_serde::from_slice::<QueuedActionPayload>(payload_bytes) {
-                            Ok(action) => {
+                            Ok(action_payload) => {
                                 // Store both ID and deserialized action
-                                pulled_actions.push((stream_id.clone(), action));
+                                pulled_actions.push(QueuedAction {
+                                    id: stream_id.clone(),
+                                    payload: action_payload,
+                                });
                             }
                             Err(err) => {
                                 tracing::warn!(
@@ -70,16 +69,6 @@ impl ValkeyStore {
 
 #[tonic::async_trait]
 impl ActionPullable for ValkeyStore {
-    /// Pulls up to `count` new actions for this consumer from the stream.
-    /// Returns a vector of tuples containing (message_id, QueuedAction).
-    async fn pull_actions(&self, count: usize) -> PullResult<Vec<(String, QueuedActionPayload)>> {
-        if count == 0 {
-            return Ok(Vec::new()); // No need to call redis if count is zero
-        }
-        // Delegate to the batch helper
-        self.pull_actions_batch(count).await
-    }
-
     /// Pulls ALL available new actions for this consumer from the stream.
     ///
     /// It repeatedly calls XREADGROUP in batches using the ">" ID until no
@@ -88,8 +77,8 @@ impl ActionPullable for ValkeyStore {
     ///
     /// Returns a Vec containing tuples of (message_id, QueuedAction).
     /// The message_id is needed for later acknowledgement (`XACK`).
-    async fn pull_all_available_actions(&self) -> PullResult<Vec<(String, QueuedActionPayload)>> {
-        let mut all_actions = Vec::new();
+    async fn pull_all_available_actions(&self) -> PullResult<Vec<QueuedAction>> {
+        let mut all_actions = Vec::<QueuedAction>::new();
         let mut total_fetched = 0;
 
         loop {
@@ -127,12 +116,12 @@ impl ActionPullable for ValkeyStore {
                         // Otherwise (batch was full), loop again immediately to fetch the next batch
                     }
                 }
-                Err(e) => {
+                Err(err) => {
                     // Log the error and stop pulling more actions for this cycle.
-                    tracing::error!(error = %e, total_fetched, "Error pulling action batch. Aborting pull cycle.");
+                    tracing::error!(error = %err, total_fetched, "Error pulling action batch. Aborting pull cycle.");
                     // Return the error, potentially with partially fetched actions if desired,
                     // but typically safer to return the error directly.
-                    return Err(e);
+                    return Err(err);
                 }
             }
         }

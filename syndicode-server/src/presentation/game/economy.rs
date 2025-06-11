@@ -135,6 +135,7 @@ where
                     business_uuid: r.business_uuid.to_string(),
                     business_name: r.business_name.to_string(),
                     seller_corporation_uuid: r.seller_corporation_uuid.map(|s| s.to_string()),
+                    market_uuid: r.market_uuid.to_string(),
                     asking_price: r.asking_price,
                     operational_expenses: r.operational_expenses,
                 };

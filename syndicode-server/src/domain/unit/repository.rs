@@ -23,11 +23,6 @@ pub trait UnitRepository: Send + Sync {
 
 #[async_trait]
 pub trait UnitTxRespository: Send + Sync {
-    async fn list_units(&mut self) -> RepositoryResult<Vec<Unit>>;
-    async fn list_units_by_corporation(
-        &mut self,
-        corporation_uuid: Uuid,
-    ) -> RepositoryResult<Vec<Unit>>;
     async fn insert_units_in_tick(
         &mut self,
         game_tick: i64,

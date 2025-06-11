@@ -1,5 +1,5 @@
 use crate::{
-    application::action::QueuedActionPayload,
+    application::action::QueuedAction,
     domain::{outcome::DomainActionOutcome, simulation::game_state::GameState},
 };
 
@@ -12,7 +12,7 @@ pub trait Simulationable: Send + Sync {
     fn calculate_next_state(
         &self,
         next_game_tick: i64,
-        id_act_slice: Vec<(String, QueuedActionPayload)>,
+        queued_actions: Vec<QueuedAction>,
         action_ids: &mut Vec<String>,
         state: &mut GameState,
     ) -> Vec<DomainActionOutcome>;

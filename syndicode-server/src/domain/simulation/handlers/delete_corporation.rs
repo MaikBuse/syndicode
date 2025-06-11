@@ -17,7 +17,7 @@ use crate::{
 #[builder]
 pub fn handle_delete_corporation(
     state: &mut GameState,
-    action: &QueuedActionPayload,
+    action_payload: &QueuedActionPayload,
     next_game_tick: i64,
     corporation_uuid: Uuid,
     req_user_uuid: Uuid,
@@ -264,7 +264,7 @@ pub fn handle_delete_corporation(
     Ok(DomainActionOutcome::CorporationDeleted {
         corporation_uuid,
         user_uuid: corporation.user_uuid,
-        request_uuid: action.request_uuid,
+        request_uuid: action_payload.request_uuid,
         tick_effective: next_game_tick,
         req_user_uuid,
     })

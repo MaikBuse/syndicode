@@ -8,7 +8,7 @@ use crate::{
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
+    infrastructure::postgres::uow::PgTransactionContext,
 };
 use sqlx::{PgPool, Postgres};
 use uuid::Uuid;
@@ -17,40 +17,6 @@ use uuid::Uuid;
 pub struct PgBusinessRepository;
 
 impl PgBusinessRepository {
-    /// Inserts a new state record for a business at a specific game tick.
-    /// This is used when advancing the game state from N to N+1.
-    /// The business input should contain the state calculated for the *new* tick.
-    pub async fn insert_business(
-        &self,
-        executor: impl sqlx::Executor<'_, Database = Postgres>,
-        business: &Business,
-        game_tick: i64,
-    ) -> RepositoryResult<()> {
-        sqlx::query!(
-            r#"
-            INSERT INTO businesses (
-                game_tick,
-                uuid,
-                market_uuid,
-                owning_corporation_uuid,
-                name,
-                operational_expenses
-            )
-            VALUES ($1, $2, $3, $4, $5, $6)
-            "#,
-            game_tick,
-            business.uuid,
-            business.market_uuid,
-            business.owning_corporation_uuid,
-            business.name,
-            business.operational_expenses
-        )
-        .execute(executor)
-        .await?;
-
-        Ok(())
-    }
-
     /// This leverages PostgreSQL's UNNEST function for efficiency.
     /// CARE: This is not compile time checked
     pub async fn insert_businesses_in_tick(
@@ -105,67 +71,6 @@ impl PgBusinessRepository {
         Ok(())
     }
 
-    /// Retrieves the state of a specific user's business at a given game tick.
-    /// This is typically used by clients reading the "current" game state.
-    pub async fn get_business_by_user_at_tick(
-        &self,
-        executor: impl sqlx::Executor<'_, Database = Postgres>,
-        owning_corporation_uuid: Uuid,
-        game_tick: i64,
-    ) -> RepositoryResult<Business> {
-        let business = sqlx::query_as!(
-            Business,
-            r#"
-            SELECT
-                uuid,
-                market_uuid,
-                owning_corporation_uuid,
-                name,
-                operational_expenses
-            FROM businesses
-            WHERE
-                owning_corporation_uuid = $1
-                AND game_tick = $2
-            "#,
-            owning_corporation_uuid,
-            game_tick
-        )
-        .fetch_one(executor)
-        .await?;
-
-        Ok(business)
-    }
-
-    /// Retrieves the state of a specific business (by its UUID) at a given game tick.
-    pub async fn get_business_by_uuid_at_tick(
-        &self,
-        executor: impl sqlx::Executor<'_, Database = Postgres>,
-        business_uuid: Uuid,
-        game_tick: i64,
-    ) -> RepositoryResult<Business> {
-        let business = sqlx::query_as!(
-            Business,
-            r#"
-            SELECT
-                uuid,
-                market_uuid,
-                owning_corporation_uuid,
-                name,
-                operational_expenses
-            FROM businesses
-            WHERE
-                uuid = $1
-                AND game_tick = $2
-            "#,
-            business_uuid,
-            game_tick
-        )
-        .fetch_one(executor)
-        .await?;
-
-        Ok(business)
-    }
-
     pub async fn list_businesses_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
@@ -214,7 +119,6 @@ impl PgBusinessRepository {
 
 pub struct PgBusinessService {
     pool: Arc<PgPool>,
-    game_tick_repo: PgGameTickRepository,
     business_repo: PgBusinessRepository,
 }
 
@@ -222,7 +126,6 @@ impl PgBusinessService {
     pub fn new(pool: Arc<PgPool>) -> Self {
         Self {
             pool,
-            game_tick_repo: PgGameTickRepository,
             business_repo: PgBusinessRepository,
         }
     }

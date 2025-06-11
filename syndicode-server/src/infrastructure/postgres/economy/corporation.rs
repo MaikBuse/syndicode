@@ -142,36 +142,6 @@ impl PgCorporationRepository {
         Ok(corporation)
     }
 
-    /// Retrieves the state of a specific corporation (by its UUID) at a given game tick.
-    pub async fn get_corporation_by_uuid_at_tick(
-        &self,
-        executor: impl sqlx::Executor<'_, Database = Postgres>,
-        corporation_uuid: Uuid,
-        game_tick: i64,
-    ) -> RepositoryResult<Corporation> {
-        // Return Option<>
-        let corporation = sqlx::query_as!(
-            Corporation,
-            r#"
-            SELECT
-                uuid,
-                user_uuid,
-                name,
-                cash_balance
-            FROM corporations
-            WHERE
-                uuid = $1
-                AND game_tick = $2
-            "#,
-            corporation_uuid,
-            game_tick
-        )
-        .fetch_one(executor)
-        .await?;
-
-        Ok(corporation)
-    }
-
     /// Retrieves the state of a specific corporation (by its name) at a given game tick.
     pub async fn get_corporation_by_name_at_tick(
         &self,
@@ -269,17 +239,6 @@ impl PgCorporationService {
 
 #[tonic::async_trait]
 impl CorporationRepository for PgCorporationService {
-    async fn insert_corporation(&self, corporation: &Corporation) -> RepositoryResult<()> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&*self.pool)
-            .await?;
-
-        self.corporation_repo
-            .create_corporation(&*self.pool, corporation, game_tick)
-            .await
-    }
-
     async fn get_corporation_by_user(
         &self,
         user_uuid: Uuid,
@@ -299,21 +258,6 @@ impl CorporationRepository for PgCorporationService {
             corporation,
         })
     }
-
-    async fn get_corporation_by_uuid(
-        &self,
-        corporation_uuid: Uuid,
-    ) -> RepositoryResult<Corporation> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&*self.pool)
-            .await?;
-
-        self.corporation_repo
-            .get_corporation_by_uuid_at_tick(&*self.pool, corporation_uuid, game_tick)
-            .await
-    }
-
     async fn get_corporation_by_name(
         &self,
         corporation_name: String,
@@ -348,45 +292,6 @@ impl CorporationTxRepository for PgTransactionContext<'_, '_> {
 
         self.corporation_repo
             .create_corporation(&mut **self.tx, corporation, game_tick)
-            .await
-    }
-
-    async fn get_corporation_by_user(&mut self, user_uuid: Uuid) -> RepositoryResult<Corporation> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&mut **self.tx)
-            .await?;
-
-        self.corporation_repo
-            .get_corporation_by_user_at_tick(&mut **self.tx, user_uuid, game_tick)
-            .await
-    }
-
-    async fn get_corporation_by_uuid(
-        &mut self,
-        corporation_uuid: Uuid,
-    ) -> RepositoryResult<Corporation> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&mut **self.tx)
-            .await?;
-
-        self.corporation_repo
-            .get_corporation_by_uuid_at_tick(&mut **self.tx, corporation_uuid, game_tick)
-            .await
-    }
-
-    async fn get_corporation_by_name(
-        &mut self,
-        corporation_name: String,
-    ) -> RepositoryResult<Corporation> {
-        let game_tick = self
-            .game_tick_repo
-            .get_current_game_tick(&mut **self.tx)
-            .await?;
-
-        self.corporation_repo
-            .get_corporation_by_name_at_tick(&mut **self.tx, corporation_name, game_tick)
             .await
     }
 

@@ -3,7 +3,6 @@ use crate::application::ports::verification::{
 };
 use crate::domain::user_verify::model::code::VerificationCode;
 use crate::utils::read_env_var;
-use anyhow::Context;
 use lettre::message::{header::ContentType, Mailbox, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::PoolConfig;
@@ -28,7 +27,7 @@ pub struct EmailHandler {
 }
 
 impl EmailHandler {
-    pub fn new() -> Self {
+    pub fn new() -> anyhow::Result<Self> {
         let sender_email = read_env_var("SENDER_EMAIL").unwrap();
         let smtp_server = read_env_var("SMTP_SERVER").unwrap();
         let smtp_username = read_env_var("SMTP_USERNAME").unwrap();
@@ -49,16 +48,15 @@ impl EmailHandler {
 
         // Build the Mailer with Pooling
         let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(&smtp_server)
-            .context("Failed to initialize SMTP relay")
-            .unwrap()
-            .credentials(sender_credentials) // No need to clone here
-            .pool_config(pool_config) // Apply pool configuration
+            .map_err(|err| VerificationSendableError::InitSMTP(err.to_string()))?
+            .credentials(sender_credentials)
+            .pool_config(pool_config)
             .build();
 
-        Self {
+        Ok(Self {
             sender_mailbox,
             mailer,
-        }
+        })
     }
 
     // Function to generate the styled verification code HTML
@@ -70,7 +68,7 @@ impl EmailHandler {
         // to the `output` buffer. write! is efficient for this.
         // We ignore the Result because writing to a String should not fail.
         let _ = write!(
-            &mut output, // Pass a mutable reference to the String
+            &mut output,
             r#"<span style="display: inline-block; border: 1px solid #555; padding: 5px 8px; margin: 0 3px; background-color: #1a1a1a; color: #00ffff; font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; min-width: 20px; text-align: center;">{}</span>"#,
             c
         );

@@ -43,9 +43,10 @@ message BusinessListingDetails {
   string listing_uuid = 1;
   string business_uuid = 2;
   string business_name = 3;
-  google.protobuf.StringValue seller_corporation_uuid = 4; // Optional wrapper
-  int64 asking_price = 5;
-  int64 operational_expenses = 6;
+  google.protobuf.StringValue seller_corporation_uuid = 4;
+  string market_uuid = 5;
+  int64 asking_price = 6;
+  int64 operational_expenses = 7;
 }
 
 // Response containing the list of matching business listings

@@ -18,8 +18,6 @@ pub trait UserRepository: Send + Sync {
 #[async_trait]
 pub trait UserTxRepository: Send + Sync {
     async fn create_user(&mut self, user: &User) -> RepositoryResult<()>;
-    async fn get_user(&mut self, user_uuid: Uuid) -> RepositoryResult<User>;
     async fn get_user_by_name(&mut self, user_name: String) -> RepositoryResult<User>;
     async fn update_user(&mut self, user: &User) -> RepositoryResult<()>;
-    async fn delete_user(&mut self, user_uuid: Uuid) -> RepositoryResult<()>;
 }

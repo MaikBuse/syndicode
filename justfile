@@ -30,3 +30,12 @@ help:
 fmt:
   cargo fmt --package syndicode-server --package syndicode-client
 
+# Run clippy linting on the workspace
+[group('cargo')]
+clippy:
+  cargo clippy
+
+# Apply the clippy suggested fixes
+[group('cargo')]
+clippy-fix:
+  cargo clippy --fix

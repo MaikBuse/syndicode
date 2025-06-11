@@ -7,6 +7,12 @@ use uuid::Uuid;
 use crate::domain::economy::corporation::model::name::CorporationName;
 
 #[derive(Builder, serde::Serialize, serde::Deserialize)]
+pub struct QueuedAction {
+    pub id: String,
+    pub payload: QueuedActionPayload,
+}
+
+#[derive(Builder, serde::Serialize, serde::Deserialize)]
 pub struct QueuedActionPayload {
     pub request_uuid: Uuid,
     pub req_user_uuid: Uuid,

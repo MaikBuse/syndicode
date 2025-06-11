@@ -1,15 +1,15 @@
 use super::ValkeyStore;
 use crate::application::ports::outcome::{
-    OutcomeNotifier, OutcomeResult, OutcomeStoreReader, OutcomeStoreWriter,
+    OutcomeError, OutcomeNotifier, OutcomeResult, OutcomeStoreReader, OutcomeStoreWriter,
 };
 use redis::AsyncCommands;
 use std::time::Duration;
 use uuid::Uuid;
 
-const PAYLOAD_KEY: &str = "syndicode:results:payload";
-const CLIENT_KEY: &str = "syndicode:results:client";
+const PAYLOAD_KEY: &str = "syndicode:outcomes:payload";
+const CLIENT_KEY: &str = "syndicode:outcomes:client";
 
-const OUTCOME_TTL: Duration = Duration::from_secs(30);
+const OUTCOME_TTL: Duration = Duration::from_secs(60);
 
 pub const GAME_TICK_NOTIFICATION_CHANNEL: &str = "syndicode:game_tick";
 
@@ -24,7 +24,7 @@ impl OutcomeStoreWriter for ValkeyStore {
         // Infer K (key type) and V (value type)
         conn.set_ex::<_, _, ()>(key, payload, OUTCOME_TTL.as_secs())
             .await
-            .map_err(anyhow::Error::from)?;
+            .map_err(|err| OutcomeError::EnqueueFailed(err.to_string()))?;
 
         Ok(())
     }
@@ -37,7 +37,10 @@ impl OutcomeStoreReader for ValkeyStore {
 
         let mut conn = self.conn.clone();
 
-        let result: Option<Vec<u8>> = conn.get(key).await.map_err(anyhow::Error::from)?;
+        let result: Option<Vec<u8>> = conn
+            .get(key)
+            .await
+            .map_err(|err| OutcomeError::DequeueFailed(err.to_string()))?;
 
         Ok(result)
     }
@@ -49,7 +52,7 @@ impl OutcomeStoreReader for ValkeyStore {
 
         conn.del::<_, usize>(key)
             .await
-            .map_err(anyhow::Error::from)?;
+            .map_err(|err| OutcomeError::DeletionFailed(err.to_string()))?;
 
         Ok(())
     }
@@ -64,7 +67,7 @@ impl OutcomeNotifier for ValkeyStore {
 
         conn.publish::<_, _, usize>(channel_name, request_uuid.to_string())
             .await
-            .map_err(anyhow::Error::from)?;
+            .map_err(|err| OutcomeError::PublishingOutcomeFailed(err.to_string()))?;
 
         Ok(())
     }
@@ -74,7 +77,7 @@ impl OutcomeNotifier for ValkeyStore {
 
         conn.publish::<_, _, usize>(GAME_TICK_NOTIFICATION_CHANNEL, game_tick)
             .await
-            .map_err(anyhow::Error::from)?;
+            .map_err(|err| OutcomeError::PublishingGametickFailed(err.to_string()))?;
 
         Ok(())
     }

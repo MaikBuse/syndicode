@@ -3,7 +3,7 @@ mod handlers;
 mod saga;
 
 use super::{outcome::DomainActionOutcome, ports::simulation::Simulationable};
-use crate::application::action::{ActionDetails, QueuedActionPayload};
+use crate::application::action::{ActionDetails, QueuedAction};
 use bon::builder;
 use game_state::GameState;
 use handlers::{
@@ -67,34 +67,35 @@ impl Simulationable for SimulationService {
     fn calculate_next_state(
         &self,
         next_game_tick: i64,
-        mut id_act_slice: Vec<(String, QueuedActionPayload)>,
+        mut queued_actions: Vec<QueuedAction>,
         action_ids: &mut Vec<String>,
         state: &mut GameState,
     ) -> Vec<DomainActionOutcome> {
-        let mut outcomes: Vec<DomainActionOutcome> = Vec::with_capacity(id_act_slice.len());
+        let mut outcomes: Vec<DomainActionOutcome> = Vec::with_capacity(queued_actions.len());
 
         // Sort the actions so that they are executed in the correct order
-        id_act_slice.sort_by(|(_, a_action), (_, b_action)| {
+        queued_actions.sort_by(|a_action, b_action| {
             a_action
+                .payload
                 .details
                 .get_order()
-                .cmp(&b_action.details.get_order())
+                .cmp(&b_action.payload.details.get_order())
         });
 
-        for (action_id, action) in id_act_slice.into_iter() {
-            action_ids.push(action_id.clone());
-            let action_string = action.details.to_string();
-            let req_user_uuid = action.req_user_uuid;
-            let request_uuid = action.request_uuid;
+        for queued_action in queued_actions.into_iter() {
+            action_ids.push(queued_action.id.clone());
+            let action_string = queued_action.payload.details.to_string();
+            let req_user_uuid = queued_action.payload.req_user_uuid;
+            let request_uuid = queued_action.payload.request_uuid;
 
-            let result = match &action.details {
+            let result = match &queued_action.payload.details {
                 ActionDetails::CreateCorporation {
                     user_uuid,
                     corporation_name,
                 } => handle_create_corporation()
                     .state(state)
                     .corporation_name(corporation_name.to_owned())
-                    .action(&action)
+                    .action_payload(&queued_action.payload)
                     .next_game_tick(next_game_tick)
                     .user_uuid(*user_uuid)
                     .req_user_uuid(req_user_uuid)
@@ -102,7 +103,7 @@ impl Simulationable for SimulationService {
                 ActionDetails::DeleteCorporation { corporation_uuid } => {
                     handle_delete_corporation()
                         .state(state)
-                        .action(&action)
+                        .action_payload(&queued_action.payload)
                         .next_game_tick(next_game_tick)
                         .corporation_uuid(*corporation_uuid)
                         .req_user_uuid(req_user_uuid)
@@ -110,7 +111,7 @@ impl Simulationable for SimulationService {
                 }
                 ActionDetails::SpawnUnit => handle_spawn_unit()
                     .state(state)
-                    .action(&action)
+                    .action_payload(&queued_action.payload)
                     .next_game_tick(next_game_tick)
                     .req_user_uuid(req_user_uuid)
                     .call(),
@@ -118,7 +119,7 @@ impl Simulationable for SimulationService {
                     business_listing_uuid,
                 } => handle_acquire_listed_business()
                     .state(state)
-                    .action(&action)
+                    .action_payload(&queued_action.payload)
                     .business_listing_uuid(*business_listing_uuid)
                     .next_game_tick(next_game_tick)
                     .req_user_uuid(req_user_uuid)
