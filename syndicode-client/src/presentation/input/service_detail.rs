@@ -36,50 +36,9 @@ where
         match key_event.code {
             KeyCode::Enter => {
                 match selected_service {
-                    SelectedService::QueryBusinessListings {
-                        selected: _,
-                        min_asking_price,
-                        max_asking_price,
-                        seller_corporation_uuid,
-                        market_uuid,
-                        min_operational_expenses,
-                        max_operational_expenses,
-                        sort_by,
-                        sort_direction,
-                        limit,
-                        offset,
-                    } => {
-                        let maybe_min_asking_price: Option<i64> =
-                            min_asking_price.textarea.lines().first().and_then(|x| {
-                                match x.is_empty() {
-                                    true => None,
-                                    false => Some(x.parse::<i64>().unwrap()),
-                                }
-                            });
-                        let maybe_max_asking_price: Option<i64> =
-                            max_asking_price.textarea.lines().first().and_then(|x| {
-                                match x.is_empty() {
-                                    true => None,
-                                    false => Some(x.parse::<i64>().unwrap()),
-                                }
-                            });
-                        let maybe_seller_corporation_uuid: Option<String> = seller_corporation_uuid
-                            .textarea
-                            .lines()
-                            .first()
-                            .and_then(|x| match x.is_empty() {
-                                true => None,
-                                false => Some(x.to_owned()),
-                            });
-                        let maybe_market_uuid: Option<String> = market_uuid
-                            .textarea
-                            .lines()
-                            .first()
-                            .and_then(|x| match x.is_empty() {
-                                true => None,
-                                false => Some(x.to_owned()),
-                            });
-                        let maybe_min_operational_expenses: Option<i64> = min_operational_expenses
+                    SelectedService::QueryBusinessListings(data) => {
+                        let maybe_min_asking_price: Option<i64> = data
+                            .min_asking_price
                             .textarea
                             .lines()
                             .first()
@@ -87,7 +46,8 @@ where
                                 true => None,
                                 false => Some(x.parse::<i64>().unwrap()),
                             });
-                        let maybe_max_operational_expenses: Option<i64> = max_operational_expenses
+                        let maybe_max_asking_price: Option<i64> = data
+                            .max_asking_price
                             .textarea
                             .lines()
                             .first()
@@ -95,36 +55,72 @@ where
                                 true => None,
                                 false => Some(x.parse::<i64>().unwrap()),
                             });
-                        let sort_by: String = sort_by
+                        let maybe_seller_corporation_uuid: Option<String> = data
+                            .seller_corporation_uuid
+                            .textarea
+                            .lines()
+                            .first()
+                            .and_then(|x| match x.is_empty() {
+                                true => None,
+                                false => Some(x.to_owned()),
+                            });
+                        let maybe_market_uuid: Option<String> =
+                            data.market_uuid.textarea.lines().first().and_then(|x| {
+                                match x.is_empty() {
+                                    true => None,
+                                    false => Some(x.to_owned()),
+                                }
+                            });
+                        let maybe_min_operational_expenses: Option<i64> = data
+                            .min_operational_expenses
+                            .textarea
+                            .lines()
+                            .first()
+                            .and_then(|x| match x.is_empty() {
+                                true => None,
+                                false => Some(x.parse::<i64>().unwrap()),
+                            });
+                        let maybe_max_operational_expenses: Option<i64> = data
+                            .max_operational_expenses
+                            .textarea
+                            .lines()
+                            .first()
+                            .and_then(|x| match x.is_empty() {
+                                true => None,
+                                false => Some(x.parse::<i64>().unwrap()),
+                            });
+                        let sort_by: String = data
+                            .sort_by
                             .textarea
                             .lines()
                             .first()
                             .map(|x| x.to_owned())
                             .unwrap_or(String::new());
-                        let sort_direction: i32 = sort_direction
+                        let sort_direction: i32 = data
+                            .sort_direction
                             .textarea
                             .lines()
                             .first()
                             .map(|x| x.parse::<i32>().unwrap_or_default())
                             .unwrap_or_default();
-                        let maybe_limit: Option<i64> =
-                            limit
-                                .textarea
-                                .lines()
-                                .first()
-                                .and_then(|x| match x.is_empty() {
-                                    true => None,
-                                    false => Some(x.parse::<i64>().unwrap()),
-                                });
-                        let maybe_offset: Option<i64> =
-                            offset
-                                .textarea
-                                .lines()
-                                .first()
-                                .and_then(|x| match x.is_empty() {
-                                    true => None,
-                                    false => Some(x.parse::<i64>().unwrap()),
-                                });
+                        let maybe_limit: Option<i64> = data
+                            .limit
+                            .textarea
+                            .lines()
+                            .first()
+                            .and_then(|x| match x.is_empty() {
+                                true => None,
+                                false => Some(x.parse::<i64>().unwrap()),
+                            });
+                        let maybe_offset: Option<i64> = data
+                            .offset
+                            .textarea
+                            .lines()
+                            .first()
+                            .and_then(|x| match x.is_empty() {
+                                true => None,
+                                false => Some(x.parse::<i64>().unwrap()),
+                            });
 
                         app.query_business_listings_uc
                             .execute()
@@ -144,11 +140,9 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::AcquireBusinessListing {
-                        selected: _,
-                        business_listing_uuid,
-                    } => {
-                        let business_listing_uuid = business_listing_uuid
+                    SelectedService::AcquireBusinessListing(data) => {
+                        let business_listing_uuid = data
+                            .business_listing_uuid
                             .textarea
                             .lines()
                             .first()
@@ -167,25 +161,24 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::Register {
-                        selected: _,
-                        user_name,
-                        user_password,
-                        corporation_name,
-                        email,
-                    } => {
-                        let user_name = user_name.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user name from textarea")
-                        })?;
+                    SelectedService::Register(data) => {
+                        let user_name =
+                            data.user_name.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve user name from textarea")
+                            })?;
                         let user_password =
-                            user_password.textarea.lines().first().ok_or_else(|| {
+                            data.user_password.textarea.lines().first().ok_or_else(|| {
                                 anyhow::anyhow!("Failed to retrieve user password from textarea")
                             })?;
-                        let email = email.textarea.lines().first().ok_or_else(|| {
+                        let email = data.email.textarea.lines().first().ok_or_else(|| {
                             anyhow::anyhow!("Failed to retrieve email from textarea")
                         })?;
-                        let corporation_name =
-                            corporation_name.textarea.lines().first().ok_or_else(|| {
+                        let corporation_name = data
+                            .corporation_name
+                            .textarea
+                            .lines()
+                            .first()
+                            .ok_or_else(|| {
                                 anyhow::anyhow!("Failed to retrieve corporation name from textarea")
                             })?;
 
@@ -203,15 +196,12 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::VerifyRegistration {
-                        selected: _,
-                        user_name,
-                        code,
-                    } => {
-                        let user_name = user_name.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user name from textarea")
-                        })?;
-                        let code = code.textarea.lines().first().ok_or_else(|| {
+                    SelectedService::VerifyRegistration(data) => {
+                        let user_name =
+                            data.user_name.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve user name from textarea")
+                            })?;
+                        let code = data.code.textarea.lines().first().ok_or_else(|| {
                             anyhow::anyhow!("Failed to retrieve code from textarea")
                         })?;
 
@@ -227,13 +217,11 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::ResendVerification {
-                        selected: _,
-                        user_name,
-                    } => {
-                        let user_name = user_name.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user name from textarea")
-                        })?;
+                    SelectedService::ResendVerification(data) => {
+                        let user_name =
+                            data.user_name.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve user name from textarea")
+                            })?;
 
                         let response = app
                             .resend_uc
@@ -246,16 +234,13 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::Login {
-                        selected: _,
-                        user_name,
-                        user_password,
-                    } => {
-                        let user_name = user_name.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user name from textarea")
-                        })?;
+                    SelectedService::Login(data) => {
+                        let user_name =
+                            data.user_name.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve user name from textarea")
+                            })?;
                         let user_password =
-                            user_password.textarea.lines().first().ok_or_else(|| {
+                            data.user_password.textarea.lines().first().ok_or_else(|| {
                                 anyhow::anyhow!("Failed to retrieve user password from textarea")
                             })?;
 
@@ -283,34 +268,32 @@ where
 
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::CreateUser {
-                        selected: _,
-                        user_name,
-                        user_password,
-                        user_email,
-                        user_role,
-                        corporation_name,
-                    } => {
-                        let user_name = user_name.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user name from textarea")
-                        })?;
+                    SelectedService::CreateUser(data) => {
+                        let user_name =
+                            data.user_name.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve user name from textarea")
+                            })?;
                         let user_password =
-                            user_password.textarea.lines().first().ok_or_else(|| {
+                            data.user_password.textarea.lines().first().ok_or_else(|| {
                                 anyhow::anyhow!("Failed to retrieve user password from textarea")
                             })?;
-                        let user_email = user_email.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve email from textarea")
-                        })?;
-                        let maybe_user_role: Option<i32> = user_role
+                        let user_email =
+                            data.user_email.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve email from textarea")
+                            })?;
+                        let maybe_user_role: Option<i32> =
+                            data.user_role.textarea.lines().first().and_then(|x| {
+                                match x.is_empty() {
+                                    true => None,
+                                    false => Some(x.parse::<i32>().unwrap()),
+                                }
+                            });
+                        let corporation_name = data
+                            .corporation_name
                             .textarea
                             .lines()
                             .first()
-                            .and_then(|x| match x.is_empty() {
-                                true => None,
-                                false => Some(x.parse::<i32>().unwrap()),
-                            });
-                        let corporation_name =
-                            corporation_name.textarea.lines().first().ok_or_else(|| {
+                            .ok_or_else(|| {
                                 anyhow::anyhow!("Failed to retrieve corporation name from textarea")
                             })?;
 
@@ -333,13 +316,11 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::GetUser {
-                        selected: _,
-                        user_uuid,
-                    } => {
-                        let user_uuid = user_uuid.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user uuid from textarea")
-                        })?;
+                    SelectedService::GetUser(data) => {
+                        let user_uuid =
+                            data.user_uuid.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve user uuid from textarea")
+                            })?;
 
                         let response = app
                             .get_user_uc
@@ -353,13 +334,11 @@ where
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }
-                    SelectedService::DeleteUser {
-                        selected: _,
-                        user_uuid,
-                    } => {
-                        let user_uuid = user_uuid.textarea.lines().first().ok_or_else(|| {
-                            anyhow::anyhow!("Failed to retrieve user uuid from textarea")
-                        })?;
+                    SelectedService::DeleteUser(data) => {
+                        let user_uuid =
+                            data.user_uuid.textarea.lines().first().ok_or_else(|| {
+                                anyhow::anyhow!("Failed to retrieve user uuid from textarea")
+                            })?;
 
                         let request_uuid = Uuid::now_v7().to_string();
 
@@ -381,157 +360,122 @@ where
             KeyCode::Char('p') if key_event.modifiers.contains(KeyModifiers::ALT) => {
                 if let Some(selected_service) = &mut app.maybe_selected_service {
                     match selected_service {
-                        SelectedService::Register {
-                            selected,
-                            user_name,
-                            user_password,
-                            corporation_name,
-                            email,
-                        } => match selected {
+                        SelectedService::Register(data) => match data.selected {
                             SelectedBlockRegister::UserName => {
-                                user_name.textarea.insert_str(app.yank_buffer.clone());
+                                data.user_name.textarea.insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockRegister::UserPassword => {
-                                user_password.textarea.insert_str(app.yank_buffer.clone());
+                                data.user_password
+                                    .textarea
+                                    .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockRegister::Email => {
-                                email.textarea.insert_str(app.yank_buffer.clone());
+                                data.email.textarea.insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockRegister::CorporationName => {
-                                corporation_name
+                                data.corporation_name
                                     .textarea
                                     .insert_str(app.yank_buffer.clone());
                             }
                         },
-                        SelectedService::VerifyRegistration {
-                            selected,
-                            user_name,
-                            code,
-                        } => match selected {
+                        SelectedService::VerifyRegistration(data) => match data.selected {
                             SelectedBlockVerify::UserName => {
-                                user_name.textarea.insert_str(app.yank_buffer.clone());
+                                data.user_name.textarea.insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockVerify::Code => {
-                                code.textarea.insert_str(app.yank_buffer.clone());
+                                data.code.textarea.insert_str(app.yank_buffer.clone());
                             }
                         },
-                        SelectedService::ResendVerification {
-                            selected,
-                            user_name,
-                        } => match selected {
+                        SelectedService::ResendVerification(data) => match data.selected {
                             SelectedBlockResend::UserName => {
-                                user_name.textarea.insert_str(app.yank_buffer.clone());
+                                data.user_name.textarea.insert_str(app.yank_buffer.clone());
                             }
                         },
-                        SelectedService::Login {
-                            selected,
-                            user_name,
-                            user_password,
-                        } => match selected {
+                        SelectedService::Login(data) => match data.selected {
                             SelectedBlockLogin::UserName => {
-                                user_name.textarea.insert_str(app.yank_buffer.clone());
+                                data.user_name.textarea.insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockLogin::UserPassword => {
-                                user_password.textarea.insert_str(app.yank_buffer.clone());
-                            }
-                        },
-                        SelectedService::CreateUser {
-                            selected,
-                            user_name,
-                            user_password,
-                            user_email,
-                            user_role,
-                            corporation_name,
-                        } => match selected {
-                            SelectedBlockCreateUser::UserName => {
-                                user_name.textarea.insert_str(app.yank_buffer.clone());
-                            }
-                            SelectedBlockCreateUser::UserPassword => {
-                                user_password.textarea.insert_str(app.yank_buffer.clone());
-                            }
-                            SelectedBlockCreateUser::UserEmail => {
-                                user_email.textarea.insert_str(app.yank_buffer.clone());
-                            }
-                            SelectedBlockCreateUser::UserRole => {
-                                user_role.textarea.insert_str(app.yank_buffer.clone());
-                            }
-                            SelectedBlockCreateUser::CorporationName => {
-                                corporation_name
+                                data.user_password
                                     .textarea
                                     .insert_str(app.yank_buffer.clone());
                             }
                         },
-                        SelectedService::GetUser {
-                            selected: _,
-                            user_uuid,
-                        } => {
-                            user_uuid.textarea.insert_str(app.yank_buffer.clone());
+                        SelectedService::CreateUser(data) => match data.selected {
+                            SelectedBlockCreateUser::UserName => {
+                                data.user_name.textarea.insert_str(app.yank_buffer.clone());
+                            }
+                            SelectedBlockCreateUser::UserPassword => {
+                                data.user_password
+                                    .textarea
+                                    .insert_str(app.yank_buffer.clone());
+                            }
+                            SelectedBlockCreateUser::UserEmail => {
+                                data.user_email.textarea.insert_str(app.yank_buffer.clone());
+                            }
+                            SelectedBlockCreateUser::UserRole => {
+                                data.user_role.textarea.insert_str(app.yank_buffer.clone());
+                            }
+                            SelectedBlockCreateUser::CorporationName => {
+                                data.corporation_name
+                                    .textarea
+                                    .insert_str(app.yank_buffer.clone());
+                            }
+                        },
+                        SelectedService::GetUser(data) => {
+                            data.user_uuid.textarea.insert_str(app.yank_buffer.clone());
                         }
-                        SelectedService::DeleteUser {
-                            selected: _,
-                            user_uuid,
-                        } => {
-                            user_uuid.textarea.insert_str(app.yank_buffer.clone());
+                        SelectedService::DeleteUser(data) => {
+                            data.user_uuid.textarea.insert_str(app.yank_buffer.clone());
                         }
-                        SelectedService::QueryBusinessListings {
-                            selected,
-                            min_asking_price,
-                            max_asking_price,
-                            seller_corporation_uuid,
-                            market_uuid,
-                            min_operational_expenses,
-                            max_operational_expenses,
-                            sort_by,
-                            sort_direction,
-                            limit,
-                            offset,
-                        } => match selected {
+                        SelectedService::QueryBusinessListings(data) => match data.selected {
                             SelectedBlockQueryBusinessListings::MinAskingPrice => {
-                                min_asking_price
+                                data.min_asking_price
                                     .textarea
                                     .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::MaxAskingPrice => {
-                                max_asking_price
+                                data.max_asking_price
                                     .textarea
                                     .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::SellerCorporationUuid => {
-                                seller_corporation_uuid
+                                data.seller_corporation_uuid
                                     .textarea
                                     .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::MarketUuid => {
-                                market_uuid.textarea.insert_str(app.yank_buffer.clone());
+                                data.market_uuid
+                                    .textarea
+                                    .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::MinOperationalExpenses => {
-                                min_operational_expenses
+                                data.min_operational_expenses
                                     .textarea
                                     .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::MaxOperationalExpenses => {
-                                max_operational_expenses
+                                data.max_operational_expenses
                                     .textarea
                                     .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::SortBy => {
-                                sort_by.textarea.insert_str(app.yank_buffer.clone());
+                                data.sort_by.textarea.insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::SortDirection => {
-                                sort_direction.textarea.insert_str(app.yank_buffer.clone());
+                                data.sort_direction
+                                    .textarea
+                                    .insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::Limit => {
-                                limit.textarea.insert_str(app.yank_buffer.clone());
+                                data.limit.textarea.insert_str(app.yank_buffer.clone());
                             }
                             SelectedBlockQueryBusinessListings::Offset => {
-                                offset.textarea.insert_str(app.yank_buffer.clone());
+                                data.offset.textarea.insert_str(app.yank_buffer.clone());
                             }
                         },
-                        SelectedService::AcquireBusinessListing {
-                            selected: _,
-                            business_listing_uuid,
-                        } => {
-                            business_listing_uuid
+                        SelectedService::AcquireBusinessListing(data) => {
+                            data.business_listing_uuid
                                 .textarea
                                 .insert_str(app.yank_buffer.clone());
                         }
@@ -542,184 +486,131 @@ where
             KeyCode::Tab => {
                 if let Some(selected_service) = &mut app.maybe_selected_service {
                     match selected_service {
-                        SelectedService::Register { selected, .. } => selected.advance(),
-                        SelectedService::VerifyRegistration { selected, .. } => selected.advance(),
-                        SelectedService::ResendVerification { selected, .. } => selected.advance(),
-                        SelectedService::Login { selected, .. } => selected.advance(),
-                        SelectedService::CreateUser { selected, .. } => selected.advance(),
-                        SelectedService::GetUser { selected, .. } => selected.advance(),
-                        SelectedService::DeleteUser { selected, .. } => selected.advance(),
-                        SelectedService::QueryBusinessListings { selected, .. } => {
-                            selected.advance()
-                        }
-                        SelectedService::AcquireBusinessListing { selected, .. } => {
-                            selected.advance()
-                        }
+                        SelectedService::Register(data) => data.selected.advance(),
+                        SelectedService::VerifyRegistration(data) => data.selected.advance(),
+                        SelectedService::ResendVerification(data) => data.selected.advance(),
+                        SelectedService::Login(data) => data.selected.advance(),
+                        SelectedService::CreateUser(data) => data.selected.advance(),
+                        SelectedService::GetUser(data) => data.selected.advance(),
+                        SelectedService::DeleteUser(data) => data.selected.advance(),
+                        SelectedService::QueryBusinessListings(data) => data.selected.advance(),
+                        SelectedService::AcquireBusinessListing(data) => data.selected.advance(),
                     }
                 };
             }
             KeyCode::BackTab => {
                 if let Some(selected_service) = &mut app.maybe_selected_service {
                     match selected_service {
-                        SelectedService::Register { selected, .. } => selected.previous(),
-                        SelectedService::VerifyRegistration { selected, .. } => selected.previous(),
-                        SelectedService::ResendVerification { selected, .. } => selected.previous(),
-                        SelectedService::Login { selected, .. } => selected.previous(),
-                        SelectedService::CreateUser { selected, .. } => selected.previous(),
-                        SelectedService::GetUser { selected, .. } => selected.previous(),
-                        SelectedService::DeleteUser { selected, .. } => selected.previous(),
-                        SelectedService::QueryBusinessListings { selected, .. } => {
-                            selected.previous()
-                        }
-                        SelectedService::AcquireBusinessListing { selected, .. } => {
-                            selected.previous()
-                        }
+                        SelectedService::Register(data) => data.selected.previous(),
+                        SelectedService::VerifyRegistration(data) => data.selected.previous(),
+                        SelectedService::ResendVerification(data) => data.selected.previous(),
+                        SelectedService::Login(data) => data.selected.previous(),
+                        SelectedService::CreateUser(data) => data.selected.previous(),
+                        SelectedService::GetUser(data) => data.selected.previous(),
+                        SelectedService::DeleteUser(data) => data.selected.previous(),
+                        SelectedService::QueryBusinessListings(data) => data.selected.previous(),
+                        SelectedService::AcquireBusinessListing(data) => data.selected.previous(),
                     }
                 };
             }
             _ => match selected_service {
-                SelectedService::Register {
-                    selected,
-                    user_name,
-                    user_password,
-                    corporation_name,
-                    email,
-                } => match selected {
+                SelectedService::Register(data) => match data.selected {
                     SelectedBlockRegister::UserName => {
-                        user_name.textarea.input(event);
+                        data.user_name.textarea.input(event);
                     }
                     SelectedBlockRegister::UserPassword => {
-                        user_password.textarea.input(event);
+                        data.user_password.textarea.input(event);
                     }
                     SelectedBlockRegister::Email => {
-                        email.textarea.input(event);
+                        data.email.textarea.input(event);
                     }
                     SelectedBlockRegister::CorporationName => {
-                        corporation_name.textarea.input(event);
+                        data.corporation_name.textarea.input(event);
                     }
                 },
-                SelectedService::VerifyRegistration {
-                    selected,
-                    user_name,
-                    code,
-                } => match selected {
+                SelectedService::VerifyRegistration(data) => match data.selected {
                     SelectedBlockVerify::UserName => {
-                        user_name.textarea.input(event);
+                        data.user_name.textarea.input(event);
                     }
                     SelectedBlockVerify::Code => {
-                        code.textarea.input(event);
+                        data.code.textarea.input(event);
                     }
                 },
-                SelectedService::ResendVerification {
-                    selected,
-                    user_name,
-                } => match selected {
+                SelectedService::ResendVerification(data) => match data.selected {
                     SelectedBlockResend::UserName => {
-                        user_name.textarea.input(event);
+                        data.user_name.textarea.input(event);
                     }
                 },
-                SelectedService::Login {
-                    selected,
-                    user_name,
-                    user_password,
-                } => match selected {
+                SelectedService::Login(data) => match data.selected {
                     SelectedBlockLogin::UserName => {
-                        user_name.textarea.input(event);
+                        data.user_name.textarea.input(event);
                     }
                     SelectedBlockLogin::UserPassword => {
-                        user_password.textarea.input(event);
+                        data.user_password.textarea.input(event);
                     }
                 },
-                SelectedService::CreateUser {
-                    selected,
-                    user_name,
-                    user_password,
-                    user_email,
-                    user_role,
-                    corporation_name,
-                } => match selected {
+                SelectedService::CreateUser(data) => match data.selected {
                     SelectedBlockCreateUser::UserName => {
-                        user_name.textarea.input(event);
+                        data.user_name.textarea.input(event);
                     }
                     SelectedBlockCreateUser::UserPassword => {
-                        user_password.textarea.input(event);
+                        data.user_password.textarea.input(event);
                     }
                     SelectedBlockCreateUser::UserEmail => {
-                        user_email.textarea.input(event);
+                        data.user_email.textarea.input(event);
                     }
                     SelectedBlockCreateUser::UserRole => {
-                        user_role.textarea.input(event);
+                        data.user_role.textarea.input(event);
                     }
                     SelectedBlockCreateUser::CorporationName => {
-                        corporation_name.textarea.input(event);
+                        data.corporation_name.textarea.input(event);
                     }
                 },
-                SelectedService::GetUser {
-                    selected,
-                    user_uuid,
-                } => match selected {
+                SelectedService::GetUser(data) => match data.selected {
                     SelectedBlockGetUser::UserUuid => {
-                        user_uuid.textarea.input(event);
+                        data.user_uuid.textarea.input(event);
                     }
                 },
-                SelectedService::DeleteUser {
-                    selected,
-                    user_uuid,
-                } => match selected {
+                SelectedService::DeleteUser(data) => match data.selected {
                     SelectedBlockDeleteUser::UserUuid => {
-                        user_uuid.textarea.input(event);
+                        data.user_uuid.textarea.input(event);
                     }
                 },
-                SelectedService::QueryBusinessListings {
-                    selected,
-                    min_asking_price,
-                    max_asking_price,
-                    seller_corporation_uuid,
-                    market_uuid,
-                    min_operational_expenses,
-                    max_operational_expenses,
-                    sort_by,
-                    sort_direction,
-                    limit,
-                    offset,
-                } => match selected {
+                SelectedService::QueryBusinessListings(data) => match data.selected {
                     SelectedBlockQueryBusinessListings::MinAskingPrice => {
-                        min_asking_price.textarea.input(event);
+                        data.min_asking_price.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::MaxAskingPrice => {
-                        max_asking_price.textarea.input(event);
+                        data.max_asking_price.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::SellerCorporationUuid => {
-                        seller_corporation_uuid.textarea.input(event);
+                        data.seller_corporation_uuid.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::MarketUuid => {
-                        market_uuid.textarea.input(event);
+                        data.market_uuid.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::MinOperationalExpenses => {
-                        min_operational_expenses.textarea.input(event);
+                        data.min_operational_expenses.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::MaxOperationalExpenses => {
-                        max_operational_expenses.textarea.input(event);
+                        data.max_operational_expenses.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::SortBy => {
-                        sort_by.textarea.input(event);
+                        data.sort_by.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::SortDirection => {
-                        sort_direction.textarea.input(event);
+                        data.sort_direction.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::Limit => {
-                        limit.textarea.input(event);
+                        data.limit.textarea.input(event);
                     }
                     SelectedBlockQueryBusinessListings::Offset => {
-                        offset.textarea.input(event);
+                        data.offset.textarea.input(event);
                     }
                 },
-                SelectedService::AcquireBusinessListing {
-                    selected,
-                    business_listing_uuid,
-                } => match selected {
+                SelectedService::AcquireBusinessListing(data) => match data.selected {
                     SelectedBlockAcquireBusinessListing::BusinessListingUuid => {
-                        business_listing_uuid.textarea.input(event);
+                        data.business_listing_uuid.textarea.input(event);
                     }
                 },
             },

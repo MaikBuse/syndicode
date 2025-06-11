@@ -34,9 +34,9 @@ impl ServiceDetailWidget {
         Clear.render(popup_area, buf);
 
         let popup_title_text = match selected_service {
-            SelectedService::Register { .. } => "Register New User",
-            SelectedService::VerifyRegistration { .. } => "Verify a user's registration",
-            SelectedService::ResendVerification { .. } => "Resend a user's verification code",
+            SelectedService::Register(_) => "Register New User",
+            SelectedService::VerifyRegistration(_) => "Verify a user's registration",
+            SelectedService::ResendVerification(_) => "Resend a user's verification code",
             _ => "Edit Request",
         };
 
@@ -57,30 +57,20 @@ impl ServiceDetailWidget {
         let inner_popup_area = popup_block.inner(popup_area);
 
         match selected_service {
-            SelectedService::VerifyRegistration {
-                selected,
-                user_name,
-                code,
-            } => {
+            SelectedService::VerifyRegistration(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .margin(1)
                     .constraints([SINGE_LINE_CONSTRAINT, SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
-                user_name.update_textarea(*selected);
-                user_name.textarea.render(input_chunks[0], buf);
+                data.user_name.update_textarea(data.selected);
+                data.user_name.textarea.render(input_chunks[0], buf);
 
-                code.update_textarea(*selected);
-                code.textarea.render(input_chunks[1], buf);
+                data.code.update_textarea(data.selected);
+                data.code.textarea.render(input_chunks[1], buf);
             }
-            SelectedService::Register {
-                selected,
-                user_name,
-                user_password,
-                email,
-                corporation_name,
-            } => {
+            SelectedService::Register(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
@@ -91,54 +81,40 @@ impl ServiceDetailWidget {
                     ])
                     .split(inner_popup_area);
 
-                user_name.update_textarea(*selected);
-                user_name.textarea.render(input_chunks[0], buf);
+                data.user_name.update_textarea(data.selected);
+                data.user_name.textarea.render(input_chunks[0], buf);
 
-                user_password.update_textarea(*selected);
-                user_password.textarea.render(input_chunks[1], buf);
+                data.user_password.update_textarea(data.selected);
+                data.user_password.textarea.render(input_chunks[1], buf);
 
-                email.update_textarea(*selected);
-                email.textarea.render(input_chunks[2], buf);
+                data.email.update_textarea(data.selected);
+                data.email.textarea.render(input_chunks[2], buf);
 
-                corporation_name.update_textarea(*selected);
-                corporation_name.textarea.render(input_chunks[3], buf);
+                data.corporation_name.update_textarea(data.selected);
+                data.corporation_name.textarea.render(input_chunks[3], buf);
             }
-            SelectedService::ResendVerification {
-                selected,
-                user_name,
-            } => {
+            SelectedService::ResendVerification(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
-                user_name.update_textarea(*selected);
-                user_name.textarea.render(input_chunks[0], buf);
+                data.user_name.update_textarea(data.selected);
+                data.user_name.textarea.render(input_chunks[0], buf);
             }
-            SelectedService::Login {
-                selected,
-                user_name,
-                user_password,
-            } => {
+            SelectedService::Login(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([SINGE_LINE_CONSTRAINT, SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
-                user_name.update_textarea(*selected);
-                user_name.textarea.render(input_chunks[0], buf);
+                data.user_name.update_textarea(data.selected);
+                data.user_name.textarea.render(input_chunks[0], buf);
 
-                user_password.update_textarea(*selected);
-                user_password.textarea.render(input_chunks[1], buf);
+                data.user_password.update_textarea(data.selected);
+                data.user_password.textarea.render(input_chunks[1], buf);
             }
-            SelectedService::CreateUser {
-                selected,
-                user_name,
-                user_password,
-                user_email,
-                user_role,
-                corporation_name,
-            } => {
+            SelectedService::CreateUser(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
@@ -150,58 +126,40 @@ impl ServiceDetailWidget {
                     ])
                     .split(inner_popup_area);
 
-                user_name.update_textarea(*selected);
-                user_name.textarea.render(input_chunks[0], buf);
+                data.user_name.update_textarea(data.selected);
+                data.user_name.textarea.render(input_chunks[0], buf);
 
-                user_password.update_textarea(*selected);
-                user_password.textarea.render(input_chunks[1], buf);
+                data.user_password.update_textarea(data.selected);
+                data.user_password.textarea.render(input_chunks[1], buf);
 
-                user_email.update_textarea(*selected);
-                user_email.textarea.render(input_chunks[2], buf);
+                data.user_email.update_textarea(data.selected);
+                data.user_email.textarea.render(input_chunks[2], buf);
 
-                user_role.update_textarea(*selected);
-                user_role.textarea.render(input_chunks[3], buf);
+                data.user_role.update_textarea(data.selected);
+                data.user_role.textarea.render(input_chunks[3], buf);
 
-                corporation_name.update_textarea(*selected);
-                corporation_name.textarea.render(input_chunks[4], buf);
+                data.corporation_name.update_textarea(data.selected);
+                data.corporation_name.textarea.render(input_chunks[4], buf);
             }
-            SelectedService::GetUser {
-                selected,
-                user_uuid,
-            } => {
+            SelectedService::GetUser(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
-                user_uuid.update_textarea(*selected);
-                user_uuid.textarea.render(input_chunks[0], buf);
+                data.user_uuid.update_textarea(data.selected);
+                data.user_uuid.textarea.render(input_chunks[0], buf);
             }
-            SelectedService::DeleteUser {
-                selected,
-                user_uuid,
-            } => {
+            SelectedService::DeleteUser(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
-                user_uuid.update_textarea(*selected);
-                user_uuid.textarea.render(input_chunks[0], buf);
+                data.user_uuid.update_textarea(data.selected);
+                data.user_uuid.textarea.render(input_chunks[0], buf);
             }
-            SelectedService::QueryBusinessListings {
-                selected,
-                min_asking_price,
-                max_asking_price,
-                seller_corporation_uuid,
-                market_uuid,
-                min_operational_expenses,
-                max_operational_expenses,
-                sort_by,
-                sort_direction,
-                limit,
-                offset,
-            } => {
+            SelectedService::QueryBusinessListings(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
@@ -218,53 +176,52 @@ impl ServiceDetailWidget {
                     ])
                     .split(inner_popup_area);
 
-                min_asking_price.update_textarea(*selected);
-                min_asking_price.textarea.render(input_chunks[0], buf);
+                data.min_asking_price.update_textarea(data.selected);
+                data.min_asking_price.textarea.render(input_chunks[0], buf);
 
-                max_asking_price.update_textarea(*selected);
-                max_asking_price.textarea.render(input_chunks[1], buf);
+                data.max_asking_price.update_textarea(data.selected);
+                data.max_asking_price.textarea.render(input_chunks[1], buf);
 
-                seller_corporation_uuid.update_textarea(*selected);
-                seller_corporation_uuid
+                data.seller_corporation_uuid.update_textarea(data.selected);
+                data.seller_corporation_uuid
                     .textarea
                     .render(input_chunks[2], buf);
 
-                market_uuid.update_textarea(*selected);
-                market_uuid.textarea.render(input_chunks[3], buf);
+                data.market_uuid.update_textarea(data.selected);
+                data.market_uuid.textarea.render(input_chunks[3], buf);
 
-                min_operational_expenses.update_textarea(*selected);
-                min_operational_expenses
+                data.min_operational_expenses.update_textarea(data.selected);
+                data.min_operational_expenses
                     .textarea
                     .render(input_chunks[4], buf);
 
-                max_operational_expenses.update_textarea(*selected);
-                max_operational_expenses
+                data.max_operational_expenses.update_textarea(data.selected);
+                data.max_operational_expenses
                     .textarea
                     .render(input_chunks[5], buf);
 
-                sort_by.update_textarea(*selected);
-                sort_by.textarea.render(input_chunks[6], buf);
+                data.sort_by.update_textarea(data.selected);
+                data.sort_by.textarea.render(input_chunks[6], buf);
 
-                sort_direction.update_textarea(*selected);
-                sort_direction.textarea.render(input_chunks[7], buf);
+                data.sort_direction.update_textarea(data.selected);
+                data.sort_direction.textarea.render(input_chunks[7], buf);
 
-                limit.update_textarea(*selected);
-                limit.textarea.render(input_chunks[8], buf);
+                data.limit.update_textarea(data.selected);
+                data.limit.textarea.render(input_chunks[8], buf);
 
-                offset.update_textarea(*selected);
-                offset.textarea.render(input_chunks[9], buf);
+                data.offset.update_textarea(data.selected);
+                data.offset.textarea.render(input_chunks[9], buf);
             }
-            SelectedService::AcquireBusinessListing {
-                selected,
-                business_listing_uuid,
-            } => {
+            SelectedService::AcquireBusinessListing(data) => {
                 let input_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([SINGE_LINE_CONSTRAINT])
                     .split(inner_popup_area);
 
-                business_listing_uuid.update_textarea(*selected);
-                business_listing_uuid.textarea.render(input_chunks[0], buf);
+                data.business_listing_uuid.update_textarea(data.selected);
+                data.business_listing_uuid
+                    .textarea
+                    .render(input_chunks[0], buf);
             }
         }
     }

@@ -1,7 +1,3 @@
-use crate::presentation::theme::{
-    ACCENT_DARK_PURPLE, CYBER_BG, CYBER_FG, CYBER_YELLOW, INPUT_AREA_BG,
-};
-
 use super::{
     selected_block::{
         SelectedBlockAcquireBusinessListing, SelectedBlockCreateUser, SelectedBlockDeleteUser,
@@ -10,13 +6,15 @@ use super::{
     },
     service_list::ServiceAction,
 };
+use crate::presentation::theme::{
+    ACCENT_DARK_PURPLE, CYBER_BG, CYBER_FG, CYBER_YELLOW, INPUT_AREA_BG,
+};
 use ratatui::{
     style::{Color, Modifier, Style},
     text::Line,
     widgets::{Block, BorderType, Borders},
 };
 use tui_textarea::TextArea;
-
 const TEXTAREA_STYLE: Style = Style {
     fg: Some(CYBER_FG),
     bg: Some(INPUT_AREA_BG),
@@ -34,7 +32,6 @@ const SELECTED_INPUT_BORDER_STYLE: Style = Style::new().fg(CYBER_YELLOW);
 const UNSELECTED_INPUT_BORDER_STYLE: Style = Style::new().fg(CYBER_FG).add_modifier(Modifier::DIM);
 const INPUT_BLOCK_TITLE_STYLE: Style = Style::new().fg(CYBER_FG).add_modifier(Modifier::DIM);
 const POPUP_BACKGROUND_COLOR: Color = CYBER_BG;
-
 #[derive(Debug)]
 pub struct SelectedServiceData<'a, B>
 where
@@ -44,7 +41,6 @@ where
     pub title: &'static str,
     pub block: B,
 }
-
 impl<B> SelectedServiceData<'_, B>
 where
     B: PartialEq,
@@ -54,7 +50,6 @@ where
         textarea.set_placeholder_text(placeholder);
         textarea.set_style(TEXTAREA_STYLE);
         textarea.set_cursor_line_style(Style::default());
-
         if mask_field {
             textarea.set_mask_char('\u{2022}');
         }
@@ -101,69 +96,94 @@ where
             .style(Style::default().bg(TEXTAREA_STYLE.bg.unwrap_or(POPUP_BACKGROUND_COLOR)))
     }
 }
+#[derive(Debug)]
+pub struct RegisterData<'a> {
+    pub selected: SelectedBlockRegister,
+    pub user_name: SelectedServiceData<'a, SelectedBlockRegister>,
+    pub user_password: SelectedServiceData<'a, SelectedBlockRegister>,
+    pub corporation_name: SelectedServiceData<'a, SelectedBlockRegister>,
+    pub email: SelectedServiceData<'a, SelectedBlockRegister>,
+}
+
+#[derive(Debug)]
+pub struct VerifyRegistrationData<'a> {
+    pub selected: SelectedBlockVerify,
+    pub user_name: SelectedServiceData<'a, SelectedBlockVerify>,
+    pub code: SelectedServiceData<'a, SelectedBlockVerify>,
+}
+
+#[derive(Debug)]
+pub struct ResendVerificationData<'a> {
+    pub selected: SelectedBlockResend,
+    pub user_name: SelectedServiceData<'a, SelectedBlockResend>,
+}
+
+#[derive(Debug)]
+pub struct LoginData<'a> {
+    pub selected: SelectedBlockLogin,
+    pub user_name: SelectedServiceData<'a, SelectedBlockLogin>,
+    pub user_password: SelectedServiceData<'a, SelectedBlockLogin>,
+}
+
+#[derive(Debug)]
+pub struct CreateUserData<'a> {
+    pub selected: SelectedBlockCreateUser,
+    pub user_name: SelectedServiceData<'a, SelectedBlockCreateUser>,
+    pub user_password: SelectedServiceData<'a, SelectedBlockCreateUser>,
+    pub user_email: SelectedServiceData<'a, SelectedBlockCreateUser>,
+    pub user_role: SelectedServiceData<'a, SelectedBlockCreateUser>,
+    pub corporation_name: SelectedServiceData<'a, SelectedBlockCreateUser>,
+}
+
+#[derive(Debug)]
+pub struct GetUserData<'a> {
+    pub selected: SelectedBlockGetUser,
+    pub user_uuid: SelectedServiceData<'a, SelectedBlockGetUser>,
+}
+
+#[derive(Debug)]
+pub struct DeleteUserData<'a> {
+    pub selected: SelectedBlockDeleteUser,
+    pub user_uuid: SelectedServiceData<'a, SelectedBlockDeleteUser>,
+}
+
+#[derive(Debug)]
+pub struct QueryBusinessListingsData<'a> {
+    pub selected: SelectedBlockQueryBusinessListings,
+    pub min_asking_price: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub max_asking_price: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub seller_corporation_uuid: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub market_uuid: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub min_operational_expenses: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub max_operational_expenses: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub sort_by: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub sort_direction: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub limit: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+    pub offset: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
+}
+
+#[derive(Debug)]
+pub struct AcquireBusinessListingData<'a> {
+    pub selected: SelectedBlockAcquireBusinessListing,
+    pub business_listing_uuid: SelectedServiceData<'a, SelectedBlockAcquireBusinessListing>,
+}
 
 #[derive(Debug)]
 pub enum SelectedService<'a> {
-    Register {
-        selected: SelectedBlockRegister,
-        user_name: SelectedServiceData<'a, SelectedBlockRegister>,
-        user_password: SelectedServiceData<'a, SelectedBlockRegister>,
-        corporation_name: SelectedServiceData<'a, SelectedBlockRegister>,
-        email: SelectedServiceData<'a, SelectedBlockRegister>,
-    },
-    VerifyRegistration {
-        selected: SelectedBlockVerify,
-        user_name: SelectedServiceData<'a, SelectedBlockVerify>,
-        code: SelectedServiceData<'a, SelectedBlockVerify>,
-    },
-    ResendVerification {
-        selected: SelectedBlockResend,
-        user_name: SelectedServiceData<'a, SelectedBlockResend>,
-    },
-    Login {
-        selected: SelectedBlockLogin,
-        user_name: SelectedServiceData<'a, SelectedBlockLogin>,
-        user_password: SelectedServiceData<'a, SelectedBlockLogin>,
-    },
-    CreateUser {
-        selected: SelectedBlockCreateUser,
-        user_name: SelectedServiceData<'a, SelectedBlockCreateUser>,
-        user_password: SelectedServiceData<'a, SelectedBlockCreateUser>,
-        user_email: SelectedServiceData<'a, SelectedBlockCreateUser>,
-        user_role: SelectedServiceData<'a, SelectedBlockCreateUser>,
-        corporation_name: SelectedServiceData<'a, SelectedBlockCreateUser>,
-    },
-    GetUser {
-        selected: SelectedBlockGetUser,
-        user_uuid: SelectedServiceData<'a, SelectedBlockGetUser>,
-    },
-    DeleteUser {
-        selected: SelectedBlockDeleteUser,
-        user_uuid: SelectedServiceData<'a, SelectedBlockDeleteUser>,
-    },
-    QueryBusinessListings {
-        selected: SelectedBlockQueryBusinessListings,
-        min_asking_price: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        max_asking_price: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        seller_corporation_uuid: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        market_uuid: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        min_operational_expenses: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        max_operational_expenses: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        sort_by: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        sort_direction: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        limit: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-        offset: SelectedServiceData<'a, SelectedBlockQueryBusinessListings>,
-    },
-    AcquireBusinessListing {
-        selected: SelectedBlockAcquireBusinessListing,
-        business_listing_uuid: SelectedServiceData<'a, SelectedBlockAcquireBusinessListing>,
-    },
+    Register(Box<RegisterData<'a>>),
+    VerifyRegistration(Box<VerifyRegistrationData<'a>>),
+    ResendVerification(Box<ResendVerificationData<'a>>),
+    Login(Box<LoginData<'a>>),
+    CreateUser(Box<CreateUserData<'a>>),
+    GetUser(Box<GetUserData<'a>>),
+    DeleteUser(Box<DeleteUserData<'a>>),
+    QueryBusinessListings(Box<QueryBusinessListingsData<'a>>),
+    AcquireBusinessListing(Box<AcquireBusinessListingData<'a>>),
 }
-
 impl From<ServiceAction> for SelectedService<'_> {
     fn from(value: ServiceAction) -> Self {
         match value {
-            ServiceAction::Register => Self::Register {
+            ServiceAction::Register => Self::Register(Box::new(RegisterData {
                 selected: SelectedBlockRegister::default(),
                 user_name: SelectedServiceData::new(
                     "Username",
@@ -189,32 +209,36 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockRegister::Email,
                     false,
                 ),
-            },
-            ServiceAction::VerifyRegistration => Self::VerifyRegistration {
-                selected: SelectedBlockVerify::default(),
-                user_name: SelectedServiceData::new(
-                    "Username",
-                    "Mc_Lovin",
-                    SelectedBlockVerify::UserName,
-                    false,
-                ),
-                code: SelectedServiceData::new(
-                    "Code",
-                    "8FA3FLI91",
-                    SelectedBlockVerify::Code,
-                    false,
-                ),
-            },
-            ServiceAction::ResendVerification => Self::ResendVerification {
-                selected: SelectedBlockResend::default(),
-                user_name: SelectedServiceData::new(
-                    "Username",
-                    "Mc_Lovin",
-                    SelectedBlockResend::UserName,
-                    false,
-                ),
-            },
-            ServiceAction::Login => Self::Login {
+            })),
+            ServiceAction::VerifyRegistration => {
+                Self::VerifyRegistration(Box::new(VerifyRegistrationData {
+                    selected: SelectedBlockVerify::default(),
+                    user_name: SelectedServiceData::new(
+                        "Username",
+                        "Mc_Lovin",
+                        SelectedBlockVerify::UserName,
+                        false,
+                    ),
+                    code: SelectedServiceData::new(
+                        "Code",
+                        "8FA3FLI91",
+                        SelectedBlockVerify::Code,
+                        false,
+                    ),
+                }))
+            }
+            ServiceAction::ResendVerification => {
+                Self::ResendVerification(Box::new(ResendVerificationData {
+                    selected: SelectedBlockResend::default(),
+                    user_name: SelectedServiceData::new(
+                        "Username",
+                        "Mc_Lovin",
+                        SelectedBlockResend::UserName,
+                        false,
+                    ),
+                }))
+            }
+            ServiceAction::Login => Self::Login(Box::new(LoginData {
                 selected: SelectedBlockLogin::default(),
                 user_name: SelectedServiceData::new(
                     "Username",
@@ -228,8 +252,8 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockLogin::UserPassword,
                     true,
                 ),
-            },
-            ServiceAction::CreateUser => Self::CreateUser {
+            })),
+            ServiceAction::CreateUser => Self::CreateUser(Box::new(CreateUserData {
                 selected: SelectedBlockCreateUser::default(),
                 user_name: SelectedServiceData::new(
                     "Username",
@@ -261,8 +285,8 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockCreateUser::CorporationName,
                     false,
                 ),
-            },
-            ServiceAction::DeleteUser => Self::DeleteUser {
+            })),
+            ServiceAction::DeleteUser => Self::DeleteUser(Box::new(DeleteUserData {
                 selected: SelectedBlockDeleteUser::default(),
                 user_uuid: SelectedServiceData::new(
                     "User UUID",
@@ -270,71 +294,73 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockDeleteUser::UserUuid,
                     false,
                 ),
-            },
-            ServiceAction::QueryBusinessListings => Self::QueryBusinessListings {
-                selected: SelectedBlockQueryBusinessListings::default(),
-                min_asking_price: SelectedServiceData::new(
-                    "Min. Asking Price",
-                    "1000",
-                    SelectedBlockQueryBusinessListings::MinAskingPrice,
-                    false,
-                ),
-                max_asking_price: SelectedServiceData::new(
-                    "Max. Asking Price",
-                    "2000",
-                    SelectedBlockQueryBusinessListings::MaxAskingPrice,
-                    false,
-                ),
-                seller_corporation_uuid: SelectedServiceData::new(
-                    "Seller Corporation UUID",
-                    "0196e20b-c252-7520-ae13-935b5d5f0029",
-                    SelectedBlockQueryBusinessListings::SellerCorporationUuid,
-                    false,
-                ),
-                market_uuid: SelectedServiceData::new(
-                    "Market UUID",
-                    "0196e24f-eda1-7145-a177-8d2f8c38f7c4",
-                    SelectedBlockQueryBusinessListings::MarketUuid,
-                    false,
-                ),
-                min_operational_expenses: SelectedServiceData::new(
-                    "Min. Operational Expenses",
-                    "10",
-                    SelectedBlockQueryBusinessListings::MinOperationalExpenses,
-                    false,
-                ),
-                max_operational_expenses: SelectedServiceData::new(
-                    "Max. Operational Expenses",
-                    "30",
-                    SelectedBlockQueryBusinessListings::MaxOperationalExpenses,
-                    false,
-                ),
-                sort_by: SelectedServiceData::new(
-                    "Sort By",
-                    "price, name, op_expenses, market_volume",
-                    SelectedBlockQueryBusinessListings::SortBy,
-                    false,
-                ),
-                sort_direction: SelectedServiceData::new(
-                    "Sort Direction",
-                    "0 or 1",
-                    SelectedBlockQueryBusinessListings::SortDirection,
-                    false,
-                ),
-                limit: SelectedServiceData::new(
-                    "Limit",
-                    "20",
-                    SelectedBlockQueryBusinessListings::Limit,
-                    false,
-                ),
-                offset: SelectedServiceData::new(
-                    "Offset",
-                    "50",
-                    SelectedBlockQueryBusinessListings::Offset,
-                    false,
-                ),
-            },
-            ServiceAction::GetUser => Self::GetUser {
+            })),
+            ServiceAction::QueryBusinessListings => {
+                Self::QueryBusinessListings(Box::new(QueryBusinessListingsData {
+                    selected: SelectedBlockQueryBusinessListings::default(),
+                    min_asking_price: SelectedServiceData::new(
+                        "Min. Asking Price",
+                        "1000",
+                        SelectedBlockQueryBusinessListings::MinAskingPrice,
+                        false,
+                    ),
+                    max_asking_price: SelectedServiceData::new(
+                        "Max. Asking Price",
+                        "2000",
+                        SelectedBlockQueryBusinessListings::MaxAskingPrice,
+                        false,
+                    ),
+                    seller_corporation_uuid: SelectedServiceData::new(
+                        "Seller Corporation UUID",
+                        "0196e20b-c252-7520-ae13-935b5d5f0029",
+                        SelectedBlockQueryBusinessListings::SellerCorporationUuid,
+                        false,
+                    ),
+                    market_uuid: SelectedServiceData::new(
+                        "Market UUID",
+                        "0196e24f-eda1-7145-a177-8d2f8c38f7c4",
+                        SelectedBlockQueryBusinessListings::MarketUuid,
+                        false,
+                    ),
+                    min_operational_expenses: SelectedServiceData::new(
+                        "Min. Operational Expenses",
+                        "10",
+                        SelectedBlockQueryBusinessListings::MinOperationalExpenses,
+                        false,
+                    ),
+                    max_operational_expenses: SelectedServiceData::new(
+                        "Max. Operational Expenses",
+                        "30",
+                        SelectedBlockQueryBusinessListings::MaxOperationalExpenses,
+                        false,
+                    ),
+                    sort_by: SelectedServiceData::new(
+                        "Sort By",
+                        "price, name, op_expenses, market_volume",
+                        SelectedBlockQueryBusinessListings::SortBy,
+                        false,
+                    ),
+                    sort_direction: SelectedServiceData::new(
+                        "Sort Direction",
+                        "0 or 1",
+                        SelectedBlockQueryBusinessListings::SortDirection,
+                        false,
+                    ),
+                    limit: SelectedServiceData::new(
+                        "Limit",
+                        "20",
+                        SelectedBlockQueryBusinessListings::Limit,
+                        false,
+                    ),
+                    offset: SelectedServiceData::new(
+                        "Offset",
+                        "50",
+                        SelectedBlockQueryBusinessListings::Offset,
+                        false,
+                    ),
+                }))
+            }
+            ServiceAction::GetUser => Self::GetUser(Box::new(GetUserData {
                 selected: SelectedBlockGetUser::default(),
                 user_uuid: SelectedServiceData::new(
                     "User UUID",
@@ -342,8 +368,8 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockGetUser::UserUuid,
                     false,
                 ),
-            },
-            _ => Self::AcquireBusinessListing {
+            })),
+            _ => Self::AcquireBusinessListing(Box::new(AcquireBusinessListingData {
                 selected: SelectedBlockAcquireBusinessListing::default(),
                 business_listing_uuid: SelectedServiceData::new(
                     "Business listing UUID",
@@ -351,7 +377,7 @@ impl From<ServiceAction> for SelectedService<'_> {
                     SelectedBlockAcquireBusinessListing::BusinessListingUuid,
                     false,
                 ),
-            },
+            })),
         }
     }
 }
