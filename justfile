@@ -24,3 +24,9 @@ help:
   @just --list docker --list-heading ""
   @echo "[db]"
   @just --list db --list-heading ""
+
+# Format relevant workspace members
+[group('cargo')]
+fmt:
+  cargo fmt --package syndicode-server --package syndicode-client
+
