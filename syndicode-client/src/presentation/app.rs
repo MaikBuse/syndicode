@@ -83,9 +83,9 @@ where
     pub hide_game_tick_notification: bool,
     pub current_screen: CurrentScreen,
     pub should_exit: bool,
+    pub shutdown_signal: Arc<Notify>,
     pub stream_handler: StreamHandler,
     pub maybe_response_detail_textarea: Option<TextArea<'a>>,
-    pub input_reader_shutdown_signal: Arc<Notify>,
     pub response_detail_vim: Vim,
     pub maybe_selected_service: Option<SelectedService<'a>>,
     pub service_list_widget: ServiceListWidget,
@@ -162,11 +162,7 @@ where
             if self.should_exit {
                 tracing::info!("App::run: Exiting loop due to should_exit flag.");
 
-                self.input_reader_shutdown_signal.notify_one();
-
-                if self.stream_handler.is_processing().await {
-                    self.stream_handler.signal_stop_processing();
-                }
+                self.shutdown_signal.notify_waiters();
 
                 break 'app_loop;
             };

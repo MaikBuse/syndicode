@@ -4,13 +4,13 @@ use super::app::AppEvent;
 use tokio::sync::{mpsc, Notify};
 
 #[derive(Debug)]
-pub struct InputReader {
+pub struct Reader {
     shutdown_signal: Arc<Notify>,
 }
 
-impl InputReader {
+impl Reader {
     pub fn new(shutdown_signal: Arc<Notify>) -> Self {
-        InputReader { shutdown_signal }
+        Reader { shutdown_signal }
     }
 
     pub async fn read_input_events(self, tx: mpsc::Sender<AppEvent>) {
@@ -18,6 +18,7 @@ impl InputReader {
             let event_fut = tokio::task::spawn_blocking(ratatui::crossterm::event::read);
             tokio::select! {
                 _ = self.shutdown_signal.notified() => {
+                    tracing::debug!("Shutdown signal received. Stopping reading input events.");
                     // Received shutdown signal, break the loop
                     break 'read_input_loop;
                 }

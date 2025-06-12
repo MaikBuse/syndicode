@@ -1,6 +1,6 @@
 mod app;
-mod event;
 mod input;
+mod reader;
 mod stream;
 mod theme;
 mod ui;
@@ -19,8 +19,8 @@ use crate::application::game::stream::PlayStreamUseCase;
 use crate::config::load_config;
 use crate::{application::auth::register::RegisterUseCase, infrastructure::grpc::GrpcHandler};
 use app::{App, CurrentScreen};
-use event::InputReader;
 use ratatui::widgets::ListState;
+use reader::Reader;
 use std::sync::Arc;
 use stream::StreamHandler;
 use tokio::sync::{mpsc, Mutex, Notify};
@@ -48,9 +48,9 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let app_event_tx_clone = app_event_tx.clone();
 
     let shutdown_signal = Arc::new(Notify::new());
-    let input_reader = InputReader::new(Arc::clone(&shutdown_signal));
+    let input_reader = Reader::new(Arc::clone(&shutdown_signal));
     // Spawn a task to read input events and send them through the channel
-    let read_input_handle = tokio::spawn(async move {
+    let reader_handle = tokio::spawn(async move {
         input_reader.read_input_events(app_event_tx_clone).await;
     });
 
@@ -94,7 +94,7 @@ pub async fn run_cli() -> anyhow::Result<()> {
         .build();
 
     // Initialize StreamHandler (owned by App or managed alongside)
-    let stream_handler = StreamHandler::new();
+    let stream_handler = StreamHandler::new(shutdown_signal.clone());
 
     // Initialize Widgets
     let response_list_widget = ResponseListWidget::new();
@@ -138,12 +138,13 @@ pub async fn run_cli() -> anyhow::Result<()> {
         .query_business_listings_uc(query_business_listings_uc)
         .acquire_business_listing_uc(acquire_listed_business_uc)
         .is_stream_active(false)
-        .input_reader_shutdown_signal(shutdown_signal)
+        .shutdown_signal(shutdown_signal)
         .build();
 
     // Spawn the task that listens to server game updates.
     // It gets the sender part of the channel to send responses back.
-    app.stream_handler
+    let stream_handle = app
+        .stream_handler
         .spawn_server_updates_listener(app_event_tx);
 
     // Run the main application cycle.
@@ -152,8 +153,9 @@ pub async fn run_cli() -> anyhow::Result<()> {
     // Graceful shutdown sequence
     tracing::debug!("Application loop ended. Shutting down...");
 
-    // Await the completion of the input reader task
-    read_input_handle.await?;
+    // Await the completion of the tasks
+    reader_handle.await?;
+    stream_handle.await?;
 
     // Restore the terminal to its original state
     ratatui::restore();
