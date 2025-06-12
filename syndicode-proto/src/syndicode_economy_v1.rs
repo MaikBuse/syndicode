@@ -20,9 +20,9 @@ pub struct QueryBusinessListingsRequest {
     /// Filter by maximum operational expenses (inclusive)
     #[prost(message, optional, tag = "7")]
     pub max_operational_expenses: ::core::option::Option<i64>,
-    /// Field to sort by. Allowed values: "price", "name", "op_expenses", "market_volume"
-    #[prost(string, tag = "20")]
-    pub sort_by: ::prost::alloc::string::String,
+    /// Field to sort by.
+    #[prost(enumeration = "BusinessListingSortBy", tag = "20")]
+    pub sort_by: i32,
     /// Direction to sort (ASCENDING or DESCENDING)
     #[prost(enumeration = "super::syndicode_interface_v1::SortDirection", tag = "21")]
     pub sort_direction: i32,
@@ -146,4 +146,39 @@ pub struct Business {
     /// Operational expenses of the business that accrue every game tick.
     #[prost(int64, tag = "5")]
     pub operational_expenses: i64,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum BusinessListingSortBy {
+    SortByUnspecified = 0,
+    Price = 1,
+    Name = 2,
+    OperationExpenses = 3,
+    MarketVolume = 4,
+}
+impl BusinessListingSortBy {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::SortByUnspecified => "SORT_BY_UNSPECIFIED",
+            Self::Price => "PRICE",
+            Self::Name => "NAME",
+            Self::OperationExpenses => "OPERATION_EXPENSES",
+            Self::MarketVolume => "MARKET_VOLUME",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "SORT_BY_UNSPECIFIED" => Some(Self::SortByUnspecified),
+            "PRICE" => Some(Self::Price),
+            "NAME" => Some(Self::Name),
+            "OPERATION_EXPENSES" => Some(Self::OperationExpenses),
+            "MARKET_VOLUME" => Some(Self::MarketVolume),
+            _ => None,
+        }
+    }
 }

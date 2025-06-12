@@ -275,7 +275,7 @@ impl From<ServiceAction> for SelectedService<'_> {
                 ),
                 user_role: SelectedServiceData::new(
                     "Role",
-                    "1 (Admin) or 2 (Player)",
+                    "ADMIN or PLAYER",
                     SelectedBlockCreateUser::UserRole,
                     false,
                 ),
@@ -336,13 +336,13 @@ impl From<ServiceAction> for SelectedService<'_> {
                     ),
                     sort_by: SelectedServiceData::new(
                         "Sort By",
-                        "price, name, op_expenses, market_volume",
+                        "PRICE, NAME, OPERATION_EXPENSES or MARKET_VOLUME",
                         SelectedBlockQueryBusinessListings::SortBy,
                         false,
                     ),
                     sort_direction: SelectedServiceData::new(
                         "Sort Direction",
-                        "0 or 1",
+                        "ASCENDING or DESCENDING",
                         SelectedBlockQueryBusinessListings::SortDirection,
                         false,
                     ),

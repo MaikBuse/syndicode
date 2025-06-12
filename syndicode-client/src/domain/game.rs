@@ -10,7 +10,7 @@ pub struct QueryBusinessListingsDomainRequest {
     pub market_uuid: Option<String>,
     pub min_operational_expenses: Option<i64>,
     pub max_operational_expenses: Option<i64>,
-    pub sort_by: String,
+    pub sort_by: i32,
     pub sort_direction: i32,
     pub limit: Option<i64>,
     pub offset: Option<i64>,

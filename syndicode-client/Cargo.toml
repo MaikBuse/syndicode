@@ -23,3 +23,6 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 directories = "6.0.0"
 lazy_static = "1.5.0"
 color-eyre = "0.6.4"
+
+[dev-dependencies]
+once_cell = "1.18"

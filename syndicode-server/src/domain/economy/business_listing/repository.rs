@@ -1,8 +1,23 @@
 use super::model::BusinessListing;
-use crate::domain::repository::{RepositoryResult, SortDirection};
+use crate::domain::repository::{DomainSortDirection, RepositoryResult};
 use bon::Builder;
 use tonic::async_trait;
 use uuid::Uuid;
+
+#[derive(Default, Clone, PartialEq)]
+pub enum DomainBusinessListingSortBy {
+    #[default]
+    Price,
+    Name,
+    OperationExpenses,
+    MarketVolume,
+}
+
+impl Default for &DomainBusinessListingSortBy {
+    fn default() -> Self {
+        &DomainBusinessListingSortBy::Price
+    }
+}
 
 #[derive(Builder, Clone, PartialEq)]
 pub struct QueryBusinessListingsRequest {
@@ -12,8 +27,8 @@ pub struct QueryBusinessListingsRequest {
     pub seller_corporation_uuid: Option<Uuid>,
     pub min_operational_expenses: Option<i64>,
     pub max_operational_expenses: Option<i64>,
-    pub sort_by: Option<String>,
-    pub sort_direction: Option<SortDirection>,
+    pub sort_by: Option<DomainBusinessListingSortBy>,
+    pub sort_direction: Option<DomainSortDirection>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
@@ -41,6 +56,7 @@ pub trait BusinessListingRepository: Send + Sync {
         &self,
         req: &QueryBusinessListingsRequest,
     ) -> RepositoryResult<(i64, QueryBusinessListingsResult)>;
+
     async fn list_business_listings_in_tick(
         &self,
         game_tick: i64,

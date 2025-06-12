@@ -1,19 +1,20 @@
 mod common;
 
 use common::{login_and_setup_stream, setup_test_suite, wait_for_stream_update};
-use syndicode_client::domain::admin::{
-    AdminRepository, CreateUserDomainRequest, DeleteUserDomainRequest,
+use syndicode_client::domain::{
+    admin::{AdminRepository, CreateUserDomainRequest, DeleteUserDomainRequest},
+    game::{GameRepository, QueryBusinessListingsDomainRequest},
 };
 use syndicode_proto::{
-    syndicode_economy_v1::GetCorporationRequest,
-    syndicode_interface_v1::{game_update::Update, player_action::Action, PlayerAction},
+    syndicode_economy_v1::{BusinessListingSortBy, GetCorporationRequest},
+    syndicode_interface_v1::{
+        game_update::Update, player_action::Action, PlayerAction, SortDirection,
+    },
 };
 use uuid::Uuid;
 
 #[tokio::test]
-async fn happy_path_integration_test() {
-    tracing_subscriber::fmt::init();
-
+async fn should_create_user() {
     tracing::info!("Set up test suite");
     let mut test_suite = setup_test_suite().await.unwrap();
 
@@ -148,4 +149,49 @@ async fn happy_path_integration_test() {
     );
     assert_eq!(player.user_uuid, delete_corp_update.user_uuid);
     tracing::info!("Player received correct corporation deletion notification");
+}
+
+#[tokio::test]
+async fn should_acquire_listed_business() {
+    tracing::info!("Set up test suite");
+    let mut test_suite = setup_test_suite().await.unwrap();
+
+    tracing::info!("Admin logs in and sets up stream");
+    let mut admin = login_and_setup_stream(
+        &mut test_suite.grpc_handler,
+        &test_suite.config.grpc.user_name,
+        &test_suite.config.grpc.user_password,
+    )
+    .await
+    .expect("Failed to log in as admin");
+
+    let business_listing_query_limit: i64 = 13;
+
+    test_suite
+        .grpc_handler
+        .query_business_listings(
+            QueryBusinessListingsDomainRequest::builder()
+                .limit(business_listing_query_limit)
+                .sort_by(BusinessListingSortBy::Price as i32)
+                .sort_direction(SortDirection::Ascending.into())
+                .build(),
+        )
+        .await
+        .expect("Admin failed to query business listings");
+
+    tracing::info!("Wait for query business listings response on admin stream");
+    let query_business_listings_response = wait_for_stream_update(
+        &mut admin.stream_rx,
+        "QueryBusinessListings response",
+        |update| match update.update {
+            Some(Update::QueryBusinessListings(resp)) => Some(resp),
+            _ => None,
+        },
+    )
+    .await;
+
+    assert_eq!(
+        business_listing_query_limit,
+        query_business_listings_response.listings.len() as i64
+    );
 }

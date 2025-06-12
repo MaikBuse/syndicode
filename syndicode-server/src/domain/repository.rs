@@ -3,22 +3,22 @@ pub type RepositoryResult<T> = std::result::Result<T, RepositoryError>;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 #[repr(i16)]
-pub enum SortDirection {
+pub enum DomainSortDirection {
     #[default]
     Ascending,
     Descending,
 }
 
-impl Display for SortDirection {
+impl Display for DomainSortDirection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SortDirection::Ascending => write!(f, "ASC"),
-            SortDirection::Descending => write!(f, "DESC"),
+            DomainSortDirection::Ascending => write!(f, "ASC"),
+            DomainSortDirection::Descending => write!(f, "DESC"),
         }
     }
 }
 
-impl From<i16> for SortDirection {
+impl From<i16> for DomainSortDirection {
     fn from(value: i16) -> Self {
         match value {
             1 => Self::Ascending,
@@ -27,11 +27,11 @@ impl From<i16> for SortDirection {
     }
 }
 
-impl From<SortDirection> for i16 {
-    fn from(value: SortDirection) -> Self {
+impl From<DomainSortDirection> for i16 {
+    fn from(value: DomainSortDirection) -> Self {
         match value {
-            SortDirection::Ascending => 1,
-            SortDirection::Descending => 2,
+            DomainSortDirection::Ascending => 1,
+            DomainSortDirection::Descending => 2,
         }
     }
 }

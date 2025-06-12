@@ -2,9 +2,10 @@ use crate::{
     application::error::ApplicationResult,
     domain::{
         economy::business_listing::repository::{
-            BusinessListingRepository, QueryBusinessListingsRequest, QueryBusinessListingsResult,
+            BusinessListingRepository, DomainBusinessListingSortBy, QueryBusinessListingsRequest,
+            QueryBusinessListingsResult,
         },
-        repository::SortDirection,
+        repository::DomainSortDirection,
     },
 };
 use bon::{bon, Builder};
@@ -33,8 +34,8 @@ where
         seller_corporation_uuid: Option<Uuid>,
         min_operational_expenses: Option<i64>,
         max_operational_expenses: Option<i64>,
-        sort_by: Option<String>,
-        sort_direction: Option<SortDirection>,
+        sort_by: Option<DomainBusinessListingSortBy>,
+        sort_direction: Option<DomainSortDirection>,
         limit: Option<i64>,
         offset: Option<i64>,
     ) -> ApplicationResult<(i64, QueryBusinessListingsResult)> {

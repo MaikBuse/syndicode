@@ -73,7 +73,7 @@ impl UserRole {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            Self::Unspecified => "UNSPECIFIED",
+            Self::Unspecified => "USER_ROLE_UNSPECIFIED",
             Self::Admin => "ADMIN",
             Self::Player => "PLAYER",
         }
@@ -81,7 +81,7 @@ impl UserRole {
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
-            "UNSPECIFIED" => Some(Self::Unspecified),
+            "USER_ROLE_UNSPECIFIED" => Some(Self::Unspecified),
             "ADMIN" => Some(Self::Admin),
             "PLAYER" => Some(Self::Player),
             _ => None,

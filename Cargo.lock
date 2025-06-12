@@ -2728,6 +2728,7 @@ dependencies = [
  "color-eyre",
  "directories",
  "lazy_static",
+ "once_cell",
  "ratatui",
  "serde",
  "syndicode-proto",

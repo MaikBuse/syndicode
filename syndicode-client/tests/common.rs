@@ -1,3 +1,4 @@
+use once_cell::sync::OnceCell;
 use std::time::Duration;
 use syndicode_client::{
     config::{load_config, ClientConfig},
@@ -14,12 +15,22 @@ use tokio::time::timeout;
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 
+static TRACING: OnceCell<()> = OnceCell::new();
+
+fn init_tracing() {
+    TRACING.get_or_init(|| {
+        tracing_subscriber::fmt::init();
+    });
+}
+
 pub struct TestSuite {
     pub config: ClientConfig,
     pub grpc_handler: GrpcHandler,
 }
 
 pub async fn setup_test_suite() -> anyhow::Result<TestSuite> {
+    init_tracing();
+
     let config = load_config()?;
 
     let grpc_handler = GrpcHandler::new(config.grpc.server_address.clone()).await?;

@@ -26,7 +26,7 @@ where
         market_uuid: Option<String>,
         min_operational_expenses: Option<i64>,
         max_operational_expenses: Option<i64>,
-        sort_by: String,
+        sort_by: i32,
         sort_direction: i32,
         limit: Option<i64>,
         offset: Option<i64>,

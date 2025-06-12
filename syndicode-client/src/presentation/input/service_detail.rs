@@ -17,6 +17,10 @@ use crate::{
     },
 };
 use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers};
+use syndicode_proto::{
+    syndicode_economy_v1::BusinessListingSortBy,
+    syndicode_interface_v1::{SortDirection, UserRole},
+};
 use uuid::Uuid;
 
 pub(super) async fn handle_service_detail<AUTH, ADMIN, GAME>(
@@ -89,19 +93,24 @@ where
                                 true => None,
                                 false => Some(x.parse::<i64>().unwrap()),
                             });
-                        let sort_by: String = data
+
+                        let sort_by = data
                             .sort_by
                             .textarea
                             .lines()
                             .first()
-                            .map(|x| x.to_owned())
-                            .unwrap_or(String::new());
-                        let sort_direction: i32 = data
+                            .and_then(|string| {
+                                BusinessListingSortBy::from_str_name(string.as_str())
+                            })
+                            .map(|sort_by| sort_by as i32)
+                            .unwrap_or_default();
+                        let sort_direction = data
                             .sort_direction
                             .textarea
                             .lines()
                             .first()
-                            .map(|x| x.parse::<i32>().unwrap_or_default())
+                            .and_then(|string| SortDirection::from_str_name(string.as_str()))
+                            .map(|sort_dir| sort_dir as i32)
                             .unwrap_or_default();
                         let maybe_limit: Option<i64> = data
                             .limit
@@ -281,13 +290,14 @@ where
                             data.user_email.textarea.lines().first().ok_or_else(|| {
                                 anyhow::anyhow!("Failed to retrieve email from textarea")
                             })?;
-                        let maybe_user_role: Option<i32> =
-                            data.user_role.textarea.lines().first().and_then(|x| {
-                                match x.is_empty() {
-                                    true => None,
-                                    false => Some(x.parse::<i32>().unwrap()),
-                                }
-                            });
+                        let user_role = data
+                            .user_role
+                            .textarea
+                            .lines()
+                            .first()
+                            .and_then(|string| UserRole::from_str_name(string.as_str()))
+                            .map(|user_role| user_role as i32)
+                            .unwrap_or(2);
                         let corporation_name = data
                             .corporation_name
                             .textarea
@@ -307,7 +317,7 @@ where
                             .user_name(user_name.to_owned())
                             .user_password(user_password.to_owned())
                             .user_email(user_email.to_owned())
-                            .user_role(maybe_user_role.unwrap_or_default())
+                            .user_role(user_role)
                             .corporation_name(corporation_name.to_owned())
                             .call()
                             .await;

@@ -8,9 +8,14 @@ use crate::{
         game::get_game_tick::GetGameTickUseCase,
         ports::{game_tick::GameTickRepository, queuer::ActionQueueable},
     },
-    domain::economy::{
-        business_listing::repository::BusinessListingRepository,
-        corporation::repository::CorporationRepository,
+    domain::{
+        economy::{
+            business_listing::repository::{
+                BusinessListingRepository, DomainBusinessListingSortBy,
+            },
+            corporation::repository::CorporationRepository,
+        },
+        repository::DomainSortDirection,
     },
     presentation::{common::parse_maybe_uuid, error::PresentationError},
 };
@@ -18,10 +23,10 @@ use bon::builder;
 use std::sync::Arc;
 use syndicode_proto::{
     syndicode_economy_v1::{
-        BusinessListingDetails, Corporation, GetCorporationResponse, QueryBusinessListingsRequest,
-        QueryBusinessListingsResponse,
+        BusinessListingDetails, BusinessListingSortBy, Corporation, GetCorporationResponse,
+        QueryBusinessListingsRequest, QueryBusinessListingsResponse,
     },
-    syndicode_interface_v1::{game_update::Update, ActionInitResponse, GameUpdate},
+    syndicode_interface_v1::{game_update::Update, ActionInitResponse, GameUpdate, SortDirection},
 };
 use tonic::Status;
 use uuid::Uuid;
@@ -117,13 +122,43 @@ where
         parse_maybe_uuid(req.seller_corporation_uuid, "seller corporation uuid")
             .map_err(|status| *status)?;
 
+    let market_uuid = parse_maybe_uuid(req.market_uuid, "market uuid").map_err(|status| *status)?;
+
+    let sort_by = BusinessListingSortBy::try_from(req.sort_by)
+        .map_err(|err| Status::invalid_argument(format!("Failed to parse sort by: {}", err)))?;
+
+    let maybe_sort_by = match sort_by {
+        BusinessListingSortBy::SortByUnspecified => None,
+        BusinessListingSortBy::Price => Some(DomainBusinessListingSortBy::Price),
+        BusinessListingSortBy::Name => Some(DomainBusinessListingSortBy::Name),
+        BusinessListingSortBy::OperationExpenses => {
+            Some(DomainBusinessListingSortBy::OperationExpenses)
+        }
+        BusinessListingSortBy::MarketVolume => Some(DomainBusinessListingSortBy::MarketVolume),
+    };
+
+    let sort_direction = SortDirection::try_from(req.sort_direction).map_err(|err| {
+        Status::invalid_argument(format!("Failed to parse sort direction: {}", err))
+    })?;
+
+    let maybe_domain_sort_direction = match sort_direction {
+        SortDirection::Unspecified => None,
+        SortDirection::Ascending => Some(DomainSortDirection::Ascending),
+        SortDirection::Descending => Some(DomainSortDirection::Descending),
+    };
+
     match query_business_listings_uc
         .execute()
+        .maybe_market_uuid(market_uuid)
+        .maybe_seller_corporation_uuid(seller_corporation_uuid)
         .maybe_min_operational_expenses(req.min_operational_expenses)
         .maybe_max_operational_expenses(req.max_operational_expenses)
         .maybe_min_asking_price(req.min_asking_price)
         .maybe_max_asking_price(req.max_asking_price)
-        .maybe_seller_corporation_uuid(seller_corporation_uuid)
+        .maybe_sort_by(maybe_sort_by)
+        .maybe_sort_direction(maybe_domain_sort_direction)
+        .maybe_limit(req.limit)
+        .maybe_offset(req.offset)
         .call()
         .await
     {

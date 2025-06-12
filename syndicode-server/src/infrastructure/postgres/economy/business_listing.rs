@@ -4,7 +4,8 @@ use crate::{
             model::BusinessListing,
             repository::{
                 BusinessListingQueryResult, BusinessListingRepository, BusinessListingTxRepository,
-                QueryBusinessListingsRequest, QueryBusinessListingsResult,
+                DomainBusinessListingSortBy, QueryBusinessListingsRequest,
+                QueryBusinessListingsResult,
             },
         },
         repository::RepositoryResult,
@@ -137,15 +138,11 @@ impl PgBusinessListingRepository {
 
         // --- Clone the builder for COUNT(*) query before adding ORDER BY, LIMIT, OFFSET ---
         // --- Add Sorting ---
-        let sort_column = match req.sort_by.as_ref() {
-            Some(sort_by) => match sort_by.as_str() {
-                "price" => "bl.asking_price",
-                "name" => "b.name",
-                "op_expenses" => "b.operational_expenses",
-                "market_volume" => "m.volume",
-                _ => "bl.asking_price", // Default sort
-            },
-            None => "b.name",
+        let sort_column = match req.sort_by.as_ref().unwrap_or_default() {
+            DomainBusinessListingSortBy::Price => "bl.asking_price",
+            DomainBusinessListingSortBy::Name => "b.name",
+            DomainBusinessListingSortBy::OperationExpenses => "b.operational_expenses",
+            DomainBusinessListingSortBy::MarketVolume => "m.volume",
         };
 
         let sort_direction = req.sort_direction.unwrap_or_default().to_string();
@@ -153,7 +150,7 @@ impl PgBusinessListingRepository {
         qb.push(format!(" ORDER BY {} {}", sort_column, sort_direction)); // Safe because sort_column comes from match
 
         // --- Add Pagination ---
-        let limit = req.limit.unwrap_or(20);
+        let limit = req.limit.unwrap_or(10);
         qb.push(" LIMIT ");
         qb.push_bind(limit);
 

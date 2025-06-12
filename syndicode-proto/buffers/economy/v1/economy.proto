@@ -25,8 +25,8 @@ message QueryBusinessListingsRequest {
   // Filter by maximum operational expenses (inclusive)
   google.protobuf.Int64Value max_operational_expenses = 7;
 
-  // Field to sort by. Allowed values: "price", "name", "op_expenses", "market_volume"
-  string sort_by = 20;
+  // Field to sort by.
+  BusinessListingSortBy sort_by = 20;
 
   // Direction to sort (ASCENDING or DESCENDING)
   syndicode_interface_v1.SortDirection sort_direction = 21;
@@ -36,6 +36,14 @@ message QueryBusinessListingsRequest {
   google.protobuf.Int64Value limit = 30;
   // Number of results to skip (for pagination)
   google.protobuf.Int64Value offset = 31;
+}
+
+enum BusinessListingSortBy {
+  SORT_BY_UNSPECIFIED = 0;
+  PRICE = 1;
+  NAME = 2;
+  OPERATION_EXPENSES = 3;
+  MARKET_VOLUME = 4;
 }
 
 // Represents detailed information about a business listing, including related business and market data.

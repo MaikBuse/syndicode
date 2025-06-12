@@ -19,7 +19,7 @@ enum SortDirection {
 /// The role assigned to a user account.
 enum UserRole {
   /// Default unspecified role.
-  UNSPECIFIED = 0;
+  USER_ROLE_UNSPECIFIED = 0;
 
   /// Admin role.
   ADMIN = 1;
