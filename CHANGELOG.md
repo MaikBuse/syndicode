@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.8](https://github.com/MaikBuse/syndicode/compare/v0.9.7...v0.9.8) (2025-06-13)
+
+
+### Bug Fixes
+
+* **ci:** add linker for the aarch build ([b79e35d](https://github.com/MaikBuse/syndicode/commit/b79e35d229a97d99bc6f50deab34412337e2cc28))
+
 ## [0.9.7](https://github.com/MaikBuse/syndicode/compare/v0.9.6...v0.9.7) (2025-06-13)
 
 
