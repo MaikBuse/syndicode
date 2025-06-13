@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.5](https://github.com/MaikBuse/syndicode/compare/v0.9.4...v0.9.5) (2025-06-13)
+
+
+### Bug Fixes
+
+* **ci:** release asset path ([f969f74](https://github.com/MaikBuse/syndicode/commit/f969f74d93ba643fb0d19796783f15e13d96900e))
+
 ## [0.9.4](https://github.com/MaikBuse/syndicode/compare/v0.9.3...v0.9.4) (2025-06-13)
 
 
