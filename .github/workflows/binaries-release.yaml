@@ -11,15 +11,15 @@ jobs:
   build-release:
     name: Build and Upload Release Binaries
     strategy:
-      # Ensure all jobs run to completion, even if one fails.
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
+          # --- Linux with MUSL for maximum portability ---
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
             binary_name: syndicode-client
-          - os: ubuntu-22.04
-            target: aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
             binary_name: syndicode-client
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -47,8 +47,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Cache dependencies to speed up builds.
-      # IMPORTANT: We do NOT cache the `target` directory itself to avoid inconsistent builds.
       - name: Cache Cargo dependencies
         uses: actions/cache@v4
         with:
@@ -59,17 +57,16 @@ jobs:
             ~/.cargo/git/db/
           key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      # Install a C compiler for the MUSL target.
+      # The aarch64-linux-gnu-gcc is NOT needed for aarch64-musl.
       - name: Install build dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-          sudo apt-get install -y libssl-dev pkg-config
+          sudo apt-get install -y musl-tools
 
       - name: Build binary
         run: cargo build -v --release --package syndicode-client --target ${{ matrix.target }}
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
       - name: Prepare binary for packaging
         run: |
@@ -87,8 +84,6 @@ jobs:
         run: |
           tar czvf "syndicode-client-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" -C staging .
 
-      # --- DEBUGGING STEP ---
-      # List files in the current directory to verify the archive was created.
       - name: Verify packaged files
         run: ls -R
         shell: bash
