@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.9](https://github.com/MaikBuse/syndicode/compare/v0.9.8...v0.9.9) (2025-06-13)
+
+
+### Bug Fixes
+
+* **client:** change log path to the binary directory ([38b607d](https://github.com/MaikBuse/syndicode/commit/38b607d692bcf53b9cbf4b45cc3d158af299ad75))
+
 ## [0.9.8](https://github.com/MaikBuse/syndicode/compare/v0.9.7...v0.9.8) (2025-06-13)
 
 
