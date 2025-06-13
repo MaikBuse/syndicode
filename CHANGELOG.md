@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/MaikBuse/syndicode/compare/v0.9.0...v0.9.1) (2025-06-13)
+
+
+### Bug Fixes
+
+* **ci:** set token for protoc setup ([81cda9c](https://github.com/MaikBuse/syndicode/commit/81cda9cbbc0f9d11c96a4166499eb73688c01c0e))
+
 ## [0.9.0](https://github.com/MaikBuse/syndicode/compare/v0.8.1...v0.9.0) (2025-06-13)
 
 
