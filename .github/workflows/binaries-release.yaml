@@ -44,7 +44,6 @@ jobs:
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
-        id: protoc
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -70,7 +69,6 @@ jobs:
       - name: Build binary
         run: cargo build -v --release --package syndicode-client --target ${{ matrix.target }}
         env:
-          PROTOC: ${{ steps.protoc.outputs.protoc-path }}
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
       - name: Prepare binary for packaging
