@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.6](https://github.com/MaikBuse/syndicode/compare/v0.9.5...v0.9.6) (2025-06-13)
+
+
+### Bug Fixes
+
+* **ci:** pin the ubuntu version in order to improve compatibility ([93df2ef](https://github.com/MaikBuse/syndicode/commit/93df2ef8fb88b9f6c3faacd139e0d6c21a59806c))
+
 ## [0.9.5](https://github.com/MaikBuse/syndicode/compare/v0.9.4...v0.9.5) (2025-06-13)
 
 
