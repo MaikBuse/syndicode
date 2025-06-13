@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.7](https://github.com/MaikBuse/syndicode/compare/v0.9.6...v0.9.7) (2025-06-13)
+
+
+### Bug Fixes
+
+* **ci:** switch linux to musl to increase compatability ([1218ee3](https://github.com/MaikBuse/syndicode/commit/1218ee3a5e4e1924ba5865174339dde5de9cb8ba))
+
 ## [0.9.6](https://github.com/MaikBuse/syndicode/compare/v0.9.5...v0.9.6) (2025-06-13)
 
 
