@@ -1,4 +1,0 @@
-[grpc]
-server_address = "http://[::1]:50051"
-user_name = "admin"
-user_password = "my-secret-password"

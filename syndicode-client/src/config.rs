@@ -16,9 +16,9 @@ pub struct GrpcSettings {
 impl Default for GrpcSettings {
     fn default() -> Self {
         GrpcSettings {
-            server_address: "http://[::1]:50051".to_string(),
-            user_name: "admin".to_string(),
-            user_password: "my-secret-password".to_string(),
+            server_address: "api.syndicode.dev:443".to_string(),
+            user_name: "".to_string(),
+            user_password: "".to_string(),
         }
     }
 }
