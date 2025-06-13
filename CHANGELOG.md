@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.4](https://github.com/MaikBuse/syndicode/compare/v0.9.3...v0.9.4) (2025-06-13)
+
+
+### Bug Fixes
+
+* (ci): stop explicitly setting the protoc path ([0fcefa7](https://github.com/MaikBuse/syndicode/commit/0fcefa7dd1e9c8ae2581acf7784dea2c369b1dcd))
+
 ## [0.9.3](https://github.com/MaikBuse/syndicode/compare/v0.9.2...v0.9.3) (2025-06-13)
 
 
