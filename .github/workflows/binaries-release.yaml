@@ -57,16 +57,20 @@ jobs:
             ~/.cargo/git/db/
           key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      # Install a C compiler for the MUSL target.
-      # The aarch64-linux-gnu-gcc is NOT needed for aarch64-musl.
       - name: Install build dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
+          # Install musl tools for the native x86_64 build
           sudo apt-get install -y musl-tools
+          # Install the aarch64 cross-compiler for the aarch64 build
+          sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Build binary
         run: cargo build -v --release --package syndicode-client --target ${{ matrix.target }}
+        # Tell cargo which linker to use for the aarch64-musl target
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
 
       - name: Prepare binary for packaging
         run: |
