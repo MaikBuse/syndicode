@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/MaikBuse/syndicode/compare/v0.9.1...v0.9.2) (2025-06-13)
+
+
+### Bug Fixes
+
+* **ci:** cache cargo dependencies only ([d4a68a6](https://github.com/MaikBuse/syndicode/commit/d4a68a6b761a908ae811084a0d67344d9c3c0bd2))
+
 ## [0.9.1](https://github.com/MaikBuse/syndicode/compare/v0.9.0...v0.9.1) (2025-06-13)
 
 
