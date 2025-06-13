@@ -17,6 +17,9 @@ lto = true
 tokio = { version = "1.44.2", features = ["full"] }
 tokio-stream = "0.1.17"
 tonic = "0.13.1"
+futures = "0.3.31"
+prost = "0.13.5"
+prost-types = "0.13.5"
 uuid = { version = "1.16.0", features = ["v7", "serde"] }
 anyhow = "1.0.97"
 thiserror = "2.0.12"
