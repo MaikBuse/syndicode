@@ -1,5 +1,6 @@
 pub mod game_state;
 mod handlers;
+mod processors;
 mod saga;
 
 use super::{outcome::DomainActionOutcome, ports::simulation::Simulationable};
@@ -11,6 +12,7 @@ use handlers::{
     create_corporation::handle_create_corporation, delete_corporation::handle_delete_corporation,
     spawn_unit::handle_spawn_unit,
 };
+use processors::business_income::calculate_business_income;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -144,6 +146,9 @@ impl Simulationable for SimulationService {
                 }
             }
         }
+
+        calculate_business_income(state);
+
         outcomes
     }
 }
