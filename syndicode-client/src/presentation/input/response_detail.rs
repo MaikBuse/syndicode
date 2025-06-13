@@ -7,7 +7,9 @@ use crate::{
         widget::vim::{Transition, Vim},
     },
 };
-use ratatui::crossterm::event::Event;
+use crossterm::event::Event;
+
+use super::utils::from_crossterm_into_ratatui;
 
 pub(super) async fn handle_response_detail<AUTH, ADMIN, GAME>(
     app: &mut App<'_, AUTH, ADMIN, GAME>,
@@ -22,9 +24,14 @@ pub(super) async fn handle_response_detail<AUTH, ADMIN, GAME>(
         return;
     };
 
+    let Ok(ratatui_event) = from_crossterm_into_ratatui(event) else {
+        tracing::error!("Failed to parse crossterm event");
+        return;
+    };
+
     app.response_detail_vim = match app.response_detail_vim.transition(
         response_detail_textarea,
-        event.into(),
+        ratatui_event.into(),
         &mut app.yank_buffer,
     ) {
         Transition::Mode(mode) if app.response_detail_vim.mode != mode => {

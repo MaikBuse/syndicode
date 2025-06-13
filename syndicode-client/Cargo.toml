@@ -9,6 +9,7 @@ syndicode-proto = { path = "../syndicode-proto" }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
+futures = { workspace = true }
 uuid = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
@@ -23,6 +24,7 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 directories = "6.0.0"
 lazy_static = "1.5.0"
 color-eyre = "0.6.4"
+crossterm = { version = "0.29", features = ["event-stream"] }
 
 [dev-dependencies]
 once_cell = "1.18"

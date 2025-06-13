@@ -4,7 +4,7 @@ use crate::{
     },
     presentation::app::{App, CurrentScreen, CurrentScreenMain},
 };
-use ratatui::crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode};
 
 pub(super) fn handle_exit<AUTH, ADMIN, GAME>(app: &mut App<'_, AUTH, ADMIN, GAME>, event: Event)
 where

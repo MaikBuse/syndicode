@@ -18,7 +18,7 @@ use crate::application::game::query_business_listings::QueryBusinessListingsUseC
 use crate::application::game::stream::PlayStreamUseCase;
 use crate::config::load_config;
 use crate::{application::auth::register::RegisterUseCase, infrastructure::grpc::GrpcHandler};
-use app::{App, CurrentScreen};
+use app::{App, AppEvent, CurrentScreen};
 use ratatui::widgets::ListState;
 use reader::Reader;
 use std::sync::Arc;
@@ -43,16 +43,14 @@ pub async fn run_cli() -> anyhow::Result<()> {
     let mut terminal = ratatui::init();
 
     // Event channel for input events from InputReader
-    // Event channel for input events from InputReader
     let (app_event_tx, mut app_event_rx) = mpsc::channel(10);
-    let app_event_tx_clone = app_event_tx.clone();
+    let app_event_tx_clone: mpsc::Sender<AppEvent> = app_event_tx.clone();
 
     let shutdown_signal = Arc::new(Notify::new());
-    let input_reader = Reader::new(Arc::clone(&shutdown_signal));
+
     // Spawn a task to read input events and send them through the channel
-    let reader_handle = tokio::spawn(async move {
-        input_reader.read_input_events(app_event_tx_clone).await;
-    });
+    let input_reader = Reader::new(Arc::clone(&shutdown_signal), app_event_tx_clone);
+    let reader_handle = input_reader.spawn_read_input_events();
 
     // Initialize Use Cases
     let register_uc = RegisterUseCase::builder()

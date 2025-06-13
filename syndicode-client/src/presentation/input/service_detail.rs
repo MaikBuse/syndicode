@@ -16,12 +16,15 @@ use crate::{
         },
     },
 };
-use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers};
+use crossterm::event::{Event, KeyCode, KeyModifiers};
+
 use syndicode_proto::{
     syndicode_economy_v1::BusinessListingSortBy,
     syndicode_interface_v1::{SortDirection, UserRole},
 };
 use uuid::Uuid;
+
+use super::utils::from_crossterm_into_ratatui;
 
 pub(super) async fn handle_service_detail<AUTH, ADMIN, GAME>(
     app: &mut App<'_, AUTH, ADMIN, GAME>,
@@ -526,101 +529,155 @@ where
             _ => match selected_service {
                 SelectedService::Register(data) => match data.selected {
                     SelectedBlockRegister::UserName => {
-                        data.user_name.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_name.textarea.input(event);
+                        }
                     }
                     SelectedBlockRegister::UserPassword => {
-                        data.user_password.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_password.textarea.input(event);
+                        }
                     }
                     SelectedBlockRegister::Email => {
-                        data.email.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.email.textarea.input(event);
+                        }
                     }
                     SelectedBlockRegister::CorporationName => {
-                        data.corporation_name.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.corporation_name.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::VerifyRegistration(data) => match data.selected {
                     SelectedBlockVerify::UserName => {
-                        data.user_name.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_name.textarea.input(event);
+                        }
                     }
                     SelectedBlockVerify::Code => {
-                        data.code.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.code.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::ResendVerification(data) => match data.selected {
                     SelectedBlockResend::UserName => {
-                        data.user_name.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_name.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::Login(data) => match data.selected {
                     SelectedBlockLogin::UserName => {
-                        data.user_name.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_name.textarea.input(event);
+                        }
                     }
                     SelectedBlockLogin::UserPassword => {
-                        data.user_password.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_password.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::CreateUser(data) => match data.selected {
                     SelectedBlockCreateUser::UserName => {
-                        data.user_name.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_name.textarea.input(event);
+                        }
                     }
                     SelectedBlockCreateUser::UserPassword => {
-                        data.user_password.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_password.textarea.input(event);
+                        }
                     }
                     SelectedBlockCreateUser::UserEmail => {
-                        data.user_email.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_email.textarea.input(event);
+                        }
                     }
                     SelectedBlockCreateUser::UserRole => {
-                        data.user_role.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_role.textarea.input(event);
+                        }
                     }
                     SelectedBlockCreateUser::CorporationName => {
-                        data.corporation_name.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.corporation_name.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::GetUser(data) => match data.selected {
                     SelectedBlockGetUser::UserUuid => {
-                        data.user_uuid.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_uuid.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::DeleteUser(data) => match data.selected {
                     SelectedBlockDeleteUser::UserUuid => {
-                        data.user_uuid.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.user_uuid.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::QueryBusinessListings(data) => match data.selected {
                     SelectedBlockQueryBusinessListings::MinAskingPrice => {
-                        data.min_asking_price.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.min_asking_price.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::MaxAskingPrice => {
-                        data.max_asking_price.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.max_asking_price.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::SellerCorporationUuid => {
-                        data.seller_corporation_uuid.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.seller_corporation_uuid.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::MarketUuid => {
-                        data.market_uuid.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.market_uuid.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::MinOperationalExpenses => {
-                        data.min_operational_expenses.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.min_operational_expenses.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::MaxOperationalExpenses => {
-                        data.max_operational_expenses.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.max_operational_expenses.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::SortBy => {
-                        data.sort_by.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.sort_by.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::SortDirection => {
-                        data.sort_direction.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.sort_direction.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::Limit => {
-                        data.limit.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.limit.textarea.input(event);
+                        }
                     }
                     SelectedBlockQueryBusinessListings::Offset => {
-                        data.offset.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.offset.textarea.input(event);
+                        }
                     }
                 },
                 SelectedService::AcquireBusinessListing(data) => match data.selected {
                     SelectedBlockAcquireBusinessListing::BusinessListingUuid => {
-                        data.business_listing_uuid.textarea.input(event);
+                        if let Ok(event) = from_crossterm_into_ratatui(event) {
+                            data.business_listing_uuid.textarea.input(event);
+                        }
                     }
                 },
             },

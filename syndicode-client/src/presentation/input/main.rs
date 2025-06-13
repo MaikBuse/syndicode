@@ -14,7 +14,7 @@ use crate::{
         },
     },
 };
-use ratatui::crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode};
 use tui_textarea::TextArea;
 
 pub(super) async fn handle_main<AUTH, ADMIN, GAME>(

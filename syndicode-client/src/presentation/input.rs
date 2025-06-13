@@ -2,14 +2,15 @@ mod exit;
 mod main;
 mod response_detail;
 mod service_detail;
+mod utils;
 
 use super::{app::CurrentScreen, App};
 use crate::domain::{
     admin::AdminRepository, auth::repository::AuthenticationRepository, game::GameRepository,
 };
+use crossterm::event::Event;
 use exit::handle_exit;
 use main::handle_main;
-use ratatui::crossterm::event::Event;
 use response_detail::handle_response_detail;
 use service_detail::handle_service_detail;
 

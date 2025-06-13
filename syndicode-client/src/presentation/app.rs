@@ -45,7 +45,7 @@ use tokio::sync::{mpsc, Notify};
 use tui_textarea::TextArea;
 
 pub enum AppEvent {
-    Crossterm(ratatui::crossterm::event::Event),
+    Crossterm(crossterm::event::Event),
     StreamUpdate(DomainResponse),
 }
 
