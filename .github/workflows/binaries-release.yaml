@@ -49,6 +49,8 @@ jobs:
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Some builds, especially cross-compiling on Linux, need specific linkers.
       - name: Install build dependencies (Linux)
