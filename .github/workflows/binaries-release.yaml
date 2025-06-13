@@ -4,34 +4,29 @@ on:
   release:
     types: [published]
 
-# Set permissions for the GITHUB_TOKEN to allow uploading assets to the release.
 permissions:
   contents: write
 
 jobs:
   build-release:
     name: Build and Upload Release Binaries
-    # Use a matrix strategy to build for multiple platforms in parallel.
     strategy:
+      # Ensure all jobs run to completion, even if one fails.
+      fail-fast: false
       matrix:
         include:
-          # Linux x86_64 (most common desktops/servers)
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             binary_name: syndicode-client
-          # Linux aarch64 (Raspberry Pi, some servers)
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             binary_name: syndicode-client
-          # Windows x86_64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             binary_name: syndicode-client.exe
-          # macOS x86_64 (Intel Macs)
           - os: macos-latest
             target: x86_64-apple-darwin
             binary_name: syndicode-client
-          # macOS aarch64 (Apple Silicon M1/M2/M3)
           - os: macos-latest
             target: aarch64-apple-darwin
             binary_name: syndicode-client
@@ -52,26 +47,31 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Some builds, especially cross-compiling on Linux, need specific linkers.
+      # Cache dependencies to speed up builds.
+      # IMPORTANT: We do NOT cache the `target` directory itself to avoid inconsistent builds.
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install build dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          # Linker for aarch64 builds
           sudo apt-get install -y gcc-aarch64-linux-gnu
-          # Common dependencies for Rust projects
           sudo apt-get install -y libssl-dev pkg-config
 
       - name: Build binary
-        # The --package flag ensures we only build the client.
-        # The --target flag tells cargo which platform to build for.
         run: cargo build --release --package syndicode-client --target ${{ matrix.target }}
-        # For aarch64 builds on Linux, we need to specify the linker.
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
       - name: Prepare binary for packaging
-        # Move the compiled binary to a staging directory for easy packaging.
         run: |
           mkdir staging
           cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} staging
@@ -87,16 +87,18 @@ jobs:
         run: |
           tar czvf "syndicode-client-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" -C staging .
 
+      # --- DEBUGGING STEP ---
+      # List files in the current directory to verify the archive was created.
+      - name: Verify packaged files
+        run: ls -R
+        shell: bash
+
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         with:
-          # This is a special URL provided by the 'release' event.
           upload_url: ${{ github.event.release.upload_url }}
-          # Use a glob pattern to find the correct archive file.
           asset_path: ./syndicode-client-${{ github.ref_name }}-${{ matrix.target }}.*
-          # The name that the asset will have on the release page.
           asset_name: syndicode-client-${{ github.ref_name }}-${{ matrix.target }}.${{ runner.os == 'Windows' && 'zip' || 'tar.gz' }}
           asset_content_type: ${{ runner.os == 'Windows' && 'application/zip' || 'application/gzip' }}
         env:
-          # The GITHUB_TOKEN is automatically provided by GitHub Actions.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
