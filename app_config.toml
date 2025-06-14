@@ -1,2 +1,0 @@
-[grpc]
-auth_service_address = "http://[::1]:50051"

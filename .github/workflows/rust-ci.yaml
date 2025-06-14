@@ -163,6 +163,10 @@ jobs:
 
       - name: Run Client Integration Tests
         run: cargo test -p syndicode-client -- --test-threads=1
+        env:
+          SYNDICODE_SERVER_ADDRESS: http://[::1]:50051
+          SYNDICODE_USER_NAME: admin
+          SYNDICODE_USER_PASSWORD: my-secret-password
 
       - name: Stop server
         if: always()

@@ -29,13 +29,14 @@ pub struct ClientConfig {
 }
 
 pub fn load_config() -> Result<ClientConfig> {
+    use std::env;
+
     let path = Path::new(CONFIG_FILE_PATH);
-    if path.exists() {
+    let mut config = if path.exists() {
         let content = fs::read_to_string(path)
             .with_context(|| format!("Failed to read config file at {}", CONFIG_FILE_PATH))?;
-        let config: ClientConfig = toml::from_str(&content)
-            .with_context(|| format!("Failed to parse TOML from {}", CONFIG_FILE_PATH))?;
-        Ok(config)
+        toml::from_str::<ClientConfig>(&content)
+            .with_context(|| format!("Failed to parse TOML from {}", CONFIG_FILE_PATH))?
     } else {
         println!(
             "Config file not found at {}, creating with default values.",
@@ -43,8 +44,21 @@ pub fn load_config() -> Result<ClientConfig> {
         );
         let default_config = ClientConfig::default();
         save_config(&default_config)?;
-        Ok(default_config)
+        default_config
+    };
+
+    // Override with env vars if present
+    if let Ok(addr) = env::var("SYNDICODE_SERVER_ADDRESS") {
+        config.grpc.server_address = addr;
     }
+    if let Ok(user) = env::var("SYNDICODE_USER_NAME") {
+        config.grpc.user_name = user;
+    }
+    if let Ok(pass) = env::var("SYNDICODE_USER_PASSWORD") {
+        config.grpc.user_password = pass;
+    }
+
+    Ok(config)
 }
 
 pub fn save_config(config: &ClientConfig) -> Result<()> {
