@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/MaikBuse/syndicode/compare/v0.9.9...v0.10.0) (2025-06-14)
+
+
+### Features
+
+* **client:** overwrite config with env vars if present ([7840995](https://github.com/MaikBuse/syndicode/commit/78409958d3d993e2b7dcbd299b0ebdf74226ac04))
+* **client:** set default config to the official server ([ef32b11](https://github.com/MaikBuse/syndicode/commit/ef32b113aee244063bbdb4b5e4d688bb1fc35ee8))
+
 ## [0.9.9](https://github.com/MaikBuse/syndicode/compare/v0.9.8...v0.9.9) (2025-06-13)
 
 
