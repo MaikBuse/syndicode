@@ -22,7 +22,9 @@ impl AuthenticationRepository for GrpcHandler {
             corporation_name: req.corporation_name,
         });
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
 
         let result = self.auth_client.register(request).await;
         self.response_from_result(result)
@@ -34,7 +36,9 @@ impl AuthenticationRepository for GrpcHandler {
             code: req.code,
         });
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
 
         let result = self.auth_client.verify_user(request).await;
         self.response_from_result(result)
@@ -48,7 +52,9 @@ impl AuthenticationRepository for GrpcHandler {
             user_name: req.user_name,
         });
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
 
         let result = self.auth_client.resend_verification_email(request).await;
         self.response_from_result(result)
@@ -60,7 +66,9 @@ impl AuthenticationRepository for GrpcHandler {
             user_password: req.user_password,
         });
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
 
         Ok(self
             .auth_client
@@ -73,7 +81,9 @@ impl AuthenticationRepository for GrpcHandler {
     async fn get_current_user(&mut self, token: String) -> anyhow::Result<GetUserResponse> {
         let mut request = Request::new(GetCurrentUserRequest {});
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
         self.add_token_metadata(request.metadata_mut(), token)?;
 
         Ok(self

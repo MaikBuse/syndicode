@@ -6,6 +6,11 @@ use std::path::Path;
 
 pub const CONFIG_FILE_PATH: &str = "client_config.toml";
 
+#[derive(Builder, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct GeneralSettings {
+    pub is_local_test: bool,
+}
+
 #[derive(Builder, Serialize, Deserialize, Debug, Clone)]
 pub struct GrpcSettings {
     pub server_address: String,
@@ -16,7 +21,7 @@ pub struct GrpcSettings {
 impl Default for GrpcSettings {
     fn default() -> Self {
         GrpcSettings {
-            server_address: "api.syndicode.dev:443".to_string(),
+            server_address: "https://api.syndicode.dev:443".to_string(),
             user_name: "".to_string(),
             user_password: "".to_string(),
         }
@@ -25,6 +30,7 @@ impl Default for GrpcSettings {
 
 #[derive(Builder, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ClientConfig {
+    pub general: GeneralSettings,
     pub grpc: GrpcSettings,
 }
 
@@ -48,6 +54,11 @@ pub fn load_config() -> Result<ClientConfig> {
     };
 
     // Override with env vars if present
+    if let Ok(is_local_test_string) = env::var("SYNDICODE_IS_LOCAL_TEST") {
+        if let Ok(is_local_test) = is_local_test_string.parse::<bool>() {
+            config.general.is_local_test = is_local_test;
+        }
+    }
     if let Ok(addr) = env::var("SYNDICODE_SERVER_ADDRESS") {
         config.grpc.server_address = addr;
     }

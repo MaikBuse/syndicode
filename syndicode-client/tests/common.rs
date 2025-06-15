@@ -33,7 +33,7 @@ pub async fn setup_test_suite() -> anyhow::Result<TestSuite> {
 
     let config = load_config()?;
 
-    let grpc_handler = GrpcHandler::new(config.grpc.server_address.clone()).await?;
+    let grpc_handler = GrpcHandler::new(config.grpc.server_address.clone(), true).await?;
 
     Ok(TestSuite {
         config,

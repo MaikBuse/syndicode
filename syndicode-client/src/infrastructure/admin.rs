@@ -24,7 +24,9 @@ impl AdminRepository for GrpcHandler {
             corporation_name: req.corporation_name,
         });
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
         self.add_token_metadata(request.metadata_mut(), token)?;
 
         Ok(self
@@ -42,7 +44,9 @@ impl AdminRepository for GrpcHandler {
     ) -> anyhow::Result<GetUserResponse> {
         let mut request = Request::new(GetUserRequest { user_uuid });
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
         self.add_token_metadata(request.metadata_mut(), token)?;
 
         Ok(self.admin_client.get_user(request).await?.into_inner())
@@ -58,7 +62,9 @@ impl AdminRepository for GrpcHandler {
             user_uuid: req.user_uuid,
         });
 
-        self.add_ip_metadata(request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(request.metadata_mut())?;
+        }
         self.add_token_metadata(request.metadata_mut(), token)?;
 
         Ok(self

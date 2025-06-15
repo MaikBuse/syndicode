@@ -22,7 +22,9 @@ impl GameRepository for GrpcHandler {
         // Create a tonic::Request from the stream
         let mut grpc_request = Request::new(request_stream);
 
-        self.add_ip_metadata(grpc_request.metadata_mut())?;
+        if self.is_local_test {
+            self.add_ip_metadata(grpc_request.metadata_mut())?;
+        }
         self.add_token_metadata(grpc_request.metadata_mut(), token)?;
 
         // Call the `play_stream` method with the modified gRPC request

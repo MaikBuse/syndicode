@@ -15,6 +15,7 @@ use tonic::{
 use crate::domain::response::{DomainResponse, ResponseType};
 
 pub struct GrpcHandler {
+    pub is_local_test: bool,
     pub auth_client: AuthServiceClient<Channel>,
     pub admin_client: AdminServiceClient<Channel>,
     pub game_client: GameServiceClient<Channel>,
@@ -22,34 +23,33 @@ pub struct GrpcHandler {
 }
 
 impl GrpcHandler {
-    pub async fn new(address: String) -> anyhow::Result<Self> {
-        // It's good practice to ensure the address string is a valid URI.
-        // Endpoint::from_shared or Endpoint::from_str will parse it.
-        // Tonic expects URIs like "http://localhost:50051" or "https://example.com:443"
-        let endpoint_uri_str =
-            if !address.starts_with("http://") && !address.starts_with("https://") {
-                // Default to http if no scheme is provided. Adjust if you need https by default.
-                format!("http://{}", address)
-            } else {
-                address
-            };
+    /// The address string should be a full URI like "http://localhost:50051"
+    /// or "https://my-prod-server.com:443"
+    pub async fn new(address: String, is_local_test: bool) -> anyhow::Result<Self> {
+        rustls::crypto::ring::default_provider()
+            .install_default()
+            .expect("Failed to install rustls crypto provider");
 
-        // Create an Endpoint from the address string.
-        // This allows for more configuration options if needed later.
-        let endpoint = Endpoint::from_str(endpoint_uri_str.as_str())?;
+        let endpoint = Endpoint::from_str(&address)?;
 
-        let Ok(channel) = endpoint.connect().await else {
-            return Err(anyhow::anyhow!(
-                "Failed to establish connection to server: {}",
-                endpoint_uri_str
-            ));
-        };
+        let channel = endpoint
+            .tls_config(tonic::transport::ClientTlsConfig::new().with_native_roots())?
+            .connect()
+            .await
+            .map_err(|err| {
+                anyhow::anyhow!(
+                    "Failed to establish gRPC connection to {}: {:?}",
+                    address,
+                    err
+                )
+            })?;
 
         let auth_client = AuthServiceClient::new(channel.clone());
         let admin_client = AdminServiceClient::new(channel.clone());
         let game_client = GameServiceClient::new(channel);
 
         Ok(GrpcHandler {
+            is_local_test,
             auth_client,
             admin_client,
             game_client,

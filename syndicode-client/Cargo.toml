@@ -8,7 +8,8 @@ bon = { workspace = true }
 syndicode-proto = { path = "../syndicode-proto" }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
-tonic = { workspace = true }
+tonic = { version = "0.13.1", default-features = false, features = ["transport", "codegen", "tls-native-roots"] }
+rustls = { version = "0.23", features = ["ring"] }
 futures = { workspace = true }
 uuid = { workspace = true }
 anyhow = { workspace = true }
