@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.10.0](https://github.com/MaikBuse/syndicode/compare/v0.9.9...v0.10.0) (2025-06-15)
+
+
+### Features
+
+* **client:** overwrite config with env vars if present ([7840995](https://github.com/MaikBuse/syndicode/commit/78409958d3d993e2b7dcbd299b0ebdf74226ac04))
+* **client:** set default config to the official server ([ef32b11](https://github.com/MaikBuse/syndicode/commit/ef32b113aee244063bbdb4b5e4d688bb1fc35ee8))
+
+
+### Bug Fixes
+
+* **client:** check for press events ([4ff6067](https://github.com/MaikBuse/syndicode/commit/4ff606705fce3603f92f4746bfb4e234142adbc5))
+* **client:** fix mayor tls handshake issue ([65443ec](https://github.com/MaikBuse/syndicode/commit/65443ece395bf49bbe61b9214c075d4982ce3a06))
+
 ## [0.9.9](https://github.com/MaikBuse/syndicode/compare/v0.9.8...v0.9.9) (2025-06-13)
 
 
