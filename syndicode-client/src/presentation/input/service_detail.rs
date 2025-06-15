@@ -40,6 +40,9 @@ where
     };
 
     if let Event::Key(key_event) = event {
+        if !key_event.is_press() {
+            return Ok(());
+        }
         match key_event.code {
             KeyCode::Enter => {
                 match selected_service {

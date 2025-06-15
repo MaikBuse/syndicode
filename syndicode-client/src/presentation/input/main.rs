@@ -26,6 +26,9 @@ pub(super) async fn handle_main<AUTH, ADMIN, GAME>(
     GAME: GameRepository,
 {
     if let Event::Key(key_event) = event {
+        if !key_event.is_press() {
+            return;
+        }
         match key_event.code {
             KeyCode::Char('e') => {
                 app.hide_game_tick_notification = !app.hide_game_tick_notification;

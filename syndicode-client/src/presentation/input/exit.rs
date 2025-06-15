@@ -13,6 +13,9 @@ where
     GAME: GameRepository,
 {
     if let Event::Key(key_event) = event {
+        if !key_event.is_press() {
+            return;
+        }
         match key_event.code {
             KeyCode::Char('y') => {
                 app.should_exit = true;
