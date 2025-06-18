@@ -1345,7 +1345,7 @@ pub struct GameUpdate {
     /// The tick for which the update is relevant.
     #[prost(int64, tag = "1")]
     pub game_tick: i64,
-    #[prost(oneof = "game_update::Update", tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
+    #[prost(oneof = "game_update::Update", tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12")]
     pub update: ::core::option::Option<game_update::Update>,
 }
 /// Nested message and enum types in `GameUpdate`.
@@ -1355,35 +1355,39 @@ pub mod game_update {
         /// Acknowledges receipt and queuing of a player command.
         #[prost(message, tag = "2")]
         ActionInitResponse(super::ActionInitResponse),
+        /// Response indicating that an action has failed.
         #[prost(message, tag = "3")]
         ActionFailedResponse(super::ActionFailedResponse),
-        /// Periodical notification of game tick progression.
+        /// Notifies the client that their rate limit has been exceeded.
         #[prost(message, tag = "4")]
+        RateLimitExceeded(super::RateLimitExceededNotification),
+        /// Periodical notification of game tick progression.
+        #[prost(message, tag = "5")]
         TickNotification(super::TickNotification),
         /// Response containing corporation data.
-        #[prost(message, tag = "5")]
+        #[prost(message, tag = "6")]
         GetCorporation(super::super::syndicode_economy_v1::GetCorporationResponse),
         /// Response listing all units.
-        #[prost(message, tag = "6")]
+        #[prost(message, tag = "7")]
         ListUnits(super::super::syndicode_warfare_v1::ListUnitsResponse),
         /// Response with the data of the newly spawned unit.
-        #[prost(message, tag = "7")]
+        #[prost(message, tag = "8")]
         SpawnUnit(super::super::syndicode_warfare_v1::SpawnUnitResponse),
         /// Response with the data of the newly acquired business.
-        #[prost(message, tag = "8")]
+        #[prost(message, tag = "9")]
         AcquireListedBusiness(
             super::super::syndicode_economy_v1::AcquireListedBusinessResponse,
         ),
         /// Response containing queried business listings.
-        #[prost(message, tag = "9")]
+        #[prost(message, tag = "10")]
         QueryBusinessListings(
             super::super::syndicode_economy_v1::QueryBusinessListingsResponse,
         ),
         /// Response containing the newly created corporation.
-        #[prost(message, tag = "10")]
+        #[prost(message, tag = "11")]
         CreateCorporation(super::super::syndicode_economy_v1::CreateCorporationResponse),
         /// Response notifying about the deletion of a corporation..
-        #[prost(message, tag = "11")]
+        #[prost(message, tag = "12")]
         DeleteCorporation(super::super::syndicode_economy_v1::DeleteCorporationResponse),
     }
 }
@@ -1396,6 +1400,13 @@ pub struct ActionFailedResponse {
     /// The reason why the action failed to process.
     #[prost(string, tag = "2")]
     pub reason: ::prost::alloc::string::String,
+}
+/// Notifies the user that their rate limit has been exceeded.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RateLimitExceededNotification {
+    /// Human-readable message.
+    #[prost(string, tag = "2")]
+    pub message: ::prost::alloc::string::String,
 }
 /// Notifies the client that the authoritative game tick has advanced.
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]

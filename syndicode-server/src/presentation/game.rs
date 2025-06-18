@@ -16,7 +16,7 @@ use crate::{
         game::get_game_tick::GetGameTickUseCase,
         ports::{
             game_tick::GameTickRepository,
-            limiter::{LimiterCategory, RateLimitEnforcer},
+            limiter::{LimitationError, LimiterCategory, RateLimitEnforcer},
             outcome::OutcomeStoreReader,
             queuer::ActionQueueable,
         },
@@ -34,7 +34,6 @@ use crate::{
         unit::repository::UnitRepository,
     },
     infrastructure::valkey::outcome::create_notification_channel,
-    presentation::common::limitation_error_into_status,
 };
 use bon::{builder, Builder};
 use economy::{acquire_listed_business, get_corporation, query_business_listings};
@@ -46,7 +45,7 @@ use syndicode_proto::{
     },
     syndicode_interface_v1::{
         game_service_server::GameService, game_update::Update, player_action::Action,
-        ActionFailedResponse, GameUpdate, PlayerAction,
+        ActionFailedResponse, GameUpdate, PlayerAction, RateLimitExceededNotification,
     },
     syndicode_warfare_v1::{SpawnUnitResponse, Unit},
 };
@@ -157,9 +156,10 @@ where
                         if let Err(err) =
                             limit.check(LimiterCategory::GameStream, &ip_address).await
                         {
-                            let status = limitation_error_into_status(err);
+                            let result =
+                                limitation_error_into_result(err, get_game_tick_uc.clone()).await;
                             if (*user_channel_tx_arc_for_action_task)
-                                .send(Err(status))
+                                .send(result)
                                 .await
                                 .is_err()
                             {
@@ -505,5 +505,30 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
     GameUpdate {
         game_tick,
         update: Some(update),
+    }
+}
+
+pub(super) async fn limitation_error_into_result<GTR>(
+    err: LimitationError,
+    get_game_tick_uc: Arc<GetGameTickUseCase<GTR>>,
+) -> Result<GameUpdate, Status>
+where
+    GTR: GameTickRepository + 'static,
+{
+    match err {
+        LimitationError::RateExhausted => {
+            let game_tick = get_game_tick_uc.execute().await.unwrap_or_default();
+
+            Ok(GameUpdate {
+                game_tick,
+                update: Some(Update::RateLimitExceeded(RateLimitExceededNotification {
+                    message: "Rate limit exceeded".to_string(),
+                })),
+            })
+        }
+        LimitationError::Internal(msg) => {
+            tracing::error!("Rate limiter internal error: {}", msg);
+            Err(Status::internal("Rate limiter error"))
+        }
     }
 }

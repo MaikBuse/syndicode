@@ -43,31 +43,35 @@ message GameUpdate {
     // Acknowledges receipt and queuing of a player command.
     ActionInitResponse action_init_response = 2;
 
+    // Response indicating that an action has failed.
     ActionFailedResponse action_failed_response = 3;
 
+    // Notifies the client that their rate limit has been exceeded.
+    RateLimitExceededNotification rate_limit_exceeded = 4;
+
     // Periodical notification of game tick progression.
-    TickNotification tick_notification = 4;
+    TickNotification tick_notification = 5;
 
     // Response containing corporation data.
-    syndicode_economy_v1.GetCorporationResponse get_corporation = 5;
+    syndicode_economy_v1.GetCorporationResponse get_corporation = 6;
 
     // Response listing all units.
-    syndicode_warfare_v1.ListUnitsResponse list_units = 6;
+    syndicode_warfare_v1.ListUnitsResponse list_units = 7;
 
     // Response with the data of the newly spawned unit.
-    syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 7;
+    syndicode_warfare_v1.SpawnUnitResponse spawn_unit = 8;
 
     // Response with the data of the newly acquired business.
-    syndicode_economy_v1.AcquireListedBusinessResponse acquire_listed_business = 8;
+    syndicode_economy_v1.AcquireListedBusinessResponse acquire_listed_business = 9;
 
     // Response containing queried business listings.
-    syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 9; 
+    syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 10; 
 
     // Response containing the newly created corporation.
-    syndicode_economy_v1.CreateCorporationResponse create_corporation = 10;
+    syndicode_economy_v1.CreateCorporationResponse create_corporation = 11;
 
     // Response notifying about the deletion of a corporation..
-    syndicode_economy_v1.DeleteCorporationResponse delete_corporation = 11;
+    syndicode_economy_v1.DeleteCorporationResponse delete_corporation = 12;
   }
 }
 
@@ -78,6 +82,12 @@ message ActionFailedResponse {
 
   // The reason why the action failed to process.
   string reason = 2;
+}
+
+// Notifies the user that their rate limit has been exceeded.
+message RateLimitExceededNotification {
+  // Human-readable message.
+  string message = 2;
 }
 
 // Notifies the client that the authoritative game tick has advanced.
