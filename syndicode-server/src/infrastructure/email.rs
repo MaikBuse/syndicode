@@ -13,7 +13,7 @@ use std::time::Duration;
 use time::OffsetDateTime;
 
 const LOGO_URL: &str =
-    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/images/logo.png";
+    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/images/logo.svg";
 const BANNER_URL: &str =
     "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/images/hero.png";
 const FOOTER_IMAGE_URL: &str =
@@ -107,7 +107,7 @@ impl EmailHandler {
 <body>
     <div class="container">
         <div class="header">
-            <img src="{logo_url}" alt="Syndicode Logo" class="logo">
+            <img src="{logo_url}" alt="Syndicode Logo" class="logo" width="160" height="160">
             <h2 style="color: #ff004f; margin: 0; font-weight: normal;">// Authentication Sequence Initiated //</h2>
         </div>
         <div class="banner">
