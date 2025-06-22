@@ -404,10 +404,10 @@ See [open issues](https://github.com/MaikBuse/syndicode/issues) for current idea
 
 ## 📚 License
 
-This work is licensed under a
-[Creative Commons Attribution 4.0 International License][cc-by].
+This work is licensed under a  
+[Creative Commons Attribution-NonCommercial 4.0 International License](https://creativecommons.org/licenses/by-nc/4.0/).
 
-[![CC BY 4.0][cc-by-image]][cc-by]
+[![CC BY-NC 4.0](https://licensebuttons.net/l/by-nc/4.0/88x31.png)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -435,7 +435,7 @@ Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBus
 [issues-shield]: https://img.shields.io/github/issues/MaikBuse/syndicode.svg?style=for-the-badge
 [issues-url]: https://github.com/MaikBuse/syndicode/issues
 [license-shield]: https://img.shields.io/github/license/MaikBuse/syndicode.svg?style=for-the-badge
-[license-url]: https://github.com/MaikBuse/syndicode/blob/master/LICENSE.txt
+[license-url]: https://github.com/MaikBuse/syndicode/blob/master/LICENSE.md
 [product-screenshot]: images/hero.png
 [rust]: https://img.shields.io/badge/Rust-4A4A55?style=for-the-badge&logo=rust&logoColor=FF3E00
 [rust-url]: https://rust-lang.org/
