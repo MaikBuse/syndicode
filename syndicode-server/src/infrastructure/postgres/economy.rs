@@ -1,3 +1,4 @@
+pub mod building;
 pub mod business;
 pub mod business_listing;
 pub mod business_offer;

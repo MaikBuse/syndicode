@@ -1,4 +1,4 @@
-use super::uow::PgTransactionContext;
+use super::{uow::PgTransactionContext, PostgresDatabase};
 use crate::domain::{
     repository::{RepositoryError, RepositoryResult},
     user::{
@@ -6,7 +6,7 @@ use crate::domain::{
         repository::{UserRepository, UserTxRepository},
     },
 };
-use sqlx::{PgPool, Postgres};
+use sqlx::Postgres;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -172,34 +172,36 @@ impl PgUserRepository {
 }
 
 pub struct PgUserService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     user_repo: PgUserRepository,
 }
 
 impl PgUserService {
-    pub fn new(pool: Arc<PgPool>, user_repo: PgUserRepository) -> Self {
-        Self { pool, user_repo }
+    pub fn new(pg_db: Arc<PostgresDatabase>, user_repo: PgUserRepository) -> Self {
+        Self { pg_db, user_repo }
     }
 }
 
 #[tonic::async_trait]
 impl UserRepository for PgUserService {
     async fn create_user(&self, user: &User) -> RepositoryResult<()> {
-        self.user_repo.create_user(&*self.pool, user).await
+        self.user_repo.create_user(&self.pg_db.pool, user).await
     }
 
     async fn get_user(&self, user_uuid: Uuid) -> RepositoryResult<User> {
-        self.user_repo.get_user(&*self.pool, user_uuid).await
+        self.user_repo.get_user(&self.pg_db.pool, user_uuid).await
     }
 
     async fn get_user_by_name(&self, user_name: String) -> RepositoryResult<User> {
         self.user_repo
-            .get_user_by_name(&*self.pool, user_name)
+            .get_user_by_name(&self.pg_db.pool, user_name)
             .await
     }
 
     async fn delete_user(&self, user_uuid: Uuid) -> RepositoryResult<()> {
-        self.user_repo.delete_user(&*self.pool, user_uuid).await
+        self.user_repo
+            .delete_user(&self.pg_db.pool, user_uuid)
+            .await
     }
 }
 

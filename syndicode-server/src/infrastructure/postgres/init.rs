@@ -2,10 +2,10 @@ use crate::{
     application::ports::init::{InitializationRepository, InitializationTxRepository},
     domain::repository::RepositoryResult,
 };
-use sqlx::{PgPool, Postgres};
+use sqlx::Postgres;
 use std::sync::Arc;
 
-use super::uow::PgTransactionContext;
+use super::{uow::PgTransactionContext, PostgresDatabase};
 
 const INIT_FLAG_KEY: &str = "database_initialized";
 
@@ -59,14 +59,14 @@ impl PgInitializationRepository {
 }
 
 pub struct PgInitializationService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     init_repo: PgInitializationRepository,
 }
 
 impl PgInitializationService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             init_repo: PgInitializationRepository,
         }
     }
@@ -75,11 +75,13 @@ impl PgInitializationService {
 #[tonic::async_trait]
 impl InitializationRepository for PgInitializationService {
     async fn is_database_initialized(&self) -> RepositoryResult<bool> {
-        self.init_repo.is_database_initialized(&*self.pool).await
+        self.init_repo
+            .is_database_initialized(&self.pg_db.pool)
+            .await
     }
 
     async fn set_advisory_lock(&self) -> RepositoryResult<()> {
-        self.init_repo.set_advisory_lock(&*self.pool).await
+        self.init_repo.set_advisory_lock(&self.pg_db.pool).await
     }
 }
 

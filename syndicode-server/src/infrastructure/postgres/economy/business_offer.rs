@@ -6,9 +6,9 @@ use crate::{
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::uow::PgTransactionContext,
+    infrastructure::postgres::{uow::PgTransactionContext, PostgresDatabase},
 };
-use sqlx::{PgPool, Postgres};
+use sqlx::Postgres;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -118,14 +118,14 @@ impl PgBusinessOfferRepository {
 }
 
 pub struct PgBusinessOfferService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     business_offer_repo: PgBusinessOfferRepository,
 }
 
 impl PgBusinessOfferService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             business_offer_repo: PgBusinessOfferRepository,
         }
     }
@@ -138,7 +138,7 @@ impl BusinessOfferRepository for PgBusinessOfferService {
         game_tick: i64,
     ) -> RepositoryResult<Vec<BusinessOffer>> {
         self.business_offer_repo
-            .list_business_offers_in_tick(&*self.pool, game_tick)
+            .list_business_offers_in_tick(&self.pg_db.pool, game_tick)
             .await
     }
 }

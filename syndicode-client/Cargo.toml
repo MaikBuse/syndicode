@@ -16,9 +16,9 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 time = { workspace = true }
+toml = { workspace = true }
 ratatui = "0.29.0"
 tui-textarea = "0.7.0"
-toml = "0.8.22"
 tracing-error = "0.2.1"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

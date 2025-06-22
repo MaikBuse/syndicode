@@ -1,21 +1,22 @@
 use crate::{application::ports::migration::MigrationRunner, domain::repository::RepositoryResult};
-use sqlx::PgPool;
 use std::sync::Arc;
 
+use super::PostgresDatabase;
+
 pub struct PostgresMigrator {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
 }
 
 impl PostgresMigrator {
-    pub fn new(pool: Arc<PgPool>) -> Self {
-        Self { pool }
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
+        Self { pg_db }
     }
 }
 
 #[tonic::async_trait]
 impl MigrationRunner for PostgresMigrator {
     async fn run_migration(&self) -> RepositoryResult<()> {
-        sqlx::migrate!().run(&*self.pool).await?;
+        sqlx::migrate!().run(&self.pg_db.pool).await?;
 
         Ok(())
     }

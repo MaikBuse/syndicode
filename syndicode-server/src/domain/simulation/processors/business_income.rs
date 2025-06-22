@@ -154,6 +154,7 @@ mod tests {
             owning_corporation_uuid: Some(corporation_uuid),
             name: "business-one".to_string(),
             operational_expenses: business_one_op_exp,
+            center: geo::Point::new(0., 0.),
         };
 
         let business_two_uuid = Uuid::now_v7();
@@ -164,6 +165,7 @@ mod tests {
             owning_corporation_uuid: None,
             name: "business-two".to_string(),
             operational_expenses: business_two_op_exp,
+            center: geo::Point::new(0., 0.),
         };
         let mut businesses_map = HashMap::new();
         businesses_map.insert(business_one.uuid, business_one);

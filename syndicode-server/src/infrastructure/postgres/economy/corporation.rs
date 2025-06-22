@@ -6,9 +6,11 @@ use crate::{
         },
         repository::{RepositoryError, RepositoryResult},
     },
-    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
+    infrastructure::postgres::{
+        game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase,
+    },
 };
-use sqlx::{PgPool, Postgres};
+use sqlx::Postgres;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -222,15 +224,15 @@ impl PgCorporationRepository {
 }
 
 pub struct PgCorporationService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     game_tick_repo: PgGameTickRepository,
     corporation_repo: PgCorporationRepository,
 }
 
 impl PgCorporationService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             game_tick_repo: PgGameTickRepository,
             corporation_repo: PgCorporationRepository,
         }
@@ -245,12 +247,12 @@ impl CorporationRepository for PgCorporationService {
     ) -> RepositoryResult<GetCorporationOutcome> {
         let game_tick = self
             .game_tick_repo
-            .get_current_game_tick(&*self.pool)
+            .get_current_game_tick(&self.pg_db.pool)
             .await?;
 
         let corporation = self
             .corporation_repo
-            .get_corporation_by_user_at_tick(&*self.pool, user_uuid, game_tick)
+            .get_corporation_by_user_at_tick(&self.pg_db.pool, user_uuid, game_tick)
             .await?;
 
         Ok(GetCorporationOutcome {
@@ -264,11 +266,11 @@ impl CorporationRepository for PgCorporationService {
     ) -> RepositoryResult<Corporation> {
         let game_tick = self
             .game_tick_repo
-            .get_current_game_tick(&*self.pool)
+            .get_current_game_tick(&self.pg_db.pool)
             .await?;
 
         self.corporation_repo
-            .get_corporation_by_name_at_tick(&*self.pool, corporation_name, game_tick)
+            .get_corporation_by_name_at_tick(&self.pg_db.pool, corporation_name, game_tick)
             .await
     }
 
@@ -277,7 +279,7 @@ impl CorporationRepository for PgCorporationService {
         game_tick: i64,
     ) -> RepositoryResult<Vec<Corporation>> {
         self.corporation_repo
-            .list_corporations_in_tick(&*self.pool, game_tick)
+            .list_corporations_in_tick(&self.pg_db.pool, game_tick)
             .await
     }
 }

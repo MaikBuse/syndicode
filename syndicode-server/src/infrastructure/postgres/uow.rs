@@ -1,3 +1,4 @@
+use super::economy::building::PgBuildingRepository;
 use super::economy::business::PgBusinessRepository;
 use super::economy::business_listing::PgBusinessListingRepository;
 use super::economy::business_offer::PgBusinessOfferRepository;
@@ -8,9 +9,10 @@ use super::init::PgInitializationRepository;
 use super::unit::PgUnitRepository;
 use super::user::PgUserRepository;
 use super::user_verify::PgUserVerificationRepository;
+use super::PostgresDatabase;
 use crate::application::error::{ApplicationError, ApplicationResult};
 use crate::application::ports::uow::{TransactionalContext, UnitOfWork};
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{Postgres, Transaction};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -30,6 +32,7 @@ where
     pub unit_repo: &'a PgUnitRepository,
     pub business_listing_repo: &'a PgBusinessListingRepository,
     pub business_offer_repo: &'a PgBusinessOfferRepository,
+    pub building_repo: &'a PgBuildingRepository,
 }
 
 // Implement the marker trait. Note the lifetimes match the struct.
@@ -38,7 +41,7 @@ impl<'a> TransactionalContext<'a> for PgTransactionContext<'a, '_> {}
 
 #[derive(Clone)]
 pub struct PostgresUnitOfWork {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     game_tick: PgGameTickRepository,
     init_repo: PgInitializationRepository,
     user_repo: PgUserRepository,
@@ -49,12 +52,13 @@ pub struct PostgresUnitOfWork {
     unit_repo: PgUnitRepository,
     business_listing_repo: PgBusinessListingRepository,
     business_offer_repo: PgBusinessOfferRepository,
+    building_repo: PgBuildingRepository,
 }
 
 impl PostgresUnitOfWork {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             game_tick: PgGameTickRepository,
             init_repo: PgInitializationRepository,
             user_repo: PgUserRepository,
@@ -65,6 +69,7 @@ impl PostgresUnitOfWork {
             unit_repo: PgUnitRepository,
             business_listing_repo: PgBusinessListingRepository,
             business_offer_repo: PgBusinessOfferRepository,
+            building_repo: PgBuildingRepository,
         }
     }
 }
@@ -82,8 +87,12 @@ impl UnitOfWork for PostgresUnitOfWork {
         R: Send,
     {
         // 1. Begin Transaction - Keep it mutable and owned by this function
-        let mut tx: Transaction<'static, Postgres> =
-            self.pool.begin().await.map_err(ApplicationError::from)?;
+        let mut tx: Transaction<'static, Postgres> = self
+            .pg_db
+            .pool
+            .begin()
+            .await
+            .map_err(ApplicationError::from)?;
 
         // 2. Introduce a scope for the context and its borrow of 'tx'
         let result: ApplicationResult<R> = {
@@ -101,6 +110,7 @@ impl UnitOfWork for PostgresUnitOfWork {
                 unit_repo: &self.unit_repo,
                 business_listing_repo: &self.business_listing_repo,
                 business_offer_repo: &self.business_offer_repo,
+                building_repo: &self.building_repo,
             };
 
             // Execute the closure, await the future INSIDE the scope.

@@ -7,37 +7,69 @@ pub mod uow;
 pub mod user;
 pub mod user_verify;
 
-use crate::utils::read_env_var;
-use sqlx::{pool::PoolOptions, PgPool};
+use std::sync::Arc;
 
-const MAX_CONNECTIONS: u32 = 5;
+use crate::config::ServerConfig;
+use geo::{LineString, Point, Polygon};
+use sqlx::{
+    pool::PoolOptions,
+    postgres::types::{PgPoint, PgPolygon},
+    PgPool,
+};
 
 #[derive(Debug)]
-pub struct PostgresDatabase;
+pub struct PostgresDatabase {
+    pub pool: PgPool,
+}
 
 impl PostgresDatabase {
-    pub async fn init() -> anyhow::Result<PgPool> {
+    pub async fn new(config: Arc<ServerConfig>) -> anyhow::Result<Self> {
         tracing::info!("Initializing postgres database connection");
-
-        let postgres_user = read_env_var("POSTGRES_USER")?;
-        let postgres_password = read_env_var("POSTGRES_PASSWORD")?;
-        let postgres_host = read_env_var("POSTGRES_HOST")?;
-        let postgres_port = read_env_var("POSTGRES_PORT")?;
-        let postgres_db = read_env_var("POSTGRES_DB")?;
 
         let conn_string = format!(
             "postgres://{}:{}@{}:{}/{}",
-            urlencoding::encode(postgres_user.as_str()),
-            urlencoding::encode(postgres_password.as_str()),
-            postgres_host,
-            postgres_port,
-            postgres_db
+            urlencoding::encode(config.postgres.user.as_str()),
+            urlencoding::encode(config.postgres.password.as_str()),
+            config.postgres.host,
+            config.postgres.port,
+            config.postgres.database
         );
 
-        PoolOptions::new()
-            .max_connections(MAX_CONNECTIONS)
+        let pool = PoolOptions::new()
+            .max_connections(config.postgres.max_connections)
             .connect(&conn_string)
             .await
-            .map_err(|err| anyhow::format_err!(err))
+            .map_err(|err| anyhow::format_err!(err))?;
+
+        Ok(Self { pool })
     }
+}
+
+pub(super) fn from_geo_point_to_pg_point(point: Point) -> PgPoint {
+    let (x, y) = point.x_y();
+
+    PgPoint { x, y }
+}
+
+pub(super) fn from_geo_polygon_to_pg_points(polygon: Polygon<f64>) -> PgPolygon {
+    let points: Vec<PgPoint> = polygon
+        .exterior()
+        .points()
+        .map(|point| {
+            let (x, y) = point.x_y();
+            PgPoint { x, y }
+        })
+        .collect();
+
+    PgPolygon { points }
+}
+
+pub(super) fn from_pg_point_to_geo_point(pg_point: PgPoint) -> Point<f64> {
+    Point::new(pg_point.x, pg_point.y)
+}
+
+pub(super) fn from_pg_polygon_to_geo_polygon(pg_polygon: PgPolygon) -> Polygon<f64> {
+    let exterior: Vec<_> = pg_polygon.points.iter().map(|p| (p.x, p.y)).collect();
+
+    Polygon::new(LineString::from(exterior), vec![])
 }

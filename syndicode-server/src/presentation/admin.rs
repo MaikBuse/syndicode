@@ -14,7 +14,7 @@ use crate::{
             queuer::ActionQueueable,
         },
     },
-    config::Config,
+    config::ServerConfig,
     domain::{
         economy::corporation::repository::CorporationRepository,
         user::{model::role::UserRole, repository::UserRepository},
@@ -38,7 +38,7 @@ where
     USR: UserRepository + 'static,
     CRP: CorporationRepository + 'static,
 {
-    config: Arc<Config>,
+    config: Arc<ServerConfig>,
     limit: Arc<R>,
     create_user_uc: Arc<CreateUserUseCase<Q, P, USR, CRP>>,
     get_user_uc: Arc<GetUserUseCase<USR>>,
@@ -61,7 +61,7 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            &self.config.ip_address_header,
+            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Admin,
         )
         .await
@@ -122,7 +122,7 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            &self.config.ip_address_header,
+            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Auth,
         )
         .await
@@ -167,7 +167,7 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            &self.config.ip_address_header,
+            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Admin,
         )
         .await

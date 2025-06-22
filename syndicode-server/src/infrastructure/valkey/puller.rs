@@ -1,6 +1,4 @@
-use super::{
-    ValkeyStore, ACTION_CONSUMER_GROUP, ACTION_STREAM_KEY, BATCH_PULL_SIZE, PAYLOAD_FIELD,
-};
+use super::{ValkeyStore, ACTION_CONSUMER_GROUP, ACTION_STREAM_KEY, PAYLOAD_FIELD};
 use crate::application::{
     action::{QueuedAction, QueuedActionPayload},
     ports::puller::{ActionPullable, PullError, PullResult},
@@ -14,7 +12,10 @@ impl ValkeyStore {
         let mut conn = self.conn.clone();
 
         let opts = redis::streams::StreamReadOptions::default()
-            .group(ACTION_CONSUMER_GROUP, self.instance_id.clone())
+            .group(
+                ACTION_CONSUMER_GROUP,
+                self.config.general.instance_id.as_str(),
+            )
             .count(count);
 
         let result: StreamReadReply = conn
@@ -83,7 +84,10 @@ impl ActionPullable for ValkeyStore {
 
         loop {
             // Fetch a batch of actions using the helper
-            match self.pull_actions_batch(BATCH_PULL_SIZE).await {
+            match self
+                .pull_actions_batch(self.config.valkey.batch_pull_size)
+                .await
+            {
                 Ok(batch) => {
                     let batch_size = batch.len();
                     total_fetched += batch_size;
@@ -94,7 +98,7 @@ impl ActionPullable for ValkeyStore {
                              total_fetched,
                              stream = ACTION_STREAM_KEY,
                              group = ACTION_CONSUMER_GROUP,
-                             consumer = %self.instance_id,
+                             consumer = %self.config.general.instance_id,
                             "Finished pulling all available actions."
                         );
                         break; // Exit the loop
@@ -104,10 +108,10 @@ impl ActionPullable for ValkeyStore {
                         all_actions.extend(batch);
 
                         // Optimization: If the batch was smaller than requested, we are likely at the end.
-                        if batch_size < BATCH_PULL_SIZE {
+                        if batch_size < self.config.valkey.batch_pull_size {
                             tracing::debug!(
                                 batch_size,
-                                batch_pull_size = BATCH_PULL_SIZE,
+                                batch_pull_size = self.config.valkey.batch_pull_size,
                                 total_fetched,
                                 "Pulled partial batch, likely end of stream for now. Finishing."
                             );

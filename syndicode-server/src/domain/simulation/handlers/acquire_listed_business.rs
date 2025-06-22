@@ -222,11 +222,11 @@ mod tests {
     use crate::domain::economy::business_listing::model::BusinessListing;
     use crate::domain::economy::corporation::model::name::CorporationName;
     use crate::domain::economy::corporation::model::Corporation;
-    use uuid::Uuid; // Use matches crate for cleaner assertions
+    use geo::Point;
+    use uuid::Uuid;
 
-    // --- Test Helper Functions --- (remain the same)
+    // Test Helper Functions
     fn setup_test_state() -> (GameState, Uuid, Uuid, Uuid, Uuid, Uuid) {
-        // Added business_uuid return
         let buyer_user_uuid = Uuid::now_v7();
         let buyer_corp_uuid = Uuid::now_v7();
         let seller_user_uuid = Uuid::now_v7();
@@ -253,6 +253,7 @@ mod tests {
             owning_corporation_uuid: Some(seller_corp_uuid), // Initially owned by seller
             name: "Test Biz".to_string(),
             operational_expenses: 100,
+            center: Point::new(0., 0.),
         };
         let listing = BusinessListing {
             uuid: listing_uuid,
@@ -276,12 +277,11 @@ mod tests {
             buyer_corp_uuid,
             seller_corp_uuid,
             listing_uuid,
-            business_uuid, // return business_uuid
+            business_uuid,
         )
     }
 
     fn create_test_action(user_uuid: Uuid, business_listing_uuid: Uuid) -> QueuedActionPayload {
-        // Changed param name
         QueuedActionPayload {
             request_uuid: Uuid::now_v7(),
             req_user_uuid: user_uuid,
@@ -291,12 +291,17 @@ mod tests {
         }
     }
 
-    // --- Test Cases ---
-
+    // Test Cases
     #[test]
     fn test_acquire_success() {
-        let (mut state, buyer_user_uuid, buyer_corp_uuid, seller_corp_uuid, listing_uuid, business_uuid) = // capture business_uuid
-            setup_test_state();
+        let (
+            mut state,
+            buyer_user_uuid,
+            buyer_corp_uuid,
+            seller_corp_uuid,
+            listing_uuid,
+            business_uuid,
+        ) = setup_test_state();
         let buyer_initial_cash = state
             .ref_corporation(&buyer_corp_uuid)
             .unwrap()
@@ -309,7 +314,6 @@ mod tests {
             .ref_business_listing(&listing_uuid)
             .unwrap()
             .asking_price;
-        // business_uuid already captured
 
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
@@ -442,7 +446,6 @@ mod tests {
 
     #[test]
     fn test_acquire_fail_buyer_corp_not_found_by_user() {
-        // More specific test name
         let (mut state, _, _, _, listing_uuid, business_uuid) = setup_test_state();
         let non_existent_user_uuid = Uuid::now_v7(); // User not linked to any corp in state
         let action = create_test_action(non_existent_user_uuid, business_uuid);
@@ -478,7 +481,7 @@ mod tests {
             .owning_corporation_uuid;
         let initial_listing = state.ref_business_listing(&listing_uuid).cloned(); // Clone for check later
 
-        // *** Simulate seller disappearing BEFORE the handler tries to credit them ***
+        // Simulate seller disappearing BEFORE the handler tries to credit them
         // This causes the Saga's step 2 (Credit Seller) forward action to fail
         state.corporations_map.remove(&seller_corp_uuid); // Remove *after* setup, before handler call
 
@@ -499,7 +502,7 @@ mod tests {
         Err(ActionError::SagaEntityMissing { entity_type: "Corporation", entity_id, step_description: "Credit Seller" }) if entity_id == seller_corp_uuid
         ));
 
-        // *** Assert Rollback Occurred ***
+        // Assert Rollback Occurred
         // Buyer's cash should be restored
         assert_eq!(
             state
@@ -542,7 +545,7 @@ mod tests {
             .cash_balance;
         let initial_listing = state.ref_business_listing(&listing_uuid).cloned();
 
-        // *** Simulate business disappearing BEFORE the handler is called ***
+        // Simulate business disappearing BEFORE the handler is called
         // This causes the pre-saga check for the business to fail.
         state.businesses_map.remove(&business_uuid);
 
@@ -564,7 +567,7 @@ mod tests {
         Err(ActionError::BusinessNotFoundDuringChecks { business_uuid: err_biz_uuid }) if err_biz_uuid == business_uuid
         ));
 
-        // *** Assert State Unchanged (because checks failed before saga) ***
+        // Assert State Unchanged (because checks failed before saga)
         assert_eq!(
             state
                 .ref_corporation(&buyer_corp_uuid)
@@ -611,7 +614,7 @@ mod tests {
         state
             .ref_mut_business(&business_uuid)
             .unwrap()
-            .owning_corporation_uuid = None; // Or owned by system? Test assumes None ok
+            .owning_corporation_uuid = None;
 
         let action = create_test_action(buyer_user_uuid, business_uuid);
         let tick = 10;
@@ -649,6 +652,5 @@ mod tests {
             state.ref_business_listing(&listing_uuid).is_none(),
             "Listing should be removed"
         );
-        // No change to seller cash as there was no seller
     }
 }

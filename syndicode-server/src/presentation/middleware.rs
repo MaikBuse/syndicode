@@ -1,6 +1,6 @@
 use crate::application::ports::crypto::JwtHandler;
 use crate::application::ports::limiter::{LimiterCategory, RateLimitEnforcer};
-use crate::config::Config;
+use crate::config::ServerConfig;
 use crate::presentation::common::limitation_error_into_status;
 use http::HeaderValue;
 use std::collections::HashSet;
@@ -47,8 +47,8 @@ where
     J: JwtHandler + Clone,
     R: RateLimitEnforcer + Clone,
 {
-    pub fn new(config: Arc<Config>, jwt: Arc<J>, limit: Arc<R>) -> Self {
-        let ip_header_name = Arc::new(config.ip_address_header.clone());
+    pub fn new(config: Arc<ServerConfig>, jwt: Arc<J>, limit: Arc<R>) -> Self {
+        let ip_header_name = Arc::new(config.rate_limiter.ip_address_header.clone());
 
         let auth_excepted_paths = Arc::new(AUTH_EXCEPTED_PATHS.clone());
         Self {

@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[tonic::async_trait]
 impl RateLimitEnforcer for ValkeyStore {
     async fn check(&self, category: LimiterCategory, ip_address: &str) -> LimitationResult<()> {
-        if self.limiter_config.disable_rate_limitting {
+        if self.config.rate_limiter.disable_rate_limitting {
             return Ok(());
         }
 
@@ -21,7 +21,7 @@ impl RateLimitEnforcer for ValkeyStore {
             .as_millis();
         let now_ms_str = now_ms.to_string(); // Store string representation
 
-        let window_secs = self.limiter_config.get_window_secs(category);
+        let window_secs = self.config.rate_limiter.get_window_secs(category);
 
         let window_millis = (window_secs as u128) * 1000;
         let window_start = now_ms.saturating_sub(window_millis);
@@ -52,7 +52,7 @@ impl RateLimitEnforcer for ValkeyStore {
              LimitationError::Internal(anyhow::Error::from(e).context("Redis zcount failed").to_string())
         })?;
 
-        let max_requests = self.limiter_config.get_max_requests(category);
+        let max_requests = self.config.rate_limiter.get_max_requests(category);
 
         // Decide if the limit was exceeded
         // If the count *after* adding is strictly greater than max_requests,

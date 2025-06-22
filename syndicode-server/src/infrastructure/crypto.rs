@@ -2,7 +2,9 @@ pub mod claims;
 pub mod jwt;
 pub mod password;
 
-use crate::utils::read_env_var;
+use std::sync::Arc;
+
+use crate::config::ServerConfig;
 use argon2::Argon2;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 
@@ -14,10 +16,8 @@ pub struct CryptoService {
 }
 
 impl CryptoService {
-    pub fn new() -> anyhow::Result<Self> {
-        let jwt_secret = read_env_var("JWT_SECRET")?;
-
-        let jwt_secret_bytes = jwt_secret.as_bytes();
+    pub fn new(config: Arc<ServerConfig>) -> anyhow::Result<Self> {
+        let jwt_secret_bytes = config.auth.jwt_secret.as_bytes();
 
         Ok(Self {
             jwt_decoding_key: DecodingKey::from_secret(jwt_secret_bytes),

@@ -1,20 +1,21 @@
 use bon::builder;
-use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::{
     application::{
-        admin::bootstrap_admin::BootstrapAdminUseCase,
-        bootstrap::Bootstrap,
-        economy::bootstrap_economy::BootstrapEconomyUseCase,
+        admin::bootstrap::BootstrapAdminUseCase,
+        bootstrap::BootstrapOrchestrator,
+        economy::bootstrap::BootstrapEconomyUseCase,
         ports::{crypto::PasswordHandler, init::InitializationRepository, uow::UnitOfWork},
     },
+    config::ServerConfig,
     infrastructure::postgres::migration::PostgresMigrator,
 };
 
 #[builder]
 pub async fn run<UOW, INI, P>(
-    pool: Arc<PgPool>,
+    config: Arc<ServerConfig>,
+    migrator: Arc<PostgresMigrator>,
     bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
     bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
 ) -> anyhow::Result<()>
@@ -23,9 +24,8 @@ where
     INI: InitializationRepository,
     P: PasswordHandler,
 {
-    let migrator = Arc::new(PostgresMigrator::new(pool.clone()));
-
-    let bootstrapper = Bootstrap::builder()
+    let bootstrapper = BootstrapOrchestrator::builder()
+        .config(config)
         .migrator(migrator)
         .bootstrap_admin_uc(bootstrap_admin_uc)
         .bootstrap_economy_uc(bootstrap_economy_uc)

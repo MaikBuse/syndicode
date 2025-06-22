@@ -1,9 +1,11 @@
 use crate::application::ports::leader::{LeaderElectionError, LeaderElector}; // Assume these are defined
 use crate::application::ports::processor::{GameTickProcessable, ProcessorError};
+use bon::Builder;
 use std::{sync::Arc, time::Duration};
 use tokio::time::{self, Instant};
 
 /// Manages the leader election loop and triggers the game tick processor when leader.
+#[derive(Builder)]
 pub struct LeaderLoopManager<L, G>
 where
     L: LeaderElector,
@@ -22,6 +24,7 @@ where
     L: LeaderElector + Send + Sync + 'static,
     G: GameTickProcessable + Send + Sync + 'static,
 {
+    #[cfg(test)]
     pub fn new(
         leader_elector: Arc<L>,
         game_tick_processor: Arc<G>,

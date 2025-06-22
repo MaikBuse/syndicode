@@ -1,13 +1,14 @@
 use crate::application::ports::verification::{
     VerificationSendable, VerificationSendableError, VerificationSendableResult,
 };
+use crate::config::ServerConfig;
 use crate::domain::user_verify::model::code::VerificationCode;
-use crate::utils::read_env_var;
 use lettre::message::{header::ContentType, Mailbox, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::PoolConfig;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use std::fmt::Write;
+use std::sync::Arc;
 use std::time::Duration;
 use time::OffsetDateTime;
 
@@ -27,19 +28,16 @@ pub struct EmailHandler {
 }
 
 impl EmailHandler {
-    pub fn new() -> anyhow::Result<Self> {
-        let sender_email = read_env_var("SENDER_EMAIL").unwrap();
-        let smtp_server = read_env_var("SMTP_SERVER").unwrap();
-        let smtp_username = read_env_var("SMTP_USERNAME").unwrap();
-        let smtp_password = read_env_var("SMTP_PASSWORD").unwrap();
-
+    pub fn new(config: Arc<ServerConfig>) -> anyhow::Result<Self> {
         // Handle potential parsing error for Mailbox
-        let sender_mailbox: Mailbox = format!("{} <{}>", SENDER_NAME, sender_email)
+        let sender_mailbox: Mailbox = format!("{} <{}>", SENDER_NAME, config.email.sender_email)
             .parse()
             .unwrap();
 
-        // Credentials::new takes String, so env::var result is fine
-        let sender_credentials = Credentials::new(smtp_username, smtp_password);
+        let sender_credentials = Credentials::new(
+            config.email.smtp_username.clone(),
+            config.email.smtp_password.clone(),
+        );
 
         let pool_config = PoolConfig::new()
             .max_size(10) // Max number of connections in the pool
@@ -47,7 +45,7 @@ impl EmailHandler {
             .idle_timeout(Duration::from_secs(5 * 60)); // Close connections idle for 5 min
 
         // Build the Mailer with Pooling
-        let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(&smtp_server)
+        let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(config.email.smtp_server.as_str())
             .map_err(|err| VerificationSendableError::InitSMTP(err.to_string()))?
             .credentials(sender_credentials)
             .pool_config(pool_config)

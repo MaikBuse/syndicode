@@ -1,6 +1,6 @@
 use super::services::DefaultAppState;
 use crate::{
-    config::Config,
+    config::ServerConfig,
     infrastructure::{
         crypto::CryptoService,
         postgres::{economy::corporation::PgCorporationService, user::PgUserService},
@@ -8,6 +8,7 @@ use crate::{
     },
     presentation::{admin::AdminPresenter, middleware::MiddlewareLayer},
 };
+use bon::builder;
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::{
     admin_service_server::AdminServiceServer, auth_service_server::AuthServiceServer,
@@ -17,8 +18,9 @@ use tonic::transport::Server;
 
 const SOCKET_ADDR: &str = "[::]:50051";
 
+#[builder]
 pub async fn start_grpc_services(
-    config: Arc<Config>,
+    config: Arc<ServerConfig>,
     app: DefaultAppState,
     valkey: Arc<ValkeyStore>,
 ) -> anyhow::Result<()> {
@@ -43,7 +45,7 @@ pub async fn start_grpc_services(
 
     tracing::info!(
         "gRPC Server with id '{}' starting up...",
-        config.instance_id
+        config.general.instance_id
     );
 
     Server::builder()

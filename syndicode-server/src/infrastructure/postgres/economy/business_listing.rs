@@ -10,9 +10,11 @@ use crate::{
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::{game_tick::PgGameTickRepository, uow::PgTransactionContext},
+    infrastructure::postgres::{
+        game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase,
+    },
 };
-use sqlx::{Execute, PgPool, Postgres, QueryBuilder};
+use sqlx::{Execute, Postgres, QueryBuilder};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -220,15 +222,15 @@ impl PgBusinessListingRepository {
 }
 
 pub struct PgBusinessListingService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     game_tick_repo: PgGameTickRepository,
     business_listing_repo: PgBusinessListingRepository,
 }
 
 impl PgBusinessListingService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             game_tick_repo: PgGameTickRepository,
             business_listing_repo: PgBusinessListingRepository,
         }
@@ -242,7 +244,7 @@ impl BusinessListingRepository for PgBusinessListingService {
         game_tick: i64,
     ) -> RepositoryResult<Vec<BusinessListing>> {
         self.business_listing_repo
-            .list_business_listings_in_tick(&*self.pool, game_tick)
+            .list_business_listings_in_tick(&self.pg_db.pool, game_tick)
             .await
     }
 
@@ -252,12 +254,12 @@ impl BusinessListingRepository for PgBusinessListingService {
     ) -> RepositoryResult<(i64, QueryBusinessListingsResult)> {
         let game_tick = self
             .game_tick_repo
-            .get_current_game_tick(&*self.pool)
+            .get_current_game_tick(&self.pg_db.pool)
             .await?;
 
         let result = self
             .business_listing_repo
-            .query_business_listings(&*self.pool, game_tick, req)
+            .query_business_listings(&self.pg_db.pool, game_tick, req)
             .await?;
 
         Ok((game_tick, result))

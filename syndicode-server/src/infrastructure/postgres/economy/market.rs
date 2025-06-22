@@ -8,9 +8,9 @@ use crate::{
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::uow::PgTransactionContext,
+    infrastructure::postgres::{uow::PgTransactionContext, PostgresDatabase},
 };
-use sqlx::{PgPool, Postgres};
+use sqlx::Postgres;
 
 #[derive(Clone)]
 pub struct PgMarketRepository;
@@ -111,14 +111,14 @@ impl PgMarketRepository {
 }
 
 pub struct PgMarketService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     market_repo: PgMarketRepository,
 }
 
 impl PgMarketService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             market_repo: PgMarketRepository,
         }
     }
@@ -128,7 +128,7 @@ impl PgMarketService {
 impl MarketRepository for PgMarketService {
     async fn list_markets_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Market>> {
         self.market_repo
-            .list_markets_at_tick(&*self.pool, game_tick)
+            .list_markets_at_tick(&self.pg_db.pool, game_tick)
             .await
     }
 }

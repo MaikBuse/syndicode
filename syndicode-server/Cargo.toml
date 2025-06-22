@@ -16,6 +16,7 @@ time = { workspace = true }
 futures = { workspace = true }
 prost-types = { workspace = true }
 uuid = { workspace = true }
+toml = { workspace = true }
 tonic-health = "0.13.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
@@ -33,6 +34,9 @@ urlencoding = "2.1.3"
 redis = { version = "0.32.0", features = ["tokio-comp"] }
 lazy_static = "1.5.0"
 lettre = { version = "0.11.15", features = ["tokio1-native-tls"] }
+parquet = "55.1.0"
+geo = "0.30.0"
+rstar = "0.12.2"
 
 [dev-dependencies]
 mockall = "0.13.1"

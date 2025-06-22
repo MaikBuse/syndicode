@@ -8,9 +8,12 @@ use crate::{
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::uow::PgTransactionContext,
+    infrastructure::postgres::{
+        from_geo_point_to_pg_point, uow::PgTransactionContext, PostgresDatabase,
+    },
 };
-use sqlx::{PgPool, Postgres};
+use geo::Point;
+use sqlx::Postgres;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -35,6 +38,7 @@ impl PgBusinessRepository {
         let mut owning_corporation_uuids: Vec<Option<Uuid>> = Vec::with_capacity(count);
         let mut names = Vec::with_capacity(count);
         let mut operational_expenses = Vec::with_capacity(count);
+        let mut centers = Vec::with_capacity(count);
 
         for business in businesses {
             uuids.push(business.uuid);
@@ -42,6 +46,7 @@ impl PgBusinessRepository {
             owning_corporation_uuids.push(business.owning_corporation_uuid);
             names.push(business.name);
             operational_expenses.push(business.operational_expenses);
+            centers.push(from_geo_point_to_pg_point(business.center));
         }
 
         sqlx::query(
@@ -52,19 +57,35 @@ impl PgBusinessRepository {
                 market_uuid,
                 owning_corporation_uuid,
                 name,
-                operational_expenses
+                operational_expenses,
+                center
             )
             SELECT $1, u.*
-            FROM unnest($2::UUID[], $3::UUID[], $4::UUID[], $5::TEXT[], $6::BIGINT[])
-            AS u(uuid, market_uuid, owning_corporation_uuid, name, operational_expenses)
+            FROM unnest(
+                $2::UUID[],
+                $3::UUID[],
+                $4::UUID[],
+                $5::TEXT[],
+                $6::BIGINT[],
+                $7::geometry[]
+            )
+            AS u(
+                uuid,
+                market_uuid,
+                owning_corporation_uuid,
+                name,
+                operational_expenses,
+                center
+            )
             "#,
         )
-        .bind(game_tick) // Binds to tick_number column via $1
-        .bind(&uuids) // Binds to $2 -> u.uuid -> uuid column
-        .bind(&market_uuids) // Binds to $3 -> u.market_uuid -> market_uuid column
-        .bind(&owning_corporation_uuids) // Binds to $4 -> u.owning_corporation_uuid -> owning_corporation_uuid column
-        .bind(&names) // Binds to $5 -> u.name -> name column
-        .bind(&operational_expenses) // Binds to $6 -> u.operational_expenses -> operational_expenses column
+        .bind(game_tick)
+        .bind(&uuids)
+        .bind(&market_uuids)
+        .bind(&owning_corporation_uuids)
+        .bind(&names)
+        .bind(&operational_expenses)
+        .bind(&centers)
         .execute(executor)
         .await?;
 
@@ -76,15 +97,15 @@ impl PgBusinessRepository {
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         game_tick: i64,
     ) -> RepositoryResult<Vec<Business>> {
-        let businesses = sqlx::query_as!(
-            Business,
+        let records = sqlx::query!(
             r#"
             SELECT
                 uuid,
                 market_uuid,
                 owning_corporation_uuid,
                 name,
-                operational_expenses
+                operational_expenses,
+                center
             FROM businesses
             WHERE
                 game_tick = $1
@@ -93,6 +114,18 @@ impl PgBusinessRepository {
         )
         .fetch_all(executor)
         .await?;
+
+        let mut businesses = Vec::with_capacity(records.len());
+        for record in records {
+            businesses.push(Business {
+                uuid: record.uuid,
+                market_uuid: record.market_uuid,
+                owning_corporation_uuid: record.owning_corporation_uuid,
+                name: record.name,
+                operational_expenses: record.operational_expenses,
+                center: Point::new(record.center.x, record.center.y),
+            });
+        }
 
         Ok(businesses)
     }
@@ -118,14 +151,14 @@ impl PgBusinessRepository {
 }
 
 pub struct PgBusinessService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     business_repo: PgBusinessRepository,
 }
 
 impl PgBusinessService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             business_repo: PgBusinessRepository,
         }
     }
@@ -135,7 +168,7 @@ impl PgBusinessService {
 impl BusinessRepository for PgBusinessService {
     async fn list_businesses_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Business>> {
         self.business_repo
-            .list_businesses_in_tick(&*self.pool, game_tick)
+            .list_businesses_in_tick(&self.pg_db.pool, game_tick)
             .await
     }
 }

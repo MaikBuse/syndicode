@@ -9,16 +9,14 @@ impl LeaderElector for ValkeyStore {
     async fn try_acquire(&self) -> LeaderElectionResult<bool> {
         let mut conn = self.conn.clone();
 
-        let value = &self.instance_id;
-
         // Type annotation ::<Option<String>> is important here.
         // SET ... NX returns "OK" (as a String) on success, or nil (None) if not set.
         let result: Option<String> = redis::cmd("SET")
             .arg(LOCK_KEY)
-            .arg(value)
+            .arg(self.config.general.instance_id.as_str())
             .arg("NX") // Only set if key does not exist
             .arg("PX") // Set expiry in milliseconds
-            .arg(self.leader_config.leader_lock_ttl)
+            .arg(self.config.processor.leader_lock_ttl)
             .query_async(&mut conn)
             .await
             .map_err(|err| LeaderElectionError::RedisCommandError(err.to_string()))?;
@@ -39,13 +37,12 @@ impl LeaderElector for ValkeyStore {
     /// Releases the lock using the safe Lua script.
     async fn release(&self) -> LeaderElectionResult<()> {
         let mut conn = self.conn.clone();
-        let instance_id = &self.instance_id;
 
         let result: i32 = self
-            .leader_config
+            .leader_scripts
             .release_script
             .key(LOCK_KEY) // Pass lock_key as KEYS[1]
-            .arg(instance_id) // Pass instance_id as ARGV[1]
+            .arg(self.config.general.instance_id.as_str()) // Pass instance_id as ARGV[1]
             .invoke_async(&mut conn)
             .await
             .map_err(|err| LeaderElectionError::RedisCommandError(err.to_string()))?;
@@ -61,7 +58,7 @@ impl LeaderElector for ValkeyStore {
                 tracing::warn!(
                     "Could not release lock '{}': Not held by this instance ('{}') or expired.",
                     LOCK_KEY,
-                    instance_id
+                    self.config.general.instance_id
                 );
                 // We might choose to return Ok(()) here, as the goal (lock is released by us) is achieved,
                 // or return NotHoldingLock if the caller needs to know specifically. Let's return Ok for simplicity now.
@@ -78,14 +75,13 @@ impl LeaderElector for ValkeyStore {
     /// Refreshes the lock TTL using the safe Lua script.
     async fn refresh(&self) -> LeaderElectionResult<()> {
         let mut conn = self.conn.clone();
-        let instance_id = &self.instance_id;
 
         let result: i32 = self
-            .leader_config
+            .leader_scripts
             .refresh_script
             .key(LOCK_KEY) // KEYS[1]
-            .arg(instance_id) // ARGV[1]
-            .arg(self.leader_config.leader_lock_ttl) // ARGV[2]
+            .arg(self.config.general.instance_id.as_str()) // ARGV[1]
+            .arg(self.config.processor.leader_lock_ttl) // ARGV[2]
             .invoke_async(&mut conn)
             .await
             .map_err(|err| LeaderElectionError::RedisCommandError(err.to_string()))?;
@@ -95,7 +91,7 @@ impl LeaderElector for ValkeyStore {
                 tracing::trace!(
                     "Successfully refreshed lock '{}' for instance '{}'",
                     LOCK_KEY,
-                    instance_id
+                    self.config.general.instance_id
                 );
                 Ok(())
             }
@@ -104,11 +100,11 @@ impl LeaderElector for ValkeyStore {
                 tracing::warn!(
                     "Could not refresh lock '{}': Not held by this instance ('{}') or expired.",
                     LOCK_KEY,
-                    instance_id
+                    self.config.general.instance_id
                 );
                 Err(LeaderElectionError::NotHoldingLock {
                     key: LOCK_KEY.to_string(),
-                    instance_id: instance_id.clone(),
+                    instance_id: self.config.general.instance_id.clone(),
                 })
             }
             _ => Err(LeaderElectionError::LockRefreshFailed {

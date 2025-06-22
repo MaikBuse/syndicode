@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     owning_corporation_uuid UUID,
     name TEXT NOT NULL,
     operational_expenses BIGINT NOT NULL CHECK (operational_expenses >= 0),
+    center POINT NOT NULL,
 
     PRIMARY KEY (game_tick, uuid)
 );
@@ -79,3 +80,32 @@ CREATE TABLE IF NOT EXISTS business_offers (
 CREATE INDEX IF NOT EXISTS idx_business_uuid_game_tick ON business_offers (business_uuid, game_tick);
 CREATE INDEX IF NOT EXISTS idx_offering_corporation_uuid ON business_offers (offering_corporation_uuid, game_tick);
 CREATE INDEX IF NOT EXISTS idx_target_corporation_uuid ON business_offers (target_corporation_uuid, game_tick);
+
+
+CREATE TABLE buildings (
+    game_tick BIGINT NOT NULL,
+    uuid UUID NOT NULL,
+    gml_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    owning_business_uuid UUID,
+    address TEXT NOT NULL,
+    usage TEXT NOT NULL,
+    usage_code SMALLINT NOT NULL,
+    class TEXT NOT NULL,
+    class_code SMALLINT NOT NULL,
+    city TEXT NOT NULL,
+    city_code TEXT NOT NULL,
+    center POINT NOT NULL,
+    footprint POLYGON NOT NULL,
+    height DOUBLE PRECISION NOT NULL,
+    prefecture TEXT NOT NULL,
+
+    PRIMARY KEY (game_tick, uuid)
+);
+
+-- Create a standard index on gml_id.
+-- This allows for very fast lookups if you need to find a specific building by its source ID.
+CREATE INDEX idx_buildings_gml_id_idx ON buildings (gml_id);
+
+CREATE INDEX IF NOT EXISTS idx_building_uuid_game_tick ON buildings (uuid, game_tick);
+CREATE INDEX IF NOT EXISTS idx_owning_business_uuid_game_tick ON buildings (owning_business_uuid, game_tick);

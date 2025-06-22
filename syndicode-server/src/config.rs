@@ -1,45 +1,411 @@
+use anyhow::Context;
+use bon::Builder;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::utils::read_env_var;
-use std::time::Duration;
+use crate::{application::ports::limiter::LimiterCategory, utils::read_env_var};
+use std::{path::Path, time::Duration};
 
-pub struct Config {
+pub const CONFIG_FILE_PATH: &str = "server_config.toml";
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct GeneralConfig {
     /// A unique identifier for this specific instance trying to acquire the lock.
     /// Used to ensure only the lock holder can release/refresh it.
     pub instance_id: String,
+}
+
+impl Default for GeneralConfig {
+    fn default() -> Self {
+        Self {
+            instance_id: Uuid::now_v7().to_string(),
+        }
+    }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct AuthConfig {
+    pub jwt_secret: String,
+    pub admin_email: String,
+    pub admin_username: String,
+    pub admin_password: String,
+    pub admin_corporation_name: String,
+}
+
+impl Default for AuthConfig {
+    fn default() -> Self {
+        Self {
+            jwt_secret: "some-super-secret-string".to_string(),
+            admin_email: "contact@maikbuse.com".to_string(),
+            admin_username: "admin".to_string(),
+            admin_password: "my-secret-password".to_string(),
+            admin_corporation_name: "Shinkai Heavyworks".to_string(),
+        }
+    }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct BootstrapConfig {
+    pub parquet_path: String,
+    pub business_count_x: usize,
+    pub business_count_y: usize,
+    pub boundary_min_lon: f64,
+    pub boundary_max_lon: f64,
+    pub boundary_min_lat: f64,
+    pub boundary_max_lat: f64,
+    /// Business clusters have a characteristic spread
+    pub spread_sigma_meters: f64,
+    pub max_radius_meters: f64,
+}
+
+impl Default for BootstrapConfig {
+    fn default() -> Self {
+        Self {
+            parquet_path: "./merged_building_lod0.parquet".to_string(),
+            business_count_x: 100,
+            business_count_y: 100,
+            boundary_min_lon: 139.6,
+            boundary_max_lon: 139.9,
+            boundary_min_lat: 35.5,
+            boundary_max_lat: 35.8,
+            spread_sigma_meters: 200.0,
+            max_radius_meters: 800.0,
+        }
+    }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct RateLimiterConfig {
+    pub disable_rate_limitting: bool,
     pub ip_address_header: String,
+    pub middleware_max_req: usize,
+    pub middleware_window_secs: usize,
+    pub game_stream_max_req: usize,
+    pub game_stream_window_secs: usize,
+    pub auth_max_req: usize,
+    pub auth_window_secs: usize,
+    pub admin_max_req: usize,
+    pub admin_window_secs: usize,
+}
+
+impl Default for RateLimiterConfig {
+    fn default() -> Self {
+        Self {
+            disable_rate_limitting: false,
+            ip_address_header: "CF-Connecting-IP".to_string(),
+            middleware_max_req: 150,
+            middleware_window_secs: 60,
+            game_stream_max_req: 100,
+            game_stream_window_secs: 10,
+            auth_max_req: 5,
+            auth_window_secs: 60,
+            admin_max_req: 10,
+            admin_window_secs: 60,
+        }
+    }
+}
+
+impl RateLimiterConfig {
+    pub fn get_max_requests(&self, category: LimiterCategory) -> usize {
+        match category {
+            LimiterCategory::Middleware => self.middleware_max_req,
+            LimiterCategory::GameStream => self.game_stream_max_req,
+            LimiterCategory::Auth => self.auth_max_req,
+            LimiterCategory::Admin => self.admin_max_req,
+        }
+    }
+
+    pub fn get_window_secs(&self, category: LimiterCategory) -> usize {
+        match category {
+            LimiterCategory::Middleware => self.middleware_window_secs,
+            LimiterCategory::GameStream => self.game_stream_window_secs,
+            LimiterCategory::Auth => self.auth_window_secs,
+            LimiterCategory::Admin => self.admin_window_secs,
+        }
+    }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct ProcessorConfig {
     pub game_tick_interval: usize,
     pub leader_lock_ttl: usize,
     pub leader_lock_refresh_interval: Duration,
     pub non_leader_acquisition_retry_internal: Duration,
-    pub disable_rate_limitting: bool,
 }
 
-impl Config {
-    pub fn new() -> anyhow::Result<Self> {
-        let instance_id = Uuid::now_v7().to_string();
-
-        let ip_address_header = read_env_var("IP_ADDRESS_HEADER")?;
-
-        let game_tick_interval = int_from_env("GAME_TICK_INTERVAL")?;
-        let leader_lock_ttl = int_from_env("LEADER_LOCK_TTL")?;
-        let leader_lock_refresh_interval = int_from_env("LEADER_LOCK_REFRESH")?;
-        let non_leader_acquisition_retry_internal = int_from_env("NON_LEADER_RETRY")?;
-
-        let disable_rate_limitting = read_env_var("DISABLE_RATE_LIMITING")?.parse::<bool>()?;
-
-        Ok(Self {
-            instance_id,
-            ip_address_header,
-            game_tick_interval,
-            leader_lock_refresh_interval: Duration::from_millis(leader_lock_refresh_interval),
-            leader_lock_ttl,
-            non_leader_acquisition_retry_internal: Duration::from_millis(
-                non_leader_acquisition_retry_internal,
-            ),
-            disable_rate_limitting,
-        })
+impl Default for ProcessorConfig {
+    fn default() -> Self {
+        Self {
+            game_tick_interval: 1000,
+            leader_lock_ttl: 30000,
+            leader_lock_refresh_interval: Duration::from_millis(10000),
+            non_leader_acquisition_retry_internal: Duration::from_millis(5000),
+        }
     }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct PostgresConfig {
+    pub max_connections: u32,
+    pub user: String,
+    pub password: String,
+    pub host: String,
+    pub port: usize,
+    pub database: String,
+}
+
+impl Default for PostgresConfig {
+    fn default() -> Self {
+        Self {
+            max_connections: 5,
+            user: "postgres".to_string(),
+            password: "secretpassword".to_string(),
+            host: "localhost".to_string(),
+            port: 5432,
+            database: "syndicode".to_string(),
+        }
+    }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct ValkeyConfig {
+    pub host: String,
+    pub password: String,
+    /// How many messages to request per internal batch
+    pub batch_pull_size: usize,
+}
+
+impl Default for ValkeyConfig {
+    fn default() -> Self {
+        Self {
+            host: "localhost".to_string(),
+            password: "secretpassword".to_string(),
+            batch_pull_size: 100,
+        }
+    }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone)]
+pub struct EmailConfig {
+    pub sender_email: String,
+    pub smtp_server: String,
+    pub smtp_username: String,
+    pub smtp_password: String,
+}
+
+impl Default for EmailConfig {
+    fn default() -> Self {
+        let smtp_server = read_env_var("SMTP_SERVER").unwrap();
+        let smtp_username = read_env_var("SMTP_USERNAME").unwrap();
+        let smtp_password = read_env_var("SMTP_PASSWORD").unwrap();
+
+        Self {
+            sender_email: "noreply@syndicode.dev".to_string(),
+            smtp_server,
+            smtp_username,
+            smtp_password,
+        }
+    }
+}
+
+#[derive(Builder, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct ServerConfig {
+    pub general: GeneralConfig,
+    pub auth: AuthConfig,
+    pub bootstrap: BootstrapConfig,
+    pub rate_limiter: RateLimiterConfig,
+    pub processor: ProcessorConfig,
+    pub postgres: PostgresConfig,
+    pub valkey: ValkeyConfig,
+    pub email: EmailConfig,
+}
+
+impl ServerConfig {
+    pub fn new() -> anyhow::Result<Self> {
+        let path = Path::new(CONFIG_FILE_PATH);
+
+        let mut config = if path.exists() {
+            let content = std::fs::read_to_string(path)
+                .with_context(|| format!("Failed to read config file at {}", CONFIG_FILE_PATH))?;
+            toml::from_str::<ServerConfig>(&content)
+                .with_context(|| format!("Failed to parse TOML from {}", CONFIG_FILE_PATH))?
+        } else {
+            println!(
+                "Config file not found at {}, creating with default values.",
+                CONFIG_FILE_PATH
+            );
+            let default_config = ServerConfig::default();
+            save_config(&default_config)?;
+            default_config
+        };
+
+        // GeneralConfig
+        if let Ok(val) = read_env_var("INSTANCE_ID") {
+            config.general.instance_id = val;
+        }
+
+        // AuthConfig
+        if let Ok(val) = read_env_var("JWT_SECRET") {
+            config.auth.jwt_secret = val;
+        }
+        if let Ok(val) = read_env_var("ADMIN_EMAIL") {
+            config.auth.admin_email = val;
+        }
+        if let Ok(val) = read_env_var("ADMIN_USERNAME") {
+            config.auth.admin_email = val;
+        }
+        if let Ok(val) = read_env_var("ADMIN_PASSWORD") {
+            config.auth.admin_password = val;
+        }
+        if let Ok(val) = read_env_var("ADMIN_CORPORATION_NAME") {
+            config.auth.admin_corporation_name = val;
+        }
+
+        // BootstrapConfig
+        if let Ok(val) = read_env_var("PARQUET_PATH") {
+            config.bootstrap.parquet_path = val;
+        }
+        if let Ok(val) = int_from_env("BUSINESS_COUNT_X") {
+            config.bootstrap.business_count_x = val;
+        }
+        if let Ok(val) = int_from_env("BUSINESS_COUNT_Y") {
+            config.bootstrap.business_count_y = val;
+        }
+        if let Ok(val) = read_env_var("BOUNDARY_MIN_LON") {
+            if let Ok(parsed) = val.parse() {
+                config.bootstrap.boundary_min_lon = parsed;
+            }
+        }
+        if let Ok(val) = read_env_var("BOUNDARY_MAX_LON") {
+            if let Ok(parsed) = val.parse() {
+                config.bootstrap.boundary_max_lon = parsed;
+            }
+        }
+        if let Ok(val) = read_env_var("BOUNDARY_MIN_LAT") {
+            if let Ok(parsed) = val.parse() {
+                config.bootstrap.boundary_min_lat = parsed;
+            }
+        }
+        if let Ok(val) = read_env_var("BOUNDARY_MAX_LAT") {
+            if let Ok(parsed) = val.parse() {
+                config.bootstrap.boundary_max_lat = parsed;
+            }
+        }
+        if let Ok(val) = read_env_var("SPREAD_SIGMA_METERS") {
+            if let Ok(parsed) = val.parse() {
+                config.bootstrap.spread_sigma_meters = parsed;
+            }
+        }
+        if let Ok(val) = read_env_var("MAX_RADIUS_METERS") {
+            if let Ok(parsed) = val.parse() {
+                config.bootstrap.max_radius_meters = parsed;
+            }
+        }
+
+        // RateLimiterConfig
+        if let Ok(val) = read_env_var("DISABLE_RATE_LIMITTING") {
+            if let Ok(parsed) = val.parse() {
+                config.rate_limiter.disable_rate_limitting = parsed;
+            }
+        }
+        if let Ok(val) = read_env_var("IP_ADDRESS_HEADER") {
+            config.rate_limiter.ip_address_header = val;
+        }
+        if let Ok(val) = int_from_env("MIDDLEWARE_MAX_REQ") {
+            config.rate_limiter.middleware_max_req = val;
+        }
+        if let Ok(val) = int_from_env("MIDDLEWARE_WINDOW_SECS") {
+            config.rate_limiter.middleware_window_secs = val;
+        }
+        if let Ok(val) = int_from_env("GAME_STREAM_MAX_REQ") {
+            config.rate_limiter.game_stream_max_req = val;
+        }
+        if let Ok(val) = int_from_env("GAME_STREAM_WINDOW_SECS") {
+            config.rate_limiter.game_stream_window_secs = val;
+        }
+        if let Ok(val) = int_from_env("AUTH_MAX_REQ") {
+            config.rate_limiter.auth_max_req = val;
+        }
+        if let Ok(val) = int_from_env("AUTH_WINDOW_SECS") {
+            config.rate_limiter.auth_window_secs = val;
+        }
+        if let Ok(val) = int_from_env("ADMIN_MAX_REQ") {
+            config.rate_limiter.admin_max_req = val;
+        }
+        if let Ok(val) = int_from_env("ADMIN_WINDOW_SECS") {
+            config.rate_limiter.admin_window_secs = val;
+        }
+
+        // ProcessorConfig
+        if let Ok(val) = int_from_env("GAME_TICK_INTERVAL") {
+            config.processor.game_tick_interval = val;
+        }
+        if let Ok(val) = int_from_env("LEADER_LOCK_TTL") {
+            config.processor.leader_lock_ttl = val;
+        }
+        if let Ok(val) = int_from_env("LEADER_LOCK_REFRESH_INTERVAL") {
+            config.processor.leader_lock_refresh_interval = Duration::from_millis(val);
+        }
+        if let Ok(val) = int_from_env("NON_LEADER_ACQUISITION_RETRY_INTERNAL") {
+            config.processor.non_leader_acquisition_retry_internal = Duration::from_millis(val);
+        }
+
+        // PostgresConfig
+        if let Ok(val) = int_from_env("POSTGRES_MAX_CONNECTIONS") {
+            config.postgres.max_connections = val;
+        }
+        if let Ok(val) = read_env_var("POSTGRES_USER") {
+            config.postgres.user = val;
+        }
+        if let Ok(val) = read_env_var("POSTGRES_PASSWORD") {
+            config.postgres.password = val;
+        }
+        if let Ok(val) = read_env_var("POSTGRES_HOST") {
+            config.postgres.host = val;
+        }
+        if let Ok(val) = int_from_env("POSTGRES_PORT") {
+            config.postgres.port = val;
+        }
+        if let Ok(val) = read_env_var("POSTGRES_DATABASE") {
+            config.postgres.database = val;
+        }
+
+        // ValkeyConfig
+        if let Ok(val) = read_env_var("VALKEY_HOST") {
+            config.valkey.host = val;
+        }
+        if let Ok(val) = read_env_var("VALKEY_PASSWORD") {
+            config.valkey.password = val;
+        }
+        if let Ok(val) = int_from_env("VALKEY_BATCH_PULL_SIZE") {
+            config.valkey.batch_pull_size = val;
+        }
+
+        // EmailConfig
+        if let Ok(val) = read_env_var("SENDER_EMAIL") {
+            config.email.sender_email = val;
+        }
+        if let Ok(val) = read_env_var("SMTP_USERNAME") {
+            config.email.smtp_username = val;
+        }
+        if let Ok(val) = read_env_var("SMTP_PASSWORD") {
+            config.email.smtp_password = val;
+        }
+        if let Ok(val) = read_env_var("SMTP_SERVER") {
+            config.email.smtp_server = val;
+        }
+
+        Ok(config)
+    }
+}
+
+pub fn save_config(config: &ServerConfig) -> anyhow::Result<()> {
+    let toml_string =
+        toml::to_string_pretty(config).context("Failed to serialize config to TOML")?;
+    std::fs::write(CONFIG_FILE_PATH, toml_string)
+        .with_context(|| format!("Failed to write config file to {}", CONFIG_FILE_PATH))?;
+    println!("Configuration saved to {}", CONFIG_FILE_PATH);
+    Ok(())
 }
 
 fn int_from_env<U>(env_name: &str) -> anyhow::Result<U>

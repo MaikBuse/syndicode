@@ -24,7 +24,6 @@ use crate::{
             list_units_by_corporation::ListUnitsByCorporationUseCase, spawn_unit::SpawnUnitUseCase,
         },
     },
-    config::Config,
     domain::{
         economy::{
             business_listing::repository::BusinessListingRepository,
@@ -56,7 +55,7 @@ use user_channel_guard::{UserChannelGuard, UserChannels, UserTx};
 use uuid::Uuid;
 use warfare::{list_units, spawn_unit};
 
-// Tunable: buffer for server-to-client MPSC channels.
+// Buffer for server-to-client MPSC channels.
 const MPSC_CHANNEL_BUFFER_SIZE: usize = 128;
 
 #[derive(Builder)]
@@ -70,7 +69,7 @@ where
     GTR: GameTickRepository,
     BL: BusinessListingRepository,
 {
-    pub config: Arc<Config>,
+    pub ip_address_header_lowercase: String,
     pub valkey_client: redis::Client,
     pub limit: Arc<R>,
     pub outcome_store_reader: Arc<OSR>,
@@ -102,7 +101,7 @@ where
     ) -> Result<Response<Self::PlayStreamStream>, Status> {
         let ip_address = ip_address_from_metadata(
             request.metadata(),
-            &self.config.ip_address_header.to_lowercase(),
+            self.ip_address_header_lowercase.as_str(),
         )
         .map_err(|status| *status)?;
 

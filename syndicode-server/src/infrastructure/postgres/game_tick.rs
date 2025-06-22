@@ -1,9 +1,9 @@
-use super::uow::PgTransactionContext;
+use super::{uow::PgTransactionContext, PostgresDatabase};
 use crate::{
     application::ports::game_tick::{GameTickRepository, GameTickTxRepository},
     domain::repository::RepositoryResult,
 };
-use sqlx::{PgPool, Postgres};
+use sqlx::Postgres;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -57,14 +57,14 @@ impl PgGameTickRepository {
 }
 
 pub struct PgGameTickService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     game_tick_repo: PgGameTickRepository,
 }
 
 impl PgGameTickService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             game_tick_repo: PgGameTickRepository,
         }
     }
@@ -73,7 +73,9 @@ impl PgGameTickService {
 #[tonic::async_trait]
 impl GameTickRepository for PgGameTickService {
     async fn get_current_game_tick(&self) -> RepositoryResult<i64> {
-        self.game_tick_repo.get_current_game_tick(&*self.pool).await
+        self.game_tick_repo
+            .get_current_game_tick(&self.pg_db.pool)
+            .await
     }
 }
 

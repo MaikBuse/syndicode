@@ -1,7 +1,7 @@
 use crate::{
     application::{
         admin::{
-            bootstrap_admin::BootstrapAdminUseCase, create_user::CreateUserUseCase,
+            bootstrap::BootstrapAdminUseCase, create_user::CreateUserUseCase,
             delete_user::DeleteUserUseCase, get_user::GetUserUseCase,
         },
         auth::{
@@ -10,7 +10,8 @@ use crate::{
         },
         economy::{
             acquire_listed_business::AcquireListedBusinessUseCase,
-            bootstrap_economy::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
+            bootstrap::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
+            list_buildings::ListBuildingsUseCase,
             list_business_listings::ListBusinessListingUseCase,
             list_business_offers::ListBusinessOffersUseCase,
             list_businesses::ListBusinessesUseCase, list_corporations::ListCorporationsUseCase,
@@ -36,7 +37,7 @@ use crate::{
             spawn_unit::SpawnUnitUseCase,
         },
     },
-    config::Config,
+    config::ServerConfig,
     domain::{
         economy::{
             business_listing::repository::BusinessListingRepository,
@@ -51,15 +52,16 @@ use crate::{
         email::EmailHandler,
         postgres::{
             economy::{
-                business::PgBusinessService, business_listing::PgBusinessListingService,
-                business_offer::PgBusinessOfferService, corporation::PgCorporationService,
-                market::PgMarketService,
+                building::PgBuildingService, business::PgBusinessService,
+                business_listing::PgBusinessListingService, business_offer::PgBusinessOfferService,
+                corporation::PgCorporationService, market::PgMarketService,
             },
             game_tick::PgGameTickService,
             init::PgInitializationService,
             unit::PgUnitService,
             uow::PostgresUnitOfWork,
             user::{PgUserRepository, PgUserService},
+            PostgresDatabase,
         },
         valkey::ValkeyStore,
     },
@@ -69,7 +71,6 @@ use crate::{
         game::{user_channel_guard::UserChannels, GamePresenter},
     },
 };
-use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::OnceCell;
 
@@ -90,6 +91,7 @@ pub type DefaultAppState = AppState<
         PgBusinessService,
         PgBusinessListingService,
         PgBusinessOfferService,
+        PgBuildingService,
     >,
     CryptoService,
     CryptoService,
@@ -136,30 +138,31 @@ where
 
 impl DefaultAppState {
     pub async fn build_services(
-        config: Arc<Config>,
-        pg_pool: Arc<PgPool>,
+        config: Arc<ServerConfig>,
+        pg_db: Arc<PostgresDatabase>,
         valkey: Arc<ValkeyStore>,
         user_channels: UserChannels,
     ) -> anyhow::Result<DefaultAppState> {
         // Crypto service
-        let crypto = Arc::new(CryptoService::new()?);
+        let crypto = Arc::new(CryptoService::new(config.clone())?);
 
         // Unit of Work
-        let uow = Arc::new(PostgresUnitOfWork::new(Arc::clone(&pg_pool)));
+        let uow = Arc::new(PostgresUnitOfWork::new(pg_db.clone()));
 
         // Email Handler
-        let sendable = Arc::new(EmailHandler::new()?);
+        let sendable = Arc::new(EmailHandler::new(config.clone())?);
 
         // Database Services
-        let init_service = Arc::new(PgInitializationService::new(pg_pool.clone()));
-        let game_tick_service = Arc::new(PgGameTickService::new(pg_pool.clone()));
-        let user_service = Arc::new(PgUserService::new(Arc::clone(&pg_pool), PgUserRepository));
-        let unit_service = Arc::new(PgUnitService::new(Arc::clone(&pg_pool)));
-        let corporation_service = Arc::new(PgCorporationService::new(Arc::clone(&pg_pool)));
-        let market_service = Arc::new(PgMarketService::new(pg_pool.clone()));
-        let business_service = Arc::new(PgBusinessService::new(pg_pool.clone()));
-        let business_listing_service = Arc::new(PgBusinessListingService::new(pg_pool.clone()));
-        let business_offer_service = Arc::new(PgBusinessOfferService::new(pg_pool.clone()));
+        let init_service = Arc::new(PgInitializationService::new(pg_db.clone()));
+        let game_tick_service = Arc::new(PgGameTickService::new(pg_db.clone()));
+        let user_service = Arc::new(PgUserService::new(pg_db.clone(), PgUserRepository));
+        let unit_service = Arc::new(PgUnitService::new(pg_db.clone()));
+        let corporation_service = Arc::new(PgCorporationService::new(pg_db.clone()));
+        let market_service = Arc::new(PgMarketService::new(pg_db.clone()));
+        let business_service = Arc::new(PgBusinessService::new(pg_db.clone()));
+        let business_listing_service = Arc::new(PgBusinessListingService::new(pg_db.clone()));
+        let business_offer_service = Arc::new(PgBusinessOfferService::new(pg_db.clone()));
+        let building_service = Arc::new(PgBuildingService::new(pg_db.clone()));
 
         // System use cases
         let get_game_tick_uc = Arc::new(
@@ -248,6 +251,7 @@ impl DefaultAppState {
             BootstrapEconomyUseCase::builder()
                 .uow(uow.clone())
                 .init_repo(init_service.clone())
+                .config(config.clone())
                 .build(),
         );
         let get_corporation_uc = Arc::new(
@@ -280,6 +284,11 @@ impl DefaultAppState {
                 .business_offer_repo(business_offer_service.clone())
                 .build(),
         );
+        let list_buildings_uc = Arc::new(
+            ListBuildingsUseCase::builder()
+                .building_repo(building_service.clone())
+                .build(),
+        );
         let query_business_listings_uc = Arc::new(
             QueryBusinessListingsUseCase::builder()
                 .business_listing_repo(business_listing_service.clone())
@@ -303,12 +312,13 @@ impl DefaultAppState {
                 .list_businesses_uc(list_businesses_uc.clone())
                 .list_business_listings_uc(list_business_listings_uc.clone())
                 .list_business_offers_uc(list_business_offers_uc.clone())
+                .list_buildings_uc(list_buildings_uc.clone())
                 .build(),
         );
 
         // Presenter
         let game_presenter = GamePresenter::builder()
-            .config(config.clone())
+            .ip_address_header_lowercase(config.rate_limiter.ip_address_header.to_lowercase())
             .limit(valkey.clone())
             .user_channels(user_channels.clone())
             .get_game_tick_uc(get_game_tick_uc.clone())
@@ -330,13 +340,13 @@ impl DefaultAppState {
             .build();
 
         let auth_presenter = AuthPresenter::builder()
-            .config(config.clone())
             .limit(valkey.clone())
             .register_user_uc(register_user_uc)
             .get_user_uc(get_user_uc)
             .login_uc(login_uc.clone())
             .verify_user_uc(verify_user_uc.clone())
             .resend_verification_uc(resend_verification_uc.clone())
+            .config(config.clone())
             .build();
 
         Ok(AppState {

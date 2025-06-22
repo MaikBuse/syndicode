@@ -4,46 +4,36 @@ pub mod outcome;
 pub mod puller;
 pub mod queuer;
 
-use std::env;
+use std::sync::Arc;
 
-use crate::{application::ports::limiter::LimiterCategory, utils::read_env_var};
+use crate::config::ServerConfig;
 use anyhow::Context;
 use redis::{aio::MultiplexedConnection, AsyncCommands, Script};
 
 pub const ACTION_STREAM_KEY: &str = "syndicode:game_actions";
 pub const ACTION_CONSUMER_GROUP: &str = "leader_processors";
 pub const PAYLOAD_FIELD: &str = "payload";
-const BATCH_PULL_SIZE: usize = 100; // How many messages to request per internal batch
 
 #[derive(Clone)]
 pub struct ValkeyStore {
-    /// A unique identifier for this specific instance trying to acquire the lock.
-    /// Used to ensure only the lock holder can release/refresh it.
-    instance_id: String,
+    config: Arc<ServerConfig>,
     client: redis::Client,
     conn: MultiplexedConnection,
-    leader_config: LeaderElectionConfig,
-    limiter_config: LimiterConfig,
+    leader_scripts: LeaderElectionScripts,
 }
 
 impl ValkeyStore {
-    pub async fn new(
-        instance_id: String,
-        leader_config: LeaderElectionConfig,
-        limiter_config: LimiterConfig,
-    ) -> anyhow::Result<Self> {
-        let valkey_host = read_env_var("VALKEY_HOST")?;
-
-        let conn_string = match env::var("VALKEY_PASSWORD") {
-            Ok(valkey_password) => {
+    pub async fn new(config: Arc<ServerConfig>) -> anyhow::Result<Self> {
+        let conn_string = match config.valkey.password.is_empty() {
+            true => {
                 format!(
                     "redis://:{}@{}:6379",
-                    urlencoding::encode(valkey_password.as_str()),
-                    valkey_host,
+                    urlencoding::encode(config.valkey.password.as_str()),
+                    config.valkey.host,
                 )
             }
-            Err(_) => {
-                format!("redis://{}:6379", valkey_host)
+            false => {
+                format!("redis://{}:6379", config.valkey.host)
             }
         };
 
@@ -63,11 +53,10 @@ impl ValkeyStore {
         .await?;
 
         Ok(Self {
-            instance_id,
+            config,
             client,
             conn,
-            limiter_config,
-            leader_config,
+            leader_scripts: LeaderElectionScripts::default(),
         })
     }
     async fn ensure_consumer_group_exists(
@@ -114,16 +103,14 @@ impl ValkeyStore {
 }
 
 #[derive(Clone, Debug)]
-pub struct LeaderElectionConfig {
-    pub leader_lock_ttl: usize,
+pub struct LeaderElectionScripts {
     // Lua scripts for safe release and refresh
     pub release_script: Script,
     pub refresh_script: Script,
 }
 
-impl LeaderElectionConfig {
-    /// Creates a default configuration with a unique instance ID.
-    pub fn new(leader_lock_ttl: usize) -> Self {
+impl Default for LeaderElectionScripts {
+    fn default() -> Self {
         // Lua script for safe release:
         // Deletes the key ONLY if its value matches the provided instance_id.
         // KEYS[1]: lock_key
@@ -158,40 +145,6 @@ impl LeaderElectionConfig {
         Self {
             release_script,
             refresh_script,
-            leader_lock_ttl,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct LimiterConfig {
-    pub disable_rate_limitting: bool,
-    pub middleware_max_req: usize,
-    pub middleware_window_secs: usize,
-    pub game_stream_max_req: usize,
-    pub game_stream_window_secs: usize,
-    pub auth_max_req: usize,
-    pub auth_window_secs: usize,
-    pub admin_max_req: usize,
-    pub admin_window_secs: usize,
-}
-
-impl LimiterConfig {
-    pub fn get_max_requests(&self, category: LimiterCategory) -> usize {
-        match category {
-            LimiterCategory::Middleware => self.middleware_max_req,
-            LimiterCategory::GameStream => self.game_stream_max_req,
-            LimiterCategory::Auth => self.auth_max_req,
-            LimiterCategory::Admin => self.admin_max_req,
-        }
-    }
-
-    pub fn get_window_secs(&self, category: LimiterCategory) -> usize {
-        match category {
-            LimiterCategory::Middleware => self.middleware_window_secs,
-            LimiterCategory::GameStream => self.game_stream_window_secs,
-            LimiterCategory::Auth => self.auth_window_secs,
-            LimiterCategory::Admin => self.admin_window_secs,
         }
     }
 }

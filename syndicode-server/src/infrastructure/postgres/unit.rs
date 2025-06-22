@@ -1,4 +1,4 @@
-use super::{game_tick::PgGameTickRepository, uow::PgTransactionContext};
+use super::{game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase};
 use crate::domain::{
     repository::RepositoryResult,
     unit::{
@@ -6,7 +6,7 @@ use crate::domain::{
         repository::{ListUnitsOutcome, UnitRepository, UnitTxRespository},
     },
 };
-use sqlx::{Executor, PgPool, Postgres};
+use sqlx::{Executor, Postgres};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -131,15 +131,15 @@ impl PgUnitRepository {
 }
 
 pub struct PgUnitService {
-    pool: Arc<PgPool>,
+    pg_db: Arc<PostgresDatabase>,
     game_tick_repo: PgGameTickRepository,
     unit_repo: PgUnitRepository,
 }
 
 impl PgUnitService {
-    pub fn new(pool: Arc<PgPool>) -> Self {
+    pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
-            pool,
+            pg_db,
             game_tick_repo: PgGameTickRepository,
             unit_repo: PgUnitRepository,
         }
@@ -150,7 +150,7 @@ impl PgUnitService {
 impl UnitRepository for PgUnitService {
     async fn list_units_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Unit>> {
         self.unit_repo
-            .list_units_in_tick(&*self.pool, game_tick)
+            .list_units_in_tick(&self.pg_db.pool, game_tick)
             .await
     }
 
@@ -160,12 +160,12 @@ impl UnitRepository for PgUnitService {
     ) -> RepositoryResult<ListUnitsOutcome> {
         let game_tick = self
             .game_tick_repo
-            .get_current_game_tick(&*self.pool)
+            .get_current_game_tick(&self.pg_db.pool)
             .await?;
 
         let units = self
             .unit_repo
-            .list_corporation_units_at_tick(&*self.pool, corporation_uuid, game_tick)
+            .list_corporation_units_at_tick(&self.pg_db.pool, corporation_uuid, game_tick)
             .await?;
 
         Ok(ListUnitsOutcome { game_tick, units })

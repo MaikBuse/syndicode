@@ -7,3 +7,5 @@
 # client
 syndicode-client.log
 /client_config.toml
+
+*.parquet
