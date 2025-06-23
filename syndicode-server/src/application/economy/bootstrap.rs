@@ -38,12 +38,13 @@ macro_rules! get_record_value {
     ($record:expr, $method:ident, $idx:expr, $field:expr, $row_group_idx:expr, $record_idx:expr) => {
         match $record.$method($idx) {
             Ok(val) => val,
-            Err(_) => {
+            Err(err) => {
                 return Err(anyhow::anyhow!(
-                    "Failed to retrieve '{}' from row group '{}' and record '{}'",
+                    "Failed to retrieve '{}' from row group '{}' and record '{}': {}",
                     $field,
                     $row_group_idx,
-                    $record_idx
+                    $record_idx,
+                    err
                 ));
             }
         }
@@ -209,30 +210,9 @@ pub fn load_buildings_from_flateau(path: &str) -> anyhow::Result<Vec<Building>> 
                 row_group_idx,
                 record_idx
             );
-            let prefecture = get_record_value!(
-                record,
-                get_string,
-                prefecture_idx,
-                "prefecture",
-                row_group_idx,
-                record_idx
-            );
-            let class = get_record_value!(
-                record,
-                get_string,
-                class_idx,
-                "class",
-                row_group_idx,
-                record_idx
-            );
-            let class_code = get_record_value!(
-                record,
-                get_short,
-                class_code_idx,
-                "class_code",
-                row_group_idx,
-                record_idx
-            );
+            let prefecture = record.get_string(prefecture_idx).ok().map(|c| c.to_owned());
+            let class = record.get_string(class_idx).ok().map(|c| c.to_owned());
+            let class_code = record.get_string(class_code_idx).ok().map(|c| c.to_owned());
             let cal_xmin = get_record_value!(
                 record,
                 get_double,
@@ -273,54 +253,12 @@ pub fn load_buildings_from_flateau(path: &str) -> anyhow::Result<Vec<Building>> 
                 row_group_idx,
                 record_idx
             );
-            let city = get_record_value!(
-                record,
-                get_string,
-                city_idx,
-                "city",
-                row_group_idx,
-                record_idx
-            );
-            let city_code = get_record_value!(
-                record,
-                get_string,
-                city_code_idx,
-                "city_code",
-                row_group_idx,
-                record_idx
-            );
-            let name = get_record_value!(
-                record,
-                get_string,
-                name_idx,
-                "name",
-                row_group_idx,
-                record_idx
-            );
-            let address = get_record_value!(
-                record,
-                get_string,
-                address_idx,
-                "address",
-                row_group_idx,
-                record_idx
-            );
-            let usage = get_record_value!(
-                record,
-                get_string,
-                usage_idx,
-                "usage",
-                row_group_idx,
-                record_idx
-            );
-            let usage_code = get_record_value!(
-                record,
-                get_short,
-                usage_code_idx,
-                "usage_code",
-                row_group_idx,
-                record_idx
-            );
+            let city = record.get_string(city_idx).ok().map(|c| c.to_owned());
+            let city_code = record.get_string(city_code_idx).ok().map(|c| c.to_owned());
+            let name = record.get_string(name_idx).ok().map(|c| c.to_owned());
+            let address = record.get_string(address_idx).ok().map(|c| c.to_owned());
+            let usage = record.get_string(usage_idx).ok().map(|c| c.to_owned());
+            let usage_code = record.get_string(usage_code_idx).ok().map(|c| c.to_owned());
 
             let footprint = polygon![
                 (x: cal_xmin, y: cal_ymin), // Bottom-left
@@ -351,9 +289,9 @@ pub fn load_buildings_from_flateau(path: &str) -> anyhow::Result<Vec<Building>> 
                 height: cal_height_m,
                 owning_business_uuid: None,
                 class: class.to_owned(),
-                class_code,
+                class_code: class_code.to_owned(),
                 usage: usage.to_owned(),
-                usage_code,
+                usage_code: usage_code.to_owned(),
                 prefecture: prefecture.to_owned(),
             });
         }

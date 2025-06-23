@@ -26,14 +26,14 @@ impl ValkeyStore {
     pub async fn new(config: Arc<ServerConfig>) -> anyhow::Result<Self> {
         let conn_string = match config.valkey.password.is_empty() {
             true => {
+                format!("redis://{}:6379", config.valkey.host)
+            }
+            false => {
                 format!(
                     "redis://:{}@{}:6379",
                     urlencoding::encode(config.valkey.password.as_str()),
                     config.valkey.host,
                 )
-            }
-            false => {
-                format!("redis://{}:6379", config.valkey.host)
             }
         };
 

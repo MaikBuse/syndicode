@@ -41,7 +41,7 @@
       {
         "ordinal": 7,
         "name": "usage_code",
-        "type_info": "Int2"
+        "type_info": "Text"
       },
       {
         "ordinal": 8,
@@ -51,7 +51,7 @@
       {
         "ordinal": 9,
         "name": "class_code",
-        "type_info": "Int2"
+        "type_info": "Text"
       },
       {
         "ordinal": 10,
@@ -93,19 +93,19 @@
       false,
       false,
       false,
-      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
       true,
       false,
       false,
       false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
+      true
     ]
   },
   "hash": "15ce30abe544e94006483606514be309f90dbbc3a99f60cbadf7b481d6e34402"

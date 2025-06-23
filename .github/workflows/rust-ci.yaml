@@ -60,7 +60,7 @@ jobs:
     needs: [lint, server-unit-tests]
     services:
       postgres:
-        image: postgis/postgis:17-3.5
+        image: postgres:17.2
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: secretpassword

@@ -97,7 +97,7 @@ impl PgBuildingRepository {
                 $7::TEXT[],
                 $8::SMALLINT[],
                 $9::TEXT[],
-                $10::SMALLINT[],
+                $10::TEXT[],
                 $11::TEXT[],
                 $12::TEXT[],
                 $13::geometry[],

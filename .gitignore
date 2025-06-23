@@ -8,4 +8,6 @@
 syndicode-client.log
 /client_config.toml
 
+# server
+/server_config.toml
 *.parquet

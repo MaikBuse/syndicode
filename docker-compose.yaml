@@ -3,7 +3,7 @@ services:
     env_file:
       - path: ./.env
         required: true
-    image: postgis/postgis:17-3.5
+    image: postgres:17.2
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT}:5432"
