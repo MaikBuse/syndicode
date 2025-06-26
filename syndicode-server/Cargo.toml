@@ -37,6 +37,9 @@ lettre = { version = "0.11.15", features = ["tokio1-native-tls"] }
 parquet = "55.1.0"
 geo = "0.30.0"
 rstar = "0.12.2"
+rayon = "1.10.0"
+arrow = "55.1.0"
+indicatif = { version = "0.17.11", features = ["rayon"] }
 
 [dev-dependencies]
 mockall = "0.13.1"

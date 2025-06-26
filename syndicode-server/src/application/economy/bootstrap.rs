@@ -11,15 +11,21 @@ use crate::{
         market::model::{name::MarketName, Market},
     },
 };
+use arrow::array::Array;
 use bon::Builder;
 use geo::{polygon, prelude::Centroid, Distance, Haversine, Point};
-use parquet::file::reader::{FileReader, SerializedFileReader};
-use parquet::record::RowAccessor;
+use indicatif::{ProgressBar, ProgressStyle};
+use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use rand::{seq::IteratorRandom, Rng};
+use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use rstar::RTree;
-use std::{collections::HashSet, path::Path};
+use std::{collections::HashSet, path::Path, time::Instant};
 use std::{fs::File, sync::Arc};
 use uuid::Uuid;
+
+const PROGRESS_BAR_TEMPLATE: &str =
+    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})";
+const PROGRESS_BAR_CHARS: &str = "#>-";
 
 const MARKET_NAMES: [MarketName; 10] = [
     MarketName::AutonomousDrone,
@@ -33,23 +39,6 @@ const MARKET_NAMES: [MarketName; 10] = [
     MarketName::SyndicateData,
     MarketName::BlackMarketBio,
 ];
-
-macro_rules! get_record_value {
-    ($record:expr, $method:ident, $idx:expr, $field:expr, $row_group_idx:expr, $record_idx:expr) => {
-        match $record.$method($idx) {
-            Ok(val) => val,
-            Err(err) => {
-                return Err(anyhow::anyhow!(
-                    "Failed to retrieve '{}' from row group '{}' and record '{}': {}",
-                    $field,
-                    $row_group_idx,
-                    $record_idx,
-                    err
-                ));
-            }
-        }
-    };
-}
 
 #[derive(Builder)]
 pub struct BootstrapEconomyUseCase<UOW, INI>
@@ -94,7 +83,7 @@ where
             markets.push(market);
         }
 
-        let buildings = load_buildings_from_flateau(self.config.bootstrap.parquet_path.as_str())?;
+        let buildings = load_buildings_from_parquet(self.config.bootstrap.parquet_path.as_str())?;
         let central_points = generate_central_points(
             self.config.bootstrap.business_count_x,
             self.config.bootstrap.business_count_y,
@@ -158,144 +147,194 @@ where
     }
 }
 
-/// Loads building data from a Flateau Parquet file.
-///
-/// This function reads the `gml_id` and the WKB `geometry` for each building,
-/// calculates the centroid of the geometry, and returns a list of Buildings.
-pub fn load_buildings_from_flateau(path: &str) -> anyhow::Result<Vec<Building>> {
+/// Loads building data from a Flateau Parquet file using a high-performance
+/// columnar and parallel approach.
+pub fn load_buildings_from_parquet(path: &str) -> anyhow::Result<Vec<Building>> {
+    tracing::info!("Reading buildings from parquet: {}", path);
+
+    let start_time = Instant::now();
+
     let file = File::open(Path::new(path))?;
-    let reader = SerializedFileReader::new(file)?;
 
-    // Find the column indices from the schema by iterating
-    let schema_descr = reader.metadata().file_metadata().schema_descr();
+    // Use the Arrow-based RecordBatchReader for columnar access
+    let builder = ParquetRecordBatchReaderBuilder::try_new(file)?;
 
-    let get_index_of_column = |column_name: &str| -> anyhow::Result<usize> {
-        schema_descr
-            .columns()
-            .iter()
-            .position(|c| c.name() == column_name)
-            .ok_or(anyhow::anyhow!("Column '{}' not found", column_name))
-    };
+    // Get total rows for the progress bar
+    let total_rows = builder.metadata().file_metadata().num_rows() as u64;
 
-    let gml_id_idx = get_index_of_column("gml_id")?;
-    let prefecture_idx = get_index_of_column("prefecture")?;
-    let class_idx = get_index_of_column("class")?;
-    let class_code_idx = get_index_of_column("class_code")?;
-    let cal_xmin_idx = get_index_of_column("cal_xmin")?;
-    let cal_xmax_idx = get_index_of_column("cal_xmax")?;
-    let cal_ymin_idx = get_index_of_column("cal_ymin")?;
-    let cal_ymax_idx = get_index_of_column("cal_ymax")?;
-    let cal_height_m_idx = get_index_of_column("cal_height_m")?;
-    let city_idx = get_index_of_column("city")?;
-    let city_code_idx = get_index_of_column("city_code")?;
-    let name_idx = get_index_of_column("gml_name")?;
-    let address_idx = get_index_of_column("address")?;
-    let usage_idx = get_index_of_column("usage")?;
-    let usage_code_idx = get_index_of_column("usage_code")?;
+    let reader = builder.build()?;
 
-    let num_rows = reader.metadata().file_metadata().num_rows() as usize;
-    let mut buildings = Vec::with_capacity(num_rows);
+    // Set up the progress bar
+    let pb = ProgressBar::new(total_rows);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(PROGRESS_BAR_TEMPLATE)?
+            .progress_chars(PROGRESS_BAR_CHARS),
+    );
 
-    for (row_group_idx, row_group_reader) in reader.get_row_iter(None)?.enumerate() {
-        tracing::info!(
-            "Importing buildings of group reader with index '{}'",
-            row_group_idx
-        );
-        for (record_idx, record) in row_group_reader.iter().enumerate() {
-            let gml_id = get_record_value!(
-                record,
-                get_string,
-                gml_id_idx,
-                "gml_id",
-                row_group_idx,
-                record_idx
-            );
-            let prefecture = record.get_string(prefecture_idx).ok().map(|c| c.to_owned());
-            let class = record.get_string(class_idx).ok().map(|c| c.to_owned());
-            let class_code = record.get_string(class_code_idx).ok().map(|c| c.to_owned());
-            let cal_xmin = get_record_value!(
-                record,
-                get_double,
-                cal_xmin_idx,
-                "cal_xmin",
-                row_group_idx,
-                record_idx
-            );
-            let cal_xmax = get_record_value!(
-                record,
-                get_double,
-                cal_xmax_idx,
-                "cal_xmax",
-                row_group_idx,
-                record_idx
-            );
-            let cal_ymin = get_record_value!(
-                record,
-                get_double,
-                cal_ymin_idx,
-                "cal_ymin",
-                row_group_idx,
-                record_idx
-            );
-            let cal_ymax = get_record_value!(
-                record,
-                get_double,
-                cal_ymax_idx,
-                "cal_ymax",
-                row_group_idx,
-                record_idx
-            );
-            let cal_height_m = get_record_value!(
-                record,
-                get_double,
-                cal_height_m_idx,
-                "cal_height_m",
-                row_group_idx,
-                record_idx
-            );
-            let city = record.get_string(city_idx).ok().map(|c| c.to_owned());
-            let city_code = record.get_string(city_code_idx).ok().map(|c| c.to_owned());
-            let name = record.get_string(name_idx).ok().map(|c| c.to_owned());
-            let address = record.get_string(address_idx).ok().map(|c| c.to_owned());
-            let usage = record.get_string(usage_idx).ok().map(|c| c.to_owned());
-            let usage_code = record.get_string(usage_code_idx).ok().map(|c| c.to_owned());
+    // Process record batches in parallel using Rayon
+    let buildings: Vec<Building> = reader
+        .into_iter()
+        .filter_map(Result::ok) // Ignore batches that fail to read
+        .par_bridge() // Switch to a parallel iterator
+        .flat_map(|batch| {
+            // Increment the progress bar after processing a batch
+            // It's thread-safe and designed for this.
+            pb.inc(batch.num_rows() as u64);
 
-            let footprint = polygon![
-                (x: cal_xmin, y: cal_ymin), // Bottom-left
-                (x: cal_xmax, y: cal_ymin), // Bottom-right
-                (x: cal_xmax, y: cal_ymax), // Top-right
-                (x: cal_xmin, y: cal_ymax), // Top-left
-            ];
+            // Cast columns to their concrete Arrow Array types. This is very fast.
+            // This looks verbose, but it's much more efficient than row-by-row access.
+            let gml_id_arr = batch
+                .column_by_name("gml_id")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let prefecture_arr = batch
+                .column_by_name("prefecture")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let class_arr = batch
+                .column_by_name("class")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let class_code_arr = batch
+                .column_by_name("class_code")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let cal_xmin_arr = batch
+                .column_by_name("cal_xmin")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::Float64Array>()
+                .unwrap();
+            let cal_xmax_arr = batch
+                .column_by_name("cal_xmax")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::Float64Array>()
+                .unwrap();
+            let cal_ymin_arr = batch
+                .column_by_name("cal_ymin")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::Float64Array>()
+                .unwrap();
+            let cal_ymax_arr = batch
+                .column_by_name("cal_ymax")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::Float64Array>()
+                .unwrap();
+            let cal_height_m_arr = batch
+                .column_by_name("cal_height_m")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::Float64Array>()
+                .unwrap();
+            let city_arr = batch
+                .column_by_name("city")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let city_code_arr = batch
+                .column_by_name("city_code")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let name_arr = batch
+                .column_by_name("gml_name")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let address_arr = batch
+                .column_by_name("address")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let usage_arr = batch
+                .column_by_name("usage")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
+            let usage_code_arr = batch
+                .column_by_name("usage_code")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap();
 
-            let Some(centroid) = footprint.centroid() else {
-                return Err(anyhow::anyhow!(
-                    "Failed to retrieve 'centroid' from polygon of row group '{}' and record '{}'",
-                    row_group_idx,
-                    record_idx
-                ));
-            };
+            // Iterate from 0 to num_rows and extract data by index.
+            // This is cache-friendly and avoids repeated lookups.
+            (0..batch.num_rows())
+                .into_par_iter() // You can even parallelize within a batch for very large batches
+                .map(|i| {
+                    let cal_xmin = cal_xmin_arr.value(i);
+                    let cal_xmax = cal_xmax_arr.value(i);
+                    let cal_ymin = cal_ymin_arr.value(i);
+                    let cal_ymax = cal_ymax_arr.value(i);
 
-            let uuid = Uuid::now_v7();
+                    let footprint = polygon![
+                        (x: cal_xmin, y: cal_ymin),
+                        (x: cal_xmax, y: cal_ymin),
+                        (x: cal_xmax, y: cal_ymax),
+                        (x: cal_xmin, y: cal_ymax),
+                    ];
 
-            buildings.push(Building {
-                uuid,
-                gml_id: gml_id.to_owned(),
-                name: name.to_owned(),
-                address: address.to_owned(),
-                city: city.to_owned(),
-                city_code: city_code.to_owned(),
-                center: centroid,
-                footprint,
-                height: cal_height_m,
-                owning_business_uuid: None,
-                class: class.to_owned(),
-                class_code: class_code.to_owned(),
-                usage: usage.to_owned(),
-                usage_code: usage_code.to_owned(),
-                prefecture: prefecture.to_owned(),
-            });
-        }
-    }
+                    // The centroid calculation is safe for a rectangle
+                    let centroid = footprint.centroid().unwrap();
+
+                    // Helper to reduce repetition for optional string fields
+                    // This gets a &str slice, avoiding allocation until .to_string()
+                    let get_opt_string = |arr: &arrow::array::StringArray, idx: usize| {
+                        if arr.is_valid(idx) {
+                            Some(arr.value(idx).to_string())
+                        } else {
+                            None
+                        }
+                    };
+
+                    Building {
+                        uuid: Uuid::now_v7(),
+                        gml_id: gml_id_arr.value(i).to_string(),
+                        height: cal_height_m_arr.value(i),
+                        footprint,
+                        center: centroid,
+                        name: get_opt_string(name_arr, i),
+                        address: get_opt_string(address_arr, i),
+                        city: get_opt_string(city_arr, i),
+                        city_code: get_opt_string(city_code_arr, i),
+                        class: get_opt_string(class_arr, i),
+                        class_code: get_opt_string(class_code_arr, i),
+                        usage: get_opt_string(usage_arr, i),
+                        usage_code: get_opt_string(usage_code_arr, i),
+                        prefecture: get_opt_string(prefecture_arr, i),
+                        owning_business_uuid: None,
+                    }
+                })
+                .collect::<Vec<Building>>()
+        })
+        .collect();
+
+    //Finish the progress bar and stop the timer
+    pb.finish_with_message("All buildings loaded.");
+    let duration = start_time.elapsed();
+    tracing::info!(
+        "Successfully loaded {} buildings in {:.2?}.",
+        buildings.len(),
+        duration
+    );
 
     Ok(buildings)
 }
@@ -309,6 +348,8 @@ pub fn generate_central_points(
     min_lat: f64,
     max_lat: f64,
 ) -> Vec<Point<f64>> {
+    tracing::info!("Generating central points for businesses");
+
     let mut points = Vec::new();
     let mut rng = rand::rng();
 
@@ -336,6 +377,16 @@ pub fn assign_buildings_to_businesses(
     sigma_meters: f64,
     max_radius_meters: f64,
 ) -> anyhow::Result<Vec<Business>> {
+    tracing::info!("Assigning buildings to businesses");
+
+    // Set up the progress bar
+    let pb = ProgressBar::new(central_points.len() as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(PROGRESS_BAR_TEMPLATE)?
+            .progress_chars(PROGRESS_BAR_CHARS),
+    );
+
     let mut businesses = Vec::new();
     let mut rng = rand::rng();
     let mut assigned_building_uuids: HashSet<Uuid> = HashSet::new();
@@ -390,7 +441,12 @@ pub fn assign_buildings_to_businesses(
 
             businesses.push(business);
         }
+
+        pb.inc(1);
     }
+
+    //Finish the progress bar and stop the timer
+    pb.finish_with_message("All central points processed.");
 
     Ok(businesses)
 }

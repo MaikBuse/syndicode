@@ -1,4 +1,4 @@
-use super::services::DefaultAppState;
+use super::state::DefaultAppState;
 use crate::{
     config::ServerConfig,
     infrastructure::{

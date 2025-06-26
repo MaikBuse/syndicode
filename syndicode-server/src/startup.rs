@@ -1,7 +1,7 @@
 mod bootstrap;
 mod logging;
 mod server;
-mod services;
+mod state;
 
 use crate::{
     application::leader::LeaderLoopManager,
@@ -13,7 +13,7 @@ use crate::{
     presentation::{broadcaster::GameTickBroadcaster, game::user_channel_guard::UserChannels},
 };
 use dashmap::DashMap;
-use services::AppState;
+use state::AppState;
 use std::{sync::Arc, time::Duration};
 
 pub async fn start_server() -> anyhow::Result<()> {
