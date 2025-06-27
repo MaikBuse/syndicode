@@ -83,11 +83,9 @@ CREATE INDEX IF NOT EXISTS idx_target_corporation_uuid ON business_offers (targe
 
 
 CREATE TABLE buildings (
-    game_tick BIGINT NOT NULL,
-    uuid UUID NOT NULL,
+    uuid UUID PRIMARY KEY,
     gml_id TEXT NOT NULL,
     name TEXT,
-    owning_business_uuid UUID,
     address TEXT,
     usage TEXT,
     usage_code TEXT,
@@ -98,14 +96,22 @@ CREATE TABLE buildings (
     center POINT NOT NULL,
     footprint POLYGON NOT NULL,
     height DOUBLE PRECISION NOT NULL,
-    prefecture TEXT,
-
-    PRIMARY KEY (game_tick, uuid)
+    prefecture TEXT
 );
 
 -- Create a standard index on gml_id.
 -- This allows for very fast lookups if you need to find a specific building by its source ID.
 CREATE INDEX idx_buildings_gml_id_idx ON buildings (gml_id);
 
-CREATE INDEX IF NOT EXISTS idx_building_uuid_game_tick ON buildings (uuid, game_tick);
-CREATE INDEX IF NOT EXISTS idx_owning_business_uuid_game_tick ON buildings (owning_business_uuid, game_tick);
+-- Tracks which business owns which building at every game tick.
+CREATE TABLE IF NOT EXISTS building_ownerships (
+    game_tick BIGINT NOT NULL,
+    building_uuid UUID NOT NULL,
+    owning_business_uuid UUID NOT NULL,
+
+    -- At any given tick, a building can only have one owner.
+    PRIMARY KEY (game_tick, building_uuid)
+);
+
+-- Index for the most common query: "Find all buildings owned by a business at a specific tick"
+CREATE INDEX IF NOT EXISTS idx_ownership_owner_tick ON building_ownerships (owning_business_uuid, game_tick);

@@ -64,10 +64,12 @@ pub(super) fn from_geo_polygon_to_pg_points(polygon: Polygon<f64>) -> PgPolygon 
     PgPolygon { points }
 }
 
+#[allow(dead_code)]
 pub(super) fn from_pg_point_to_geo_point(pg_point: PgPoint) -> Point<f64> {
     Point::new(pg_point.x, pg_point.y)
 }
 
+#[allow(dead_code)]
 pub(super) fn from_pg_polygon_to_geo_polygon(pg_polygon: PgPolygon) -> Polygon<f64> {
     let exterior: Vec<_> = pg_polygon.points.iter().map(|p| (p.x, p.y)).collect();
 

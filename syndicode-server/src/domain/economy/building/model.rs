@@ -7,7 +7,6 @@ pub struct Building {
     pub uuid: Uuid,
     pub gml_id: String,
     pub name: Option<String>,
-    pub owning_business_uuid: Option<Uuid>,
     pub address: Option<String>,
     pub usage: Option<String>,
     pub usage_code: Option<String>,

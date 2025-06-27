@@ -11,7 +11,7 @@ use crate::{
         economy::{
             acquire_listed_business::AcquireListedBusinessUseCase,
             bootstrap::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
-            list_buildings::ListBuildingsUseCase,
+            list_building_ownerships::ListBuildingOwnershipsUseCase,
             list_business_listings::ListBusinessListingUseCase,
             list_business_offers::ListBusinessOffersUseCase,
             list_businesses::ListBusinessesUseCase, list_corporations::ListCorporationsUseCase,
@@ -52,7 +52,7 @@ use crate::{
         email::EmailHandler,
         postgres::{
             economy::{
-                building::PgBuildingService, business::PgBusinessService,
+                building_ownership::PgBuildingOwnershipService, business::PgBusinessService,
                 business_listing::PgBusinessListingService, business_offer::PgBusinessOfferService,
                 corporation::PgCorporationService, market::PgMarketService,
             },
@@ -91,7 +91,7 @@ pub type DefaultAppState = AppState<
         PgBusinessService,
         PgBusinessListingService,
         PgBusinessOfferService,
-        PgBuildingService,
+        PgBuildingOwnershipService,
     >,
     CryptoService,
     CryptoService,
@@ -162,7 +162,7 @@ impl DefaultAppState {
         let business_service = Arc::new(PgBusinessService::new(pg_db.clone()));
         let business_listing_service = Arc::new(PgBusinessListingService::new(pg_db.clone()));
         let business_offer_service = Arc::new(PgBusinessOfferService::new(pg_db.clone()));
-        let building_service = Arc::new(PgBuildingService::new(pg_db.clone()));
+        let building_ownership_service = Arc::new(PgBuildingOwnershipService::new(pg_db.clone()));
 
         // System use cases
         let get_game_tick_uc = Arc::new(
@@ -284,9 +284,9 @@ impl DefaultAppState {
                 .business_offer_repo(business_offer_service.clone())
                 .build(),
         );
-        let list_buildings_uc = Arc::new(
-            ListBuildingsUseCase::builder()
-                .building_repo(building_service.clone())
+        let list_building_ownerships = Arc::new(
+            ListBuildingOwnershipsUseCase::builder()
+                .building_ownership_repo(building_ownership_service)
                 .build(),
         );
         let query_business_listings_uc = Arc::new(
@@ -312,7 +312,7 @@ impl DefaultAppState {
                 .list_businesses_uc(list_businesses_uc.clone())
                 .list_business_listings_uc(list_business_listings_uc.clone())
                 .list_business_offers_uc(list_business_offers_uc.clone())
-                .list_buildings_uc(list_buildings_uc.clone())
+                .list_building_ownerships(list_building_ownerships)
                 .build(),
         );
 

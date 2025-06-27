@@ -6,6 +6,7 @@ use crate::{
     config::ServerConfig,
     domain::economy::{
         building::{model::Building, point::BuildingPoint},
+        building_ownership::model::BuildingOwnership,
         business::{generator::generate_business_name, model::Business},
         business_listing::model::BusinessListing,
         market::model::{name::MarketName, Market},
@@ -93,7 +94,7 @@ where
             self.config.bootstrap.boundary_max_lat,
         );
 
-        let businesses = assign_buildings_to_businesses(
+        let (businesses, building_ownerships) = assign_buildings_to_businesses(
             &markets,
             &buildings,
             central_points,
@@ -128,7 +129,8 @@ where
                     ctx.insert_markets_in_tick(game_tick, markets).await?;
                     ctx.insert_businesses_in_tick(game_tick, businesses).await?;
                     ctx.insert_business_listings_in_tick(game_tick, business_listings).await?;
-                    ctx.insert_buildings_in_tick(game_tick, buildings).await?;
+                    ctx.insert_buildings(buildings).await?;
+                    ctx.insert_building_ownerships_in_tick(game_tick, building_ownerships).await?;
 
                     ctx.set_database_initialization_flag().await?;
 
@@ -320,7 +322,6 @@ pub fn load_buildings_from_parquet(path: &str) -> anyhow::Result<Vec<Building>> 
                         usage: get_opt_string(usage_arr, i),
                         usage_code: get_opt_string(usage_code_arr, i),
                         prefecture: get_opt_string(prefecture_arr, i),
-                        owning_business_uuid: None,
                     }
                 })
                 .collect::<Vec<Building>>()
@@ -376,18 +377,22 @@ pub fn assign_buildings_to_businesses(
     central_points: Vec<Point<f64>>,
     sigma_meters: f64,
     max_radius_meters: f64,
-) -> anyhow::Result<Vec<Business>> {
+) -> anyhow::Result<(Vec<Business>, Vec<BuildingOwnership>)> {
     tracing::info!("Assigning buildings to businesses");
 
+    let center_points_len = central_points.len();
+
     // Set up the progress bar
-    let pb = ProgressBar::new(central_points.len() as u64);
+    let pb = ProgressBar::new(center_points_len as u64);
     pb.set_style(
         ProgressStyle::default_bar()
             .template(PROGRESS_BAR_TEMPLATE)?
             .progress_chars(PROGRESS_BAR_CHARS),
     );
 
-    let mut businesses = Vec::new();
+    let mut businesses = Vec::with_capacity(center_points_len);
+    let mut building_ownerships = Vec::new();
+
     let mut rng = rand::rng();
     let mut assigned_building_uuids: HashSet<Uuid> = HashSet::new();
     let variance = sigma_meters.powi(2);
@@ -430,16 +435,26 @@ pub fn assign_buildings_to_businesses(
 
         if !assigned_buildings_for_this_business.is_empty() {
             let business_name = generate_business_name(market.name);
+            let business_uuid = Uuid::now_v7();
 
             let business = Business::builder()
                 .center(center)
-                .uuid(Uuid::now_v7())
+                .uuid(business_uuid)
                 .name(business_name)
                 .operational_expenses(0)
                 .market_uuid(market.uuid)
                 .build();
 
             businesses.push(business);
+
+            for assigned_building_uuid in assigned_buildings_for_this_business {
+                let building_ownership = BuildingOwnership::builder()
+                    .owning_business_uuid(business_uuid)
+                    .building_uuid(assigned_building_uuid)
+                    .build();
+
+                building_ownerships.push(building_ownership);
+            }
         }
 
         pb.inc(1);
@@ -448,5 +463,5 @@ pub fn assign_buildings_to_businesses(
     //Finish the progress bar and stop the timer
     pb.finish_with_message("All central points processed.");
 
-    Ok(businesses)
+    Ok((businesses, building_ownerships))
 }

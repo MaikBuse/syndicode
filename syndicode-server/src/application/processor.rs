@@ -1,6 +1,7 @@
 use super::{
     economy::{
-        list_buildings::ListBuildingsUseCase, list_business_listings::ListBusinessListingUseCase,
+        list_building_ownerships::ListBuildingOwnershipsUseCase,
+        list_business_listings::ListBusinessListingUseCase,
         list_business_offers::ListBusinessOffersUseCase, list_businesses::ListBusinessesUseCase,
         list_corporations::ListCorporationsUseCase, list_markets::ListMarketsUseCase,
     },
@@ -18,7 +19,7 @@ use crate::{
     application::ports::processor::ProcessorError,
     domain::{
         economy::{
-            building::repository::BuildingRepository,
+            building_ownership::repository::BuildingOwnershipRepository,
             business::{model::Business, repository::BusinessRepository},
             business_listing::{model::BusinessListing, repository::BusinessListingRepository},
             business_offer::{model::BusinessOffer, repository::BusinessOfferRepository},
@@ -37,7 +38,7 @@ use std::sync::Arc;
 use tokio::sync::OnceCell;
 
 #[derive(Builder)]
-pub struct GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLD>
+pub struct GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLO>
 where
     INI: InitializationRepository,
     S: Simulationable,
@@ -52,7 +53,7 @@ where
     BSN: BusinessRepository,
     BL: BusinessListingRepository,
     BO: BusinessOfferRepository,
-    BLD: BuildingRepository,
+    BLO: BuildingOwnershipRepository,
 {
     init_check_cell: OnceCell<()>, // Stores Ok(()) on successful check
     init_repo: Arc<INI>,
@@ -68,11 +69,11 @@ where
     list_businesses_uc: Arc<ListBusinessesUseCase<BSN>>,
     list_business_listings_uc: Arc<ListBusinessListingUseCase<BL>>,
     list_business_offers_uc: Arc<ListBusinessOffersUseCase<BO>>,
-    list_buildings_uc: Arc<ListBuildingsUseCase<BLD>>,
+    list_building_ownerships: Arc<ListBuildingOwnershipsUseCase<BLO>>,
 }
 
-impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLD>
-    GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLD>
+impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLO>
+    GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLO>
 where
     INI: InitializationRepository,
     S: Simulationable,
@@ -87,7 +88,7 @@ where
     BSN: BusinessRepository,
     BL: BusinessListingRepository,
     BO: BusinessOfferRepository,
-    BLD: BuildingRepository,
+    BLO: BuildingOwnershipRepository,
 {
     // Helper to serialize the outcome into bytes for storage
     fn serialize_outcome_for_delivery(
@@ -116,8 +117,8 @@ where
 }
 
 #[tonic::async_trait]
-impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLD> GameTickProcessable
-    for GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLD>
+impl<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLO> GameTickProcessable
+    for GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLO>
 where
     INI: InitializationRepository,
     S: Simulationable,
@@ -132,7 +133,7 @@ where
     BSN: BusinessRepository,
     BL: BusinessListingRepository,
     BO: BusinessOfferRepository,
-    BLD: BuildingRepository,
+    BLO: BuildingOwnershipRepository,
 {
     async fn process_next_tick(&self) -> ProcessorResult<i64> {
         // 0. CHECK DATABASE INITIALIZATION
@@ -156,7 +157,10 @@ where
             .list_business_offers_uc
             .execute(current_game_tick)
             .await?;
-        let buildings_vec = self.list_buildings_uc.execute(current_game_tick).await?;
+        let building_ownerships_vec = self
+            .list_building_ownerships
+            .execute(current_game_tick)
+            .await?;
 
         let mut game_state = GameState::build(
             units_vec,
@@ -230,10 +234,11 @@ where
                     ctx.delete_business_offers_before_tick(current_game_tick)
                         .await?;
 
-                    // Buildings
-                    ctx.insert_buildings_in_tick(next_game_tick, buildings_vec)
+                    // Buildings Ownerships
+                    ctx.insert_building_ownerships_in_tick(next_game_tick, building_ownerships_vec)
                         .await?;
-                    ctx.delete_buildings_before_tick(current_game_tick).await?;
+                    ctx.delete_building_ownerships_before_tick(current_game_tick)
+                        .await?;
 
                     // Update game tick state
                     ctx.update_current_game_tick(next_game_tick).await?;

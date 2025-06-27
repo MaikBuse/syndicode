@@ -6,7 +6,9 @@ use crate::{
     application::error::ApplicationResult,
     domain::{
         economy::{
-            building::repository::BuildingTxRepository, business::repository::BusinessTxRepository,
+            building::repository::BuildingTxRepository,
+            building_ownership::repository::BuildingOwnershipTxRepository,
+            business::repository::BusinessTxRepository,
             business_listing::repository::BusinessListingTxRepository,
             business_offer::repository::BusinessOfferTxRepository,
             corporation::repository::CorporationTxRepository,
@@ -35,6 +37,7 @@ pub trait TransactionalContext<'a>:
     + BusinessOfferTxRepository
     + UnitTxRespository
     + BuildingTxRepository
+    + BuildingOwnershipTxRepository
     + Send
     + Sync
 {
