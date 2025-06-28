@@ -137,9 +137,9 @@ where
         is_leader: &mut bool,
         next_tick_time: &mut Option<Instant>,
     ) {
-        // This function will process any and all ticks that are currently due.
+        // This function will process a single tick if one is due.
         // It returns `true` if a critical, unrecoverable processing error occurred.
-        let had_critical_error = self.process_due_ticks(next_tick_time).await;
+        let had_critical_error = self.process_tick_if_due(next_tick_time).await;
 
         if had_critical_error {
             self.handle_critical_processor_error(is_leader, next_tick_time)
@@ -151,12 +151,18 @@ where
         }
     }
 
-    /// Processes game ticks in a loop until the system is "caught up" to the current time.
+    /// Processes a single game tick if its scheduled time has passed.
+    ///
+    /// This function does **not** loop to "catch up". Instead, it implements specific logic
+    /// for scheduling the next tick based on the processing time of the current one:
+    /// - If processing is fast (duration < interval), it maintains a fixed-rate cadence.
+    /// - If processing is slow (duration > interval), it schedules the next tick relative to
+    ///   the **completion time** of the slow tick. This introduces a mandatory pause to prevent
+    ///   the system from being overwhelmed by a runaway catch-up loop.
     ///
     /// Returns `true` if a critical processing error occurs that requires relinquishing
-    /// leadership. Returns `false` for successful processing or non-critical issues
-    /// (like the processor not being initialized yet).
-    async fn process_due_ticks(&self, next_tick_time: &mut Option<Instant>) -> bool {
+    /// leadership. Returns `false` otherwise.
+    async fn process_tick_if_due(&self, next_tick_time: &mut Option<Instant>) -> bool {
         // Initialize the tick timer on the very first run after becoming leader.
         if next_tick_time.is_none() {
             let first_tick_target = Instant::now() + self.game_tick_interval;
@@ -168,58 +174,69 @@ where
         }
 
         // We can unwrap here; it was just set if None.
-        let mut current_tick_target = next_tick_time.unwrap();
+        let current_tick_target = next_tick_time.unwrap();
+        let now = Instant::now();
 
-        // This loop processes ticks as long as their scheduled time is in the past.
-        loop {
-            let now = Instant::now();
+        // Check if it's time for the next scheduled tick. If not, we're done for this cycle.
+        if now < current_tick_target {
+            return false; // Not yet time for a tick, not an error.
+        }
 
-            // Check if it's time for the next scheduled tick. If not, we're caught up.
-            if now < current_tick_target {
-                *next_tick_time = Some(current_tick_target); // Persist the updated target time.
-                return false; // Not a critical error, exit the processing loop.
-            }
+        let tick_start_offset = now.saturating_duration_since(current_tick_target);
+        tracing::debug!(
+            lag_ms = tick_start_offset.as_millis(),
+            "Starting tick processing for target time: {:?}",
+            current_tick_target
+        );
 
-            let tick_start_offset = now - current_tick_target;
-            tracing::debug!(
-                lag_ms = tick_start_offset.as_millis(),
-                "Starting tick processing for target time: {:?}",
-                current_tick_target
-            );
+        let processing_start_instant = Instant::now();
+        match self.game_tick_processor.process_next_tick().await {
+            Ok(processed_tick) => {
+                let duration = processing_start_instant.elapsed();
 
-            match self.game_tick_processor.process_next_tick().await {
-                Ok(processed_tick) => {
-                    let duration = Instant::now() - now;
-                    tracing::info!(
-                        tick = processed_tick,
+                if duration > self.game_tick_interval {
+                    // SLOW TICK PATH: The tick took longer than the interval.
+                    // To prevent a runaway loop of immediate catch-up ticks, we schedule the
+                    // next tick relative to when *this* one finished. This ensures a full
+                    // `game_tick_interval` of "cool-down" before the next attempt.
+                    // This intentionally introduces drift to maintain system stability under load.
+                    *next_tick_time = Some(Instant::now() + self.game_tick_interval);
+                    tracing::warn!(
                         duration_ms = duration.as_millis(),
-                        target_interval_ms = self.game_tick_interval.as_millis(),
-                        lag_ms = tick_start_offset.as_millis(),
-                        "Successfully processed game tick."
+                        target_ms = self.game_tick_interval.as_millis(),
+                        "Tick processing duration exceeded target interval. Next tick is scheduled relative to completion to prevent runaway."
                     );
+                } else {
+                    // FAST TICK PATH: The tick finished within the interval.
+                    // We schedule the next tick relative to the target time of the *current*
+                    // tick. This maintains a stable, fixed-rate cadence and allows the
+                    // system to correct for minor processing delays without long-term drift.
+                    *next_tick_time = Some(current_tick_target + self.game_tick_interval);
+                }
 
-                    if duration > self.game_tick_interval {
-                        tracing::warn!(
-                            duration_ms = duration.as_millis(),
-                            target_ms = self.game_tick_interval.as_millis(),
-                            "Tick processing duration exceeded target interval!"
-                        );
-                    }
+                tracing::info!(
+                    tick = processed_tick,
+                    duration_ms = duration.as_millis(),
+                    target_interval_ms = self.game_tick_interval.as_millis(),
+                    lag_ms = tick_start_offset.as_millis(),
+                    "Successfully processed game tick."
+                );
 
-                    // Always advance target time by the fixed interval to maintain a stable rate.
-                    current_tick_target += self.game_tick_interval;
-                    // The loop will continue on the next iteration if the new target is still in the past.
-                }
-                Err(ProcessorError::NotInitialized) => {
-                    tracing::warn!("Tick processing skipped: Database not initialized yet. Will retry on next cycle.");
-                    *next_tick_time = Some(current_tick_target); // Persist target.
-                    return false; // Not a critical error.
-                }
-                Err(err) => {
-                    // Any other processor error is treated as critical.
-                    tracing::error!("Game tick processing failed (ProcessorError: {}). Relinquishing leadership.", err);
-                    return true; // Critical error.
-                }
+                false // Not a critical error.
+            }
+            Err(ProcessorError::NotInitialized) => {
+                tracing::warn!("Tick processing skipped: Database not initialized yet. Will retry on next cycle.");
+                // We don't advance the tick timer. The next loop cycle will retry processing
+                // for the same `current_tick_target` after a sleep.
+                false // Not a critical error.
+            }
+            Err(err) => {
+                // Any other processor error is treated as critical.
+                tracing::error!(
+                    "Game tick processing failed (ProcessorError: {}). Relinquishing leadership.",
+                    err
+                );
+                true // Critical error.
             }
         }
     }
@@ -825,57 +842,4 @@ mod tests {
 
         run_handle.abort();
     }
-
-    #[tokio::test(flavor = "current_thread", start_paused = true)]
-    async fn test_tick_catch_up_logic() {
-        let tick_interval = Duration::from_millis(50);
-        let elector = Arc::new(MockLeaderElector::new(INSTANCE_ID));
-        let processor = Arc::new(MockGameTickProcessor::new());
-        let manager = LeaderLoopManager::new(
-            elector.clone(),
-            processor.clone(),
-            INSTANCE_ID.to_string(),
-            Duration::from_millis(1000),
-            Duration::from_millis(500),
-            tick_interval,
-        );
-
-        elector.add_acquire_result(Ok(true));
-        processor.add_process_result(Ok(1));
-        processor.add_process_result(Ok(2));
-        processor.add_process_result(Ok(3));
-        processor.add_process_result(Ok(4));
-        let run_handle = tokio::spawn(manager.run());
-
-        // Become leader (Acquire + Refresh)
-        time::advance(Duration::from_millis(10)).await;
-        tokio::task::yield_now().await;
-        assert!(elector.is_held_by_mock());
-        elector.clear_actions();
-
-        // Advance time for multiple ticks to be due (needs one refresh first)
-        elector.add_refresh_result(Ok(())); // Add expected refresh
-        let advance_duration = tick_interval * 3 + Duration::from_millis(5); // ~155ms
-        time::advance(advance_duration).await;
-        tokio::task::yield_now().await; // Runs Refresh, then catches up 3 ticks
-
-        assert_eq!(processor.get_call_count(), 3, "Catch up 3 ticks");
-        assert_eq!(processor.get_processed_ticks(), vec![1, 2, 3]);
-        assert!(
-            elector.get_actions().contains(&MockLeaderAction::Refresh),
-            "Refresh before catchup"
-        ); // Refresh should have happened
-        elector.clear_actions();
-
-        // Advance past the *next* tick interval (needs refresh first)
-        elector.add_refresh_result(Ok(()));
-        time::advance(tick_interval + Duration::from_millis(5)).await; // ~55ms
-        tokio::task::yield_now().await; // Runs Refresh, then tick 4
-
-        assert_eq!(processor.get_call_count(), 4, "Process 4th tick");
-        assert_eq!(processor.get_processed_ticks(), vec![1, 2, 3, 4]);
-        assert!(elector.get_actions().contains(&MockLeaderAction::Refresh));
-
-        run_handle.abort();
-    }
-} // End tests module
+}
