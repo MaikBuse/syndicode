@@ -11,7 +11,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/MaikBuse/syndicode">
-    <img src="images/logo.svg" alt="Logo" width="160" height="160">
+    <img src="assets/images/logo.svg" alt="Logo" width="160" height="160">
   </a>
 
 <h3 align="center">Syndicode</h3>
@@ -97,7 +97,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### 💴 Economy
 
-<img src="images/gameplay/economy.png" alt="Economy gameplay" width="100%" />
+<img src="assets/images/gameplay/economy.png" alt="Economy gameplay" width="100%" />
 
 *Syndicates influence the city’s markets through trade, logistics, and digital currency. From corporate front operations to underground exchanges, economic power is built in broad daylight.*
 
@@ -105,7 +105,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### 🕶️ Espionage
 
-<img src="images/gameplay/espionage.png" alt="Espionage gameplay" width="100%" />
+<img src="assets/images/gameplay/espionage.png" alt="Espionage gameplay" width="100%" />
 
 *Information is currency. Whether gathering intel, intercepting transmissions, or manipulating data flows — espionage operations are quiet, but their consequences are public.*
 
@@ -113,7 +113,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### ⚔️ Warfare
 
-<img src="images/gameplay/warfare.png" alt="Warfare gameplay" width="100%" />
+<img src="assets/images/gameplay/warfare.png" alt="Warfare gameplay" width="100%" />
 
 *When diplomacy fails, syndicates strike. Automated units, drones, and digital warfare tools are deployed to protect territory, settle disputes, or send a message — sometimes in full view of the city.*
 
@@ -121,7 +121,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### 🕊️ Diplomacy
 
-<img src="images/gameplay/diplomacy.png" alt="Diplomacy gameplay" width="100%" />
+<img src="assets/images/gameplay/diplomacy.png" alt="Diplomacy gameplay" width="100%" />
 
 *Broker alliances with politicians, factions, and rival syndicates in ritualized negotiations under glowing sakura and digital crests. Every agreement is a power move — and every peace, temporary.*
 
@@ -436,7 +436,7 @@ Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBus
 [issues-url]: https://github.com/MaikBuse/syndicode/issues
 [license-shield]: https://img.shields.io/github/license/MaikBuse/syndicode.svg?style=for-the-badge
 [license-url]: https://github.com/MaikBuse/syndicode/blob/master/LICENSE.md
-[product-screenshot]: images/hero.png
+[product-screenshot]: assets/images/hero.png
 [rust]: https://img.shields.io/badge/Rust-4A4A55?style=for-the-badge&logo=rust&logoColor=FF3E00
 [rust-url]: https://rust-lang.org/
 [postgresql]: https://img.shields.io/badge/PostgreSQL-4A4A55?style=for-the-badge&logo=postgresql&logoColor=FF3E00

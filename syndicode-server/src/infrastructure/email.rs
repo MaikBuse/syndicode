@@ -13,11 +13,11 @@ use std::time::Duration;
 use time::OffsetDateTime;
 
 const LOGO_URL: &str =
-    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/images/logo.svg";
+    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/assets/images/logo.svg";
 const BANNER_URL: &str =
-    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/images/hero.png";
+    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/assets/images/hero.png";
 const FOOTER_IMAGE_URL: &str =
-    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/images/gameplay/warfare.png";
+    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/assets/images/gameplay/warfare.png";
 
 const SENDER_NAME: &str = "Syndicode Verification";
 const EMAIL_SUBJECT: &str = "Syndicode Account Verification Required";
