@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     owning_corporation_uuid UUID,
     name TEXT NOT NULL,
     operational_expenses BIGINT NOT NULL CHECK (operational_expenses >= 0),
-    center POINT NOT NULL,
+    center GEOMETRY(Point, 4326) NOT NULL,
 
     PRIMARY KEY (game_tick, uuid)
 );
@@ -50,6 +50,8 @@ CREATE INDEX IF NOT EXISTS idx_businesses_uuid_game_tick ON businesses (uuid, ga
 CREATE INDEX IF NOT EXISTS idx_businesses_market_uuid_game_tick ON businesses (market_uuid, game_tick);
 -- Index for finding all businesses owned by a specific corporation at a specific tick
 CREATE INDEX IF NOT EXISTS idx_businesses_owner_uuid_game_tick ON businesses (owning_corporation_uuid, game_tick);
+-- Create a GiST spatial index on the center point for fast location-based queries.
+CREATE INDEX IF NOT EXISTS idx_businesses_center_geom ON businesses USING GIST (center);
 
 -- Business Listing Table
 CREATE TABLE IF NOT EXISTS business_listings (
@@ -93,15 +95,21 @@ CREATE TABLE buildings (
     class_code TEXT,
     city TEXT,
     city_code TEXT,
-    center POINT NOT NULL,
-    footprint POLYGON NOT NULL,
+    center GEOMETRY(Point, 4326) NOT NULL,
+    footprint GEOMETRY(Polygon, 4326) NOT NULL,
     height DOUBLE PRECISION NOT NULL,
     prefecture TEXT
 );
 
--- Create a standard index on gml_id.
--- This allows for very fast lookups if you need to find a specific building by its source ID.
-CREATE INDEX idx_buildings_gml_id_idx ON buildings (gml_id);
+-- Comments explaining the indexes
+COMMENT ON COLUMN buildings.center IS 'Center point of the building''s footprint, stored as PostGIS geometry with SRID 4326.';
+COMMENT ON COLUMN buildings.footprint IS 'Footprint of the building, stored as PostGIS geometry with SRID 4326.';
+
+-- Create a standard B-Tree index on gml_id for fast ID lookups.
+CREATE INDEX idx_buildings_gml_id ON buildings (gml_id);
+
+-- Create a GiST spatial index on the center point for fast location-based queries.
+CREATE INDEX idx_buildings_center_geom ON buildings USING GIST (center);
 
 -- Tracks which business owns which building at every game tick.
 CREATE TABLE IF NOT EXISTS building_ownerships (

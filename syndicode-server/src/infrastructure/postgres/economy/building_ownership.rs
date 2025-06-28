@@ -43,17 +43,16 @@ impl PgBuildingOwnershipRepository {
             INSERT INTO building_ownerships (
                 game_tick,
                 building_uuid,
-                owning_business_uuid,
+                owning_business_uuid
             )
             SELECT $1, u.*
             FROM unnest(
                 $2::UUID[],
-                $3::UUID[],
+                $3::UUID[]
             )
             AS u(
-                game_tick,
                 building_uuid,
-                owning_business_uuid,
+                owning_business_uuid
             )
             "#,
         )

@@ -38,8 +38,11 @@ impl From<DomainSortDirection> for i16 {
 
 #[derive(Debug, thiserror::Error)]
 pub enum RepositoryError {
-    #[error(transparent)]
-    Sqlx(#[from] sqlx::error::Error),
+    #[error("Failed to cast Geometry as Point")]
+    PointCasting,
+
+    #[error("Failed to retrieve geometry from center")]
+    GeometryMissing,
 
     #[error("The database returned with a violation of a unique/primary key constraint")]
     UniqueConstraint,
@@ -49,6 +52,9 @@ pub enum RepositoryError {
 
     #[error(transparent)]
     Migration(#[from] sqlx::migrate::MigrateError),
+
+    #[error(transparent)]
+    Sqlx(#[from] sqlx::error::Error),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),

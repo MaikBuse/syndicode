@@ -10,12 +10,10 @@ pub mod user_verify;
 use std::sync::Arc;
 
 use crate::config::ServerConfig;
-use geo::{LineString, Point, Polygon};
-use sqlx::{
-    pool::PoolOptions,
-    postgres::types::{PgPoint, PgPolygon},
-    PgPool,
-};
+use sqlx::{pool::PoolOptions, PgPool};
+
+// The SRID (Spatial Reference ID). 4326 is the standard for GPS (WGS 84).
+pub(super) const SRID: i32 = 4326;
 
 #[derive(Debug)]
 pub struct PostgresDatabase {
@@ -43,35 +41,4 @@ impl PostgresDatabase {
 
         Ok(Self { pool })
     }
-}
-
-pub(super) fn from_geo_point_to_pg_point(point: Point) -> PgPoint {
-    let (x, y) = point.x_y();
-
-    PgPoint { x, y }
-}
-
-pub(super) fn from_geo_polygon_to_pg_points(polygon: Polygon<f64>) -> PgPolygon {
-    let points: Vec<PgPoint> = polygon
-        .exterior()
-        .points()
-        .map(|point| {
-            let (x, y) = point.x_y();
-            PgPoint { x, y }
-        })
-        .collect();
-
-    PgPolygon { points }
-}
-
-#[allow(dead_code)]
-pub(super) fn from_pg_point_to_geo_point(pg_point: PgPoint) -> Point<f64> {
-    Point::new(pg_point.x, pg_point.y)
-}
-
-#[allow(dead_code)]
-pub(super) fn from_pg_polygon_to_geo_polygon(pg_polygon: PgPolygon) -> Polygon<f64> {
-    let exterior: Vec<_> = pg_polygon.points.iter().map(|p| (p.x, p.y)).collect();
-
-    Polygon::new(LineString::from(exterior), vec![])
 }

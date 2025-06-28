@@ -17,8 +17,8 @@ use bon::Builder;
 use geo::{polygon, prelude::Centroid, Distance, Haversine, Point};
 use indicatif::{ProgressBar, ProgressStyle};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
-use rand::{seq::IteratorRandom, Rng};
-use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use rand::Rng;
+use rayon::prelude::*;
 use rstar::RTree;
 use std::{collections::HashSet, path::Path, time::Instant};
 use std::{fs::File, sync::Arc};
@@ -154,10 +154,19 @@ where
 
                     let game_tick = ctx.get_current_game_tick().await?;
 
+                    tracing::info!("Inserting markets...");
                     ctx.insert_markets_in_tick(game_tick, markets).await?;
+
+                    tracing::info!("Inserting businesses...");
                     ctx.insert_businesses_in_tick(game_tick, businesses).await?;
+
+                    tracing::info!("Inserting business_listings...");
                     ctx.insert_business_listings_in_tick(game_tick, business_listings).await?;
+
+                    tracing::info!("Inserting buildings...");
                     ctx.insert_buildings(buildings).await?;
+
+                    tracing::info!("Inserting building ownerships...");
                     ctx.insert_building_ownerships_in_tick(game_tick, building_ownerships).await?;
 
                     ctx.set_database_initialization_flag().await?;
@@ -406,7 +415,13 @@ pub fn generate_central_points(
     points
 }
 
-/// Assigns buildings to businesses ensuring each building is claimed only once.
+// A temporary struct to hold the results from the parallel processing
+struct BusinessProposal {
+    center: Point<f64>,
+    market_uuid: Uuid,
+    claimed_building_uuids: Vec<Uuid>,
+}
+
 pub fn assign_buildings_to_businesses(
     markets: &[Market],
     buildings: &[Building],
@@ -416,88 +431,135 @@ pub fn assign_buildings_to_businesses(
 ) -> anyhow::Result<(Vec<Business>, Vec<BuildingOwnership>)> {
     tracing::info!("Assigning buildings to businesses");
 
-    let center_points_len = central_points.len();
+    if markets.is_empty() {
+        return Err(anyhow::anyhow!("Markets slice is empty"));
+    }
+
+    let building_points: Vec<BuildingPoint> = buildings
+        .iter()
+        .map(|b| BuildingPoint { building: b })
+        .collect();
+    let rtree = RTree::bulk_load(building_points);
+
+    let variance = sigma_meters.powi(2);
+    let max_radius_sq = max_radius_meters.powi(2);
+
+    tracing::info!("Phase 1: Mapping buildings...");
 
     // Set up the progress bar
-    let pb = ProgressBar::new(center_points_len as u64);
+    let pb = ProgressBar::new(central_points.len() as u64);
     pb.set_style(
         ProgressStyle::default_bar()
             .template(PROGRESS_BAR_TEMPLATE)?
             .progress_chars(PROGRESS_BAR_CHARS),
     );
 
-    let mut businesses = Vec::with_capacity(center_points_len);
-    let mut building_ownerships = Vec::new();
+    // Parallel "Map" phase
+    let proposals: Vec<BusinessProposal> = central_points
+        .into_par_iter()
+        .enumerate()
+        .filter_map(|(i, center)| {
+            // Increment the progress bar after processing a batch
+            // It's thread-safe and designed for this.
+            let mut rng = rand::rng();
+            let market = &markets[i % markets.len()];
 
-    let mut rng = rand::rng();
-    let mut assigned_building_uuids: HashSet<Uuid> = HashSet::new();
-    let variance = sigma_meters.powi(2);
+            let search_center = [center.x(), center.y()];
+            let mut claimed_building_uuids = Vec::new();
 
-    let building_points: Vec<BuildingPoint> = buildings
-        .iter()
-        .map(|b| BuildingPoint { building: b })
+            for building_point in rtree.locate_within_distance(search_center, max_radius_sq) {
+                let building = building_point.building;
+                let distance = Haversine.distance(building.center, center);
+
+                let probability = (-distance.powi(2) / (2.0 * variance)).exp();
+                if rng.random::<f64>() < probability {
+                    claimed_building_uuids.push(building.uuid);
+                }
+            }
+
+            let result = if claimed_building_uuids.is_empty() {
+                None
+            } else {
+                Some(BusinessProposal {
+                    center,
+                    market_uuid: market.uuid,
+                    claimed_building_uuids,
+                })
+            };
+
+            pb.inc(1);
+
+            result
+        })
         .collect();
 
-    let rtree = RTree::bulk_load(building_points);
+    pb.finish();
 
-    for center in central_points {
-        let Some(market) = markets.iter().choose(&mut rng) else {
-            return Err(anyhow::anyhow!("Markets slice is empty"));
-        };
+    tracing::info!(
+        "Phase 2: Resolving {} business proposals...",
+        proposals.len()
+    );
 
-        let mut assigned_buildings_for_this_business = Vec::new();
-
-        // We find all buildings within the max_radius. This is extremely fast.
-        let search_center = [center.x(), center.y()];
-        let max_radius_sq = max_radius_meters.powi(2);
-
-        for building_point in rtree.locate_within_distance(search_center, max_radius_sq) {
-            let building = building_point.building;
-
-            if assigned_building_uuids.contains(&building.uuid) {
-                continue;
-            }
-
-            // We still need the precise Haversine distance for the probability calc.
-            let distance = Haversine.distance(building.center, center);
-
-            // Gaussian probability falloff
-            let probability = (-distance.powi(2) / (2.0 * variance)).exp();
-            if rng.random::<f64>() < probability {
-                assigned_buildings_for_this_business.push(building.uuid);
-                assigned_building_uuids.insert(building.uuid);
+    // Pass 1: Count total successful assignments to determine exact capacity
+    let mut temp_assigned_ids: HashSet<Uuid> = HashSet::new();
+    let mut total_successful_assignments = 0;
+    for proposal in &proposals {
+        for building_uuid in &proposal.claimed_building_uuids {
+            if temp_assigned_ids.insert(*building_uuid) {
+                total_successful_assignments += 1;
             }
         }
-
-        if !assigned_buildings_for_this_business.is_empty() {
-            let business_name = generate_business_name(market.name);
-            let business_uuid = Uuid::now_v7();
-
-            let business = Business::builder()
-                .center(center)
-                .uuid(business_uuid)
-                .name(business_name)
-                .operational_expenses(0)
-                .market_uuid(market.uuid)
-                .build();
-
-            businesses.push(business);
-
-            for assigned_building_uuid in assigned_buildings_for_this_business {
-                let building_ownership = BuildingOwnership::builder()
-                    .owning_business_uuid(business_uuid)
-                    .building_uuid(assigned_building_uuid)
-                    .build();
-
-                building_ownerships.push(building_ownership);
-            }
-        }
-
-        pb.inc(1);
     }
+    // Clear the temporary set to free its memory
+    drop(temp_assigned_ids);
 
-    //Finish the progress bar and stop the timer
-    pb.finish_with_message("All central points processed.");
+    tracing::info!(
+        "Found {} unique buildings to be assigned.",
+        total_successful_assignments
+    );
+
+    // Pass 2: Allocate with perfect capacity and populate
+    let mut businesses = Vec::with_capacity(proposals.len());
+    let mut building_ownerships = Vec::with_capacity(total_successful_assignments);
+    let mut assigned_building_uuids = HashSet::with_capacity(total_successful_assignments);
+
+    // This map is needed to get market names later.
+    let market_map: std::collections::HashMap<Uuid, MarketName> =
+        markets.iter().map(|m| (m.uuid, m.name)).collect();
+
+    for proposal in proposals {
+        let mut successfully_assigned_buildings = Vec::new();
+        for building_uuid in proposal.claimed_building_uuids {
+            if assigned_building_uuids.insert(building_uuid) {
+                successfully_assigned_buildings.push(building_uuid);
+            }
+        }
+
+        if !successfully_assigned_buildings.is_empty() {
+            let business_uuid = Uuid::now_v7();
+            let market_name = market_map.get(&proposal.market_uuid).unwrap();
+            let business_name = generate_business_name(*market_name);
+
+            businesses.push(
+                Business::builder()
+                    .center(proposal.center)
+                    .uuid(business_uuid)
+                    .name(business_name)
+                    .operational_expenses(0)
+                    .market_uuid(proposal.market_uuid)
+                    .build(),
+            );
+
+            for building_uuid in successfully_assigned_buildings {
+                building_ownerships.push(
+                    BuildingOwnership::builder()
+                        .owning_business_uuid(business_uuid)
+                        .building_uuid(building_uuid)
+                        .build(),
+                );
+            }
+        }
+    }
 
     Ok((businesses, building_ownerships))
 }

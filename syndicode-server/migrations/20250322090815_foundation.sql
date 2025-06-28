@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS citext;
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- Create the system_flags table
 CREATE TABLE IF NOT EXISTS system_flags (

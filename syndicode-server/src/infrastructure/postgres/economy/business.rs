@@ -6,15 +6,45 @@ use crate::{
             model::Business,
             repository::{BusinessRepository, BusinessTxRepository},
         },
-        repository::RepositoryResult,
+        repository::{RepositoryError, RepositoryResult},
     },
-    infrastructure::postgres::{
-        from_geo_point_to_pg_point, uow::PgTransactionContext, PostgresDatabase,
-    },
+    infrastructure::postgres::{uow::PgTransactionContext, PostgresDatabase, SRID},
 };
-use geo::Point;
+use geo::Geometry;
 use sqlx::Postgres;
 use uuid::Uuid;
+use wkt::ToWkt;
+
+#[derive(sqlx::FromRow)]
+struct BusinessRow {
+    uuid: Uuid,
+    market_uuid: Uuid,
+    owning_corporation_uuid: Option<Uuid>,
+    name: String,
+    operational_expenses: i64,
+    center: geozero::wkb::Decode<Geometry<f64>>,
+}
+
+impl BusinessRow {
+    fn into_business(self) -> RepositoryResult<Business> {
+        let Geometry::Point(center) = self
+            .center
+            .geometry
+            .ok_or(RepositoryError::GeometryMissing)?
+        else {
+            return Err(RepositoryError::PointCasting);
+        };
+
+        Ok(Business::builder()
+            .uuid(self.uuid)
+            .maybe_owning_corporation_uuid(self.owning_corporation_uuid)
+            .name(self.name)
+            .market_uuid(self.market_uuid)
+            .operational_expenses(self.operational_expenses)
+            .center(center)
+            .build())
+    }
+}
 
 #[derive(Clone)]
 pub struct PgBusinessRepository;
@@ -33,20 +63,20 @@ impl PgBusinessRepository {
         }
 
         let count = businesses.len();
-        let mut uuids = Vec::with_capacity(count);
-        let mut market_uuids = Vec::with_capacity(count);
-        let mut owning_corporation_uuids: Vec<Option<Uuid>> = Vec::with_capacity(count);
-        let mut names = Vec::with_capacity(count);
-        let mut operational_expenses = Vec::with_capacity(count);
-        let mut centers = Vec::with_capacity(count);
+        let mut uuids_vec = Vec::with_capacity(count);
+        let mut market_uuids_vec = Vec::with_capacity(count);
+        let mut owning_corporation_uuids_vec: Vec<Option<Uuid>> = Vec::with_capacity(count);
+        let mut names_vec = Vec::with_capacity(count);
+        let mut operational_expenses_vec = Vec::with_capacity(count);
+        let mut center_wkt_vec: Vec<String> = Vec::with_capacity(count);
 
         for business in businesses {
-            uuids.push(business.uuid);
-            market_uuids.push(business.market_uuid);
-            owning_corporation_uuids.push(business.owning_corporation_uuid);
-            names.push(business.name);
-            operational_expenses.push(business.operational_expenses);
-            centers.push(from_geo_point_to_pg_point(business.center));
+            uuids_vec.push(business.uuid);
+            market_uuids_vec.push(business.market_uuid);
+            owning_corporation_uuids_vec.push(business.owning_corporation_uuid);
+            names_vec.push(business.name);
+            operational_expenses_vec.push(business.operational_expenses);
+            center_wkt_vec.push(business.center.to_wkt().to_string());
         }
 
         sqlx::query(
@@ -60,14 +90,21 @@ impl PgBusinessRepository {
                 operational_expenses,
                 center
             )
-            SELECT $1, u.*
+            SELECT
+                $1,
+                u.uuid,
+                u.market_uuid,
+                u.owning_corporation_uuid,
+                u.name,
+                u.operational_expenses,
+                ST_SetSRID(ST_GeomFromText(u.center), $8)
             FROM unnest(
                 $2::UUID[],
                 $3::UUID[],
                 $4::UUID[],
                 $5::TEXT[],
                 $6::BIGINT[],
-                $7::geometry[]
+                $7::TEXT[]
             )
             AS u(
                 uuid,
@@ -80,12 +117,13 @@ impl PgBusinessRepository {
             "#,
         )
         .bind(game_tick)
-        .bind(&uuids)
-        .bind(&market_uuids)
-        .bind(&owning_corporation_uuids)
-        .bind(&names)
-        .bind(&operational_expenses)
-        .bind(&centers)
+        .bind(&uuids_vec)
+        .bind(&market_uuids_vec)
+        .bind(&owning_corporation_uuids_vec)
+        .bind(&names_vec)
+        .bind(&operational_expenses_vec)
+        .bind(&center_wkt_vec)
+        .bind(SRID)
         .execute(executor)
         .await?;
 
@@ -97,34 +135,28 @@ impl PgBusinessRepository {
         executor: impl sqlx::Executor<'_, Database = Postgres>,
         game_tick: i64,
     ) -> RepositoryResult<Vec<Business>> {
-        let records = sqlx::query!(
+        let rows = sqlx::query_as::<_, BusinessRow>(
             r#"
-            SELECT
-                uuid,
-                market_uuid,
-                owning_corporation_uuid,
-                name,
-                operational_expenses,
-                center
-            FROM businesses
-            WHERE
-                game_tick = $1
-            "#,
-            game_tick
+        SELECT
+            uuid,
+            market_uuid,
+            owning_corporation_uuid,
+            name,
+            operational_expenses,
+            center
+        FROM businesses
+        WHERE
+            game_tick = $1
+        "#,
         )
+        .bind(game_tick)
         .fetch_all(executor)
         .await?;
 
-        let mut businesses = Vec::with_capacity(records.len());
-        for record in records {
-            businesses.push(Business {
-                uuid: record.uuid,
-                market_uuid: record.market_uuid,
-                owning_corporation_uuid: record.owning_corporation_uuid,
-                name: record.name,
-                operational_expenses: record.operational_expenses,
-                center: Point::new(record.center.x, record.center.y),
-            });
+        let mut businesses = Vec::with_capacity(rows.len());
+
+        for row in rows {
+            businesses.push(row.into_business()?);
         }
 
         Ok(businesses)

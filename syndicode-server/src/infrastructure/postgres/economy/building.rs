@@ -3,21 +3,18 @@ use crate::{
         economy::building::{model::Building, repository::BuildingTxRepository},
         repository::RepositoryResult,
     },
-    infrastructure::postgres::{
-        from_geo_point_to_pg_point, from_geo_polygon_to_pg_points, uow::PgTransactionContext,
-    },
+    infrastructure::postgres::{uow::PgTransactionContext, SRID},
 };
-use sqlx::Postgres;
+use sqlx::{Executor, Postgres};
+use wkt::ToWkt;
 
 #[derive(Clone)]
 pub struct PgBuildingRepository;
 
 impl PgBuildingRepository {
-    /// This leverages PostgreSQL's UNNEST function for efficiency.
-    /// CARE: This is not compile time checked
     pub async fn insert_buildings(
         &self,
-        executor: impl sqlx::Executor<'_, Database = Postgres>,
+        executor: impl Executor<'_, Database = Postgres>,
         buildings: Vec<Building>,
     ) -> RepositoryResult<()> {
         if buildings.is_empty() {
@@ -28,18 +25,20 @@ impl PgBuildingRepository {
 
         let mut uuid_vec = Vec::with_capacity(count);
         let mut gml_id_vec = Vec::with_capacity(count);
-        let mut name_vec = Vec::with_capacity(count);
-        let mut address_vec = Vec::with_capacity(count);
-        let mut usage_vec = Vec::with_capacity(count);
-        let mut usage_code_vec = Vec::with_capacity(count);
-        let mut class_vec = Vec::with_capacity(count);
-        let mut class_code_vec = Vec::with_capacity(count);
-        let mut city_vec = Vec::with_capacity(count);
-        let mut city_code_vec = Vec::with_capacity(count);
-        let mut center_vec = Vec::with_capacity(count);
-        let mut footprint_vec = Vec::with_capacity(count);
+        let mut name_vec: Vec<Option<String>> = Vec::with_capacity(count);
+        let mut address_vec: Vec<Option<String>> = Vec::with_capacity(count);
+        let mut usage_vec: Vec<Option<String>> = Vec::with_capacity(count);
+        let mut usage_code_vec: Vec<Option<String>> = Vec::with_capacity(count);
+        let mut class_vec: Vec<Option<String>> = Vec::with_capacity(count);
+        let mut class_code_vec: Vec<Option<String>> = Vec::with_capacity(count);
+        let mut city_vec: Vec<Option<String>> = Vec::with_capacity(count);
+        let mut city_code_vec: Vec<Option<String>> = Vec::with_capacity(count);
         let mut height_vec = Vec::with_capacity(count);
-        let mut prefecture_vec = Vec::with_capacity(count);
+        let mut prefecture_vec: Vec<Option<String>> = Vec::with_capacity(count);
+
+        // --- GEOMETRY VECTORS ARE NOW STRINGS ---
+        let mut center_wkt_vec: Vec<String> = Vec::with_capacity(count);
+        let mut footprint_wkt_vec: Vec<String> = Vec::with_capacity(count);
 
         for building in buildings {
             uuid_vec.push(building.uuid);
@@ -52,79 +51,61 @@ impl PgBuildingRepository {
             class_code_vec.push(building.class_code);
             city_vec.push(building.city);
             city_code_vec.push(building.city_code);
-            center_vec.push(from_geo_point_to_pg_point(building.center));
-            footprint_vec.push(from_geo_polygon_to_pg_points(building.footprint));
             height_vec.push(building.height);
             prefecture_vec.push(building.prefecture);
-        }
 
+            center_wkt_vec.push(building.center.to_wkt().to_string());
+            footprint_wkt_vec.push(building.footprint.to_wkt().to_string());
+        }
         sqlx::query(
             r#"
-                INSERT INTO buildings (
-                    uuid,
-                    gml_id,
-                    name,
-                    address,
-                    usage,
-                    usage_code,
-                    class,
-                    class_code,
-                    city,
-                    city_code,
-                    center,
-                    footprint,
-                    height,
-                    prefecture
-                )
-                SELECT *
-                FROM unnest(
-                    $1::UUID[],
-                    $2::TEXT[],
-                    $3::TEXT[],
-                    $4::TEXT[],
-                    $5::TEXT[],
-                    $6::SMALLINT[],
-                    $7::TEXT[],
-                    $8::SMALLINT[],
-                    $9::TEXT[],
-                    $10::TEXT[],
-                    $11::geometry[],
-                    $12::geometry[],
-                    $13::DOUBLE PRECISION[],
-                    $14::TEXT[]
-                )
-                AS u(
-                    uuid,
-                    gml_id,
-                    name,
-                    address,
-                    usage,
-                    usage_code,
-                    class,
-                    class_code,
-                    city,
-                    city_code,
-                    center,
-                    footprint,
-                    height,
-                    prefecture
-                )
-                "#,
+            INSERT INTO buildings (
+                uuid, gml_id, name, address, usage, usage_code, class, class_code,
+                city, city_code, center, footprint, height, prefecture
+            )
+            SELECT
+                u.uuid, u.gml_id, u.name, u.address, u.usage, u.usage_code, u.class, u.class_code,
+                u.city, u.city_code,
+                -- Use ST_GeomFromText to convert WKT strings to geometry
+                ST_SetSRID(ST_GeomFromText(u.center), $15),
+                ST_SetSRID(ST_GeomFromText(u.footprint), $15),
+                u.height, u.prefecture
+            FROM unnest(
+                $1::UUID[],
+                $2::TEXT[],
+                $3::TEXT[],
+                $4::TEXT[],
+                $5::TEXT[],
+                $6::TEXT[],
+                $7::TEXT[],
+                $8::TEXT[],
+                $9::TEXT[],
+                $10::TEXT[],
+                $11::TEXT[],
+                $12::TEXT[],
+                $13::DOUBLE PRECISION[],
+                $14::TEXT[]
+            ) AS u(
+                uuid, gml_id, name, address, usage, usage_code, class, class_code,
+                city, city_code, center, footprint, height, prefecture
+            )
+        "#,
         )
         .bind(&uuid_vec)
         .bind(&gml_id_vec)
         .bind(&name_vec)
         .bind(&address_vec)
         .bind(&usage_vec)
-        .bind(&usage_code_vec) // This is now Vec<Option<i16>>
+        .bind(&usage_code_vec)
         .bind(&class_vec)
-        .bind(&class_code_vec) // This is now Vec<Option<i16>>
+        .bind(&class_code_vec)
         .bind(&city_vec)
         .bind(&city_code_vec)
-        .bind(&center_vec)
-        .bind(&footprint_vec)
+        .bind(&center_wkt_vec)
+        .bind(&footprint_wkt_vec)
         .bind(&height_vec)
         .bind(&prefecture_vec)
+        .bind(SRID)
         .execute(executor)
         .await?;
 
