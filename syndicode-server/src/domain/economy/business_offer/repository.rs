@@ -15,8 +15,9 @@ pub trait BusinessOfferTxRepository: Send + Sync {
     async fn insert_business_offers_in_tick(
         &mut self,
         game_tick: i64,
-        business_offers: Vec<BusinessOffer>,
+        business_offers: &[BusinessOffer],
     ) -> RepositoryResult<()>;
+
     async fn delete_business_offers_before_tick(&mut self, game_tick: i64)
         -> RepositoryResult<u64>;
 }

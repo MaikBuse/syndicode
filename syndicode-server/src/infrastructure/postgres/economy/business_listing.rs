@@ -26,7 +26,7 @@ impl PgBusinessListingRepository {
     pub async fn insert_business_listings_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        business_listings: Vec<BusinessListing>,
+        business_listings: &[BusinessListing],
         game_tick: i64,
     ) -> RepositoryResult<()> {
         if business_listings.is_empty() {
@@ -271,7 +271,7 @@ impl BusinessListingTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_business_listings_in_tick(
         &mut self,
         game_tick: i64,
-        business_listings: Vec<BusinessListing>,
+        business_listings: &[BusinessListing],
     ) -> RepositoryResult<()> {
         self.business_listing_repo
             .insert_business_listings_in_tick(&mut **self.tx, business_listings, game_tick)

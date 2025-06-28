@@ -55,7 +55,7 @@ impl PgBusinessRepository {
     pub async fn insert_businesses_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        businesses: Vec<Business>,
+        businesses: &[Business],
         game_tick: i64,
     ) -> RepositoryResult<()> {
         if businesses.is_empty() {
@@ -74,7 +74,7 @@ impl PgBusinessRepository {
             uuids_vec.push(business.uuid);
             market_uuids_vec.push(business.market_uuid);
             owning_corporation_uuids_vec.push(business.owning_corporation_uuid);
-            names_vec.push(business.name);
+            names_vec.push(business.name.clone());
             operational_expenses_vec.push(business.operational_expenses);
             center_wkt_vec.push(business.center.to_wkt().to_string());
         }
@@ -210,7 +210,7 @@ impl BusinessTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_businesses_in_tick(
         &mut self,
         game_tick: i64,
-        businesses: Vec<Business>,
+        businesses: &[Business],
     ) -> RepositoryResult<()> {
         self.business_repo
             .insert_businesses_in_tick(&mut **self.tx, businesses, game_tick)

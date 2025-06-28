@@ -263,11 +263,13 @@ mod tests {
         };
 
         let state = GameState::build(
+            0,
             vec![],
             vec![buyer_corp.clone(), seller_corp.clone()],
             vec![],
             vec![business.clone()],
             vec![listing],
+            vec![],
             vec![],
         );
 

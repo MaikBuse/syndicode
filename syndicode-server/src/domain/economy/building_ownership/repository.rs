@@ -17,7 +17,7 @@ pub trait BuildingOwnershipTxRepository: Send + Sync {
     async fn insert_building_ownerships_in_tick(
         &mut self,
         game_tick: i64,
-        building_ownerships: Vec<BuildingOwnership>,
+        building_ownerships: &[BuildingOwnership],
     ) -> RepositoryResult<()>;
 
     async fn delete_building_ownerships_before_tick(

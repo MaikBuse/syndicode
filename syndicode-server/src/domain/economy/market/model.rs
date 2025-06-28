@@ -4,7 +4,7 @@ use bon::Builder;
 use name::MarketName;
 use uuid::Uuid;
 
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 pub struct Market {
     pub uuid: Uuid,
     pub name: MarketName,

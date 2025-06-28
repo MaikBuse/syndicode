@@ -12,7 +12,7 @@ pub trait BusinessTxRepository: Send + Sync {
     async fn insert_businesses_in_tick(
         &mut self,
         game_tick: i64,
-        businesses: Vec<Business>,
+        businesses: &[Business],
     ) -> RepositoryResult<()>;
 
     async fn delete_businesses_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64>;

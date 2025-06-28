@@ -19,7 +19,9 @@ use crate::{
     application::ports::{init::FlagKey, processor::ProcessorError},
     domain::{
         economy::{
-            building_ownership::repository::BuildingOwnershipRepository,
+            building_ownership::{
+                model::BuildingOwnership, repository::BuildingOwnershipRepository,
+            },
             business::{model::Business, repository::BusinessRepository},
             business_listing::{model::BusinessListing, repository::BusinessListingRepository},
             business_offer::{model::BusinessOffer, repository::BusinessOfferRepository},
@@ -35,7 +37,7 @@ use crate::{
 use anyhow::Context;
 use bon::Builder;
 use std::sync::Arc;
-use tokio::sync::OnceCell;
+use tokio::sync::Mutex;
 
 #[derive(Builder)]
 pub struct GameTickProcessor<INI, S, P, RSW, RN, UOW, GTR, UNT, CRP, MRK, BSN, BL, BO, BLO>
@@ -55,8 +57,8 @@ where
     BO: BusinessOfferRepository,
     BLO: BuildingOwnershipRepository,
 {
-    init_check_cell: OnceCell<()>, // Stores Ok(()) on successful check
     init_repo: Arc<INI>,
+    state: Arc<Mutex<Option<GameState>>>,
     simulation: Arc<S>,
     action_puller: Arc<P>,
     outcome_store_writer: Arc<RSW>,
@@ -90,7 +92,7 @@ where
     BO: BusinessOfferRepository,
     BLO: BuildingOwnershipRepository,
 {
-    // Helper to serialize the outcome into bytes for storage
+    // Helper to serialize outcomes
     fn serialize_outcome_for_delivery(
         &self,
         outcome: &DomainActionOutcome,
@@ -98,21 +100,54 @@ where
         rmp_serde::to_vec(outcome).context("Failed to serialize outcome for delivery")
     }
 
-    async fn perform_db_initialization_check(&self) -> ProcessorResult<()> {
-        tracing::debug!("Performing one-time database initialization check...");
-
-        let is_db_ini = self.init_repo.is_flag_set(FlagKey::DatabaseInit).await?;
-
-        match is_db_ini {
-            true => {
-                tracing::info!("Database initialization confirmed by processor.");
-                Ok(()) // Success, store Ok(()) in OnceCell
-            }
-            false => {
-                tracing::warn!("Database initialization flag not yet set.");
-                Err(ProcessorError::NotInitialized) // Signal not ready
-            }
+    /// This function performs the initial, one-time load of the game state from the database.
+    /// It's called only when the processor's internal state is empty.
+    async fn initialize_state(&self) -> ProcessorResult<GameState> {
+        // First, confirm the database itself has been initialized.
+        let is_db_initialized = self.init_repo.is_flag_set(FlagKey::DatabaseInit).await?;
+        if !is_db_initialized {
+            tracing::warn!("Processor waiting: Database initialization flag is not yet set.");
+            return Err(ProcessorError::NotInitialized);
         }
+        tracing::info!("Database initialization confirmed. Loading full game state...");
+
+        // Load all state components from the database
+        let current_game_tick = self.game_tick_repo.get_current_game_tick().await?;
+
+        let units_vec = self.list_units_uc.execute(current_game_tick).await?;
+        let corporations_vec = self.list_corporations_uc.execute(current_game_tick).await?;
+        let markets_vec = self.list_markets_uc.execute(current_game_tick).await?;
+        let businesses_vec = self.list_businesses_uc.execute(current_game_tick).await?;
+        let business_listings_vec = self
+            .list_business_listings_uc
+            .execute(current_game_tick)
+            .await?;
+        let business_offers_vec = self
+            .list_business_offers_uc
+            .execute(current_game_tick)
+            .await?;
+        let building_ownerships_vec = self
+            .list_building_ownerships
+            .execute(current_game_tick)
+            .await?;
+
+        let game_state = GameState::build(
+            current_game_tick,
+            units_vec,
+            corporations_vec,
+            markets_vec,
+            businesses_vec,
+            business_listings_vec,
+            business_offers_vec,
+            building_ownerships_vec,
+        );
+
+        tracing::info!(
+            tick = current_game_tick,
+            "Successfully loaded initial game state into memory."
+        );
+
+        Ok(game_state)
     }
 }
 
@@ -136,164 +171,185 @@ where
     BLO: BuildingOwnershipRepository,
 {
     async fn process_next_tick(&self) -> ProcessorResult<i64> {
-        // 0. CHECK DATABASE INITIALIZATION
-        self.init_check_cell
-            .get_or_try_init(|| self.perform_db_initialization_check())
-            .await?; // Propagates ProcessorError::NotInitialized or CheckFailed if check fails
+        // Acquire a lock on the state. This lock is held for the entire tick processing.
+        let mut state_guard = self.state.lock().await;
 
-        // 1. Read Current State & Tick (N) from Repositories
-        let current_game_tick = self.game_tick_repo.get_current_game_tick().await?;
+        // 1. CHECK & INITIALIZE STATE
+        // If state is `None`, this is the first run. We must load everything.
+        if state_guard.is_none() {
+            let initial_state = self.initialize_state().await?;
+            *state_guard = Some(initial_state);
+
+            // IMPORTANT: Return `NotInitialized` to signal that we only performed setup.
+            // The LeaderLoopManager will wait for the next scheduled tick time to call us again.
+            // This decouples the potentially slow initial load from the timed tick processing.
+            return Err(ProcessorError::NotInitialized);
+        }
+
+        // We are guaranteed to have state now. Take ownership to work with it.
+        // We will put it back (or an updated version) before the lock is released.
+        let mut game_state = state_guard.take().unwrap();
+        let current_game_tick = game_state.last_processed_tick;
         let next_game_tick = current_game_tick + 1;
 
-        let units_vec = self.list_units_uc.execute(current_game_tick).await?;
-        let corporations_vec = self.list_corporations_uc.execute(current_game_tick).await?;
-        let markets_vec = self.list_markets_uc.execute(current_game_tick).await?;
-        let businesses_vec = self.list_businesses_uc.execute(current_game_tick).await?;
-        let business_listings_vec = self
-            .list_business_listings_uc
-            .execute(current_game_tick)
-            .await?;
-        let business_offers_vec = self
-            .list_business_offers_uc
-            .execute(current_game_tick)
-            .await?;
-        let building_ownerships_vec = self
-            .list_building_ownerships
-            .execute(current_game_tick)
-            .await?;
-
-        let mut game_state = GameState::build(
-            units_vec,
-            corporations_vec,
-            markets_vec,
-            businesses_vec,
-            business_listings_vec,
-            business_offers_vec,
-        );
-
-        // 2. Pull Actions
+        // 2. Pull Actions (This happens every tick)
         let queued_actions = self.action_puller.pull_all_available_actions().await?;
         let act_msg_count = queued_actions.len();
+        tracing::debug!(
+            num_actions = act_msg_count,
+            "Pulled actions for tick {}.",
+            next_game_tick
+        );
 
-        tracing::debug!(num_actions = queued_actions.len(), "Pulled actions.");
-
-        // 3. Calculate State N+1
-        let mut action_ids: Vec<String> = Vec::with_capacity(queued_actions.len());
-
+        // 3. Calculate State N+1 (using the in-memory game_state)
+        let mut action_ids: Vec<String> = Vec::with_capacity(act_msg_count);
         let action_outcomes = self.simulation.calculate_next_state(
             next_game_tick,
             queued_actions,
             &mut action_ids,
             &mut game_state,
         );
-
-        tracing::debug!("Calculated next state.");
+        tracing::debug!("Calculated next state in memory.");
 
         // 4. Write State N+1 Atomically
-        let units: Vec<Unit> = game_state.units_map.into_values().collect();
-        let corporations: Vec<Corporation> = game_state.corporations_map.into_values().collect();
-        let markets: Vec<Market> = game_state.markets_map.into_values().collect();
-        let businesses: Vec<Business> = game_state.businesses_map.into_values().collect();
+        // Convert the owned HashMaps into owned Vecs.
+        // This is very cheap because it just moves the values, no deep clones.
+        let units: Vec<Unit> = std::mem::take(&mut game_state.units_map)
+            .into_values()
+            .collect();
+        let corporations: Vec<Corporation> = std::mem::take(&mut game_state.corporations_map)
+            .into_values()
+            .collect();
+        let markets: Vec<Market> = std::mem::take(&mut game_state.markets_map)
+            .into_values()
+            .collect();
+        let businesses: Vec<Business> = std::mem::take(&mut game_state.businesses_map)
+            .into_values()
+            .collect();
         let business_listings: Vec<BusinessListing> =
-            game_state.business_listings_map.into_values().collect();
+            std::mem::take(&mut game_state.business_listings_map)
+                .into_values()
+                .collect();
         let business_offers: Vec<BusinessOffer> =
-            game_state.business_offers_map.into_values().collect();
+            std::mem::take(&mut game_state.business_offers_map)
+                .into_values()
+                .collect();
+        let building_ownerships: Vec<BuildingOwnership> =
+            std::mem::take(&mut game_state.building_ownerships_map)
+                .into_values()
+                .collect();
 
-        let action_outcomes = self
+        let (
+            units,
+            corporations,
+            markets,
+            businesses,
+            business_listings,
+            business_offers,
+            building_ownerships,
+        ) = self
             .uow
             .execute(move |ctx| {
                 Box::pin(async move {
                     // Units
-                    ctx.insert_units_in_tick(next_game_tick, units).await?;
+                    ctx.insert_units_in_tick(next_game_tick, &units).await?;
                     ctx.delete_units_before_tick(current_game_tick).await?;
 
                     // Corporations
-                    ctx.insert_corporations_in_tick(next_game_tick, corporations)
+                    ctx.insert_corporations_in_tick(next_game_tick, &corporations)
                         .await?;
                     ctx.delete_corporations_before_tick(current_game_tick)
                         .await?;
 
                     // Markets
-                    ctx.insert_markets_in_tick(next_game_tick, markets).await?;
+                    ctx.insert_markets_in_tick(next_game_tick, &markets).await?;
                     ctx.delete_markets_before_tick(current_game_tick).await?;
 
                     // Businesses
-                    ctx.insert_businesses_in_tick(next_game_tick, businesses)
+                    ctx.insert_businesses_in_tick(next_game_tick, &businesses)
                         .await?;
                     ctx.delete_businesses_before_tick(current_game_tick).await?;
 
                     // Business Listings
-                    ctx.insert_business_listings_in_tick(next_game_tick, business_listings)
+                    ctx.insert_business_listings_in_tick(next_game_tick, &business_listings)
                         .await?;
                     ctx.delete_business_listings_before_tick(current_game_tick)
                         .await?;
 
                     // Business Offers
-                    ctx.insert_business_offers_in_tick(next_game_tick, business_offers)
+                    ctx.insert_business_offers_in_tick(next_game_tick, &business_offers)
                         .await?;
                     ctx.delete_business_offers_before_tick(current_game_tick)
                         .await?;
 
-                    // Buildings Ownerships
-                    ctx.insert_building_ownerships_in_tick(next_game_tick, building_ownerships_vec)
+                    // Building Ownerships
+                    ctx.insert_building_ownerships_in_tick(next_game_tick, &building_ownerships)
                         .await?;
                     ctx.delete_building_ownerships_before_tick(current_game_tick)
                         .await?;
 
-                    // Update game tick state
+                    // Game Tick Update
                     ctx.update_current_game_tick(next_game_tick).await?;
 
-                    Ok(action_outcomes)
+                    Ok((
+                        units,
+                        corporations,
+                        markets,
+                        businesses,
+                        business_listings,
+                        business_offers,
+                        building_ownerships,
+                    ))
                 })
             })
             .await?;
 
-        tracing::debug!("Atomically wrote next state.");
+        // --- REBUILD THE STATE ---
+        // Whether the UOW succeeded or failed, we must restore the full game_state
+        // object before releasing the lock, so it's ready for the next attempt.
+        // We do this by converting the vectors back into HashMaps.
+        game_state.corporations_map = corporations.into_iter().map(|c| (c.uuid, c)).collect();
+        game_state.units_map = units.into_iter().map(|u| (u.uuid, u)).collect();
+        game_state.markets_map = markets.into_iter().map(|m| (m.uuid, m)).collect();
+        game_state.businesses_map = businesses.into_iter().map(|b| (b.uuid, b)).collect();
+        game_state.business_listings_map = business_listings
+            .into_iter()
+            .map(|bl| (bl.uuid, bl))
+            .collect();
+        game_state.business_offers_map = business_offers
+            .into_iter()
+            .map(|bo| (bo.uuid, bo))
+            .collect();
+        game_state.building_ownerships_map = building_ownerships
+            .into_iter()
+            .map(|buw| (buw.building_uuid, buw))
+            .collect();
+        game_state.last_processed_tick = next_game_tick;
 
-        // 5. Handle domain events
+        *state_guard = Some(game_state);
 
-        // 6. Acknowledge processed actions
+        tracing::debug!("Atomically wrote state for tick {}.", next_game_tick);
+
+        // 5. Acknowledge and Notify
         if act_msg_count != 0 {
-            let message_count = action_ids.len();
-
-            self.action_puller
-                .acknowledge_actions(action_ids)
-                .await
-                .context("Failed to acknowledge actions")?;
-
-            tracing::debug!(num_acked = message_count, "Acknowledged processed actions.");
+            self.action_puller.acknowledge_actions(action_ids).await?;
+            tracing::debug!(num_acked = act_msg_count, "Acknowledged processed actions.");
         }
 
-        // 6. Store Results and Notify
         if !action_outcomes.is_empty() {
-            tracing::debug!(
-                tick = next_game_tick,
-                count = action_outcomes.len(),
-                "Storing results and notifying."
-            );
-
-            // Need to map outcome back to its request_uuid
-            // This requires the SimulationService/Handlers to pass it through
             for outcome in action_outcomes {
                 let request_uuid = outcome.get_request_uuid();
                 let user_uuid = outcome.get_req_user_uuid();
-
-                // a. Store the full outcome/payload
-                // Serialize the specific data needed for the final response
-                let result_payload = self.serialize_outcome_for_delivery(&outcome)?; // Helper needed
-
+                let result_payload = self.serialize_outcome_for_delivery(&outcome)?;
                 self.outcome_store_writer
                     .store_outcome(request_uuid, &result_payload)
-                    .await?; // Handle store error
-
-                // b. Publish notification
+                    .await?;
                 self.outcome_notifier
                     .notify_outcome_ready(user_uuid, request_uuid)
-                    .await?; // Handle notify error
+                    .await?;
             }
         }
 
-        // 7. Send notification that game state has advanced
         self.outcome_notifier
             .notify_game_tick_advanced(next_game_tick)
             .await?;

@@ -17,7 +17,7 @@ impl PgUnitRepository {
     pub async fn insert_units_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        units: Vec<Unit>,
+        units: &[Unit],
         game_tick: i64,
     ) -> RepositoryResult<()> {
         // If there are no units, we don't need to do anything.
@@ -177,7 +177,7 @@ impl UnitTxRespository for PgTransactionContext<'_, '_> {
     async fn insert_units_in_tick(
         &mut self,
         game_tick: i64,
-        units: Vec<Unit>,
+        units: &[Unit],
     ) -> RepositoryResult<()> {
         self.unit_repo
             .insert_units_in_tick(&mut **self.tx, units, game_tick)

@@ -21,7 +21,7 @@ impl PgBuildingOwnershipRepository {
     pub async fn insert_building_ownerships_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        building_ownerships: Vec<BuildingOwnership>,
+        building_ownerships: &[BuildingOwnership],
         game_tick: i64,
     ) -> RepositoryResult<()> {
         if building_ownerships.is_empty() {
@@ -147,7 +147,7 @@ impl BuildingOwnershipTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_building_ownerships_in_tick(
         &mut self,
         game_tick: i64,
-        building_ownerships: Vec<BuildingOwnership>,
+        building_ownerships: &[BuildingOwnership],
     ) -> RepositoryResult<()> {
         self.building_ownerships_repo
             .insert_building_ownerships_in_tick(&mut **self.tx, building_ownerships, game_tick)

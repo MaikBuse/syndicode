@@ -68,7 +68,7 @@ pub trait BusinessListingTxRepository: Send + Sync {
     async fn insert_business_listings_in_tick(
         &mut self,
         game_tick: i64,
-        business_listings: Vec<BusinessListing>,
+        business_listings: &[BusinessListing],
     ) -> RepositoryResult<()>;
 
     async fn delete_business_listings_before_tick(

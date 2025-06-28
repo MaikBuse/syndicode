@@ -20,8 +20,8 @@ impl PgMarketRepository {
     pub async fn insert_markets_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        markets: Vec<Market>, // Take ownership for efficiency
-        game_tick: i64,       // Use i64 to match insert_corporation and DB schema
+        markets: &[Market],
+        game_tick: i64,
     ) -> RepositoryResult<()> {
         if markets.is_empty() {
             return Ok(());
@@ -138,7 +138,7 @@ impl MarketTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_markets_in_tick(
         &mut self,
         game_tick: i64,
-        markets: Vec<Market>,
+        markets: &[Market],
     ) -> RepositoryResult<()> {
         self.market_repo
             .insert_markets_in_tick(&mut **self.tx, markets, game_tick)

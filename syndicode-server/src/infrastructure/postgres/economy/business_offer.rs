@@ -19,23 +19,23 @@ impl PgBusinessOfferRepository {
     pub async fn insert_business_offers_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        business_offer: Vec<BusinessOffer>,
+        business_offers: &[BusinessOffer],
         game_tick: i64,
     ) -> RepositoryResult<()> {
-        if business_offer.is_empty() {
+        if business_offers.is_empty() {
             return Ok(());
         }
 
         // Prepare separate vectors for each column to be bulk inserted.
         // Pre-allocate capacity for efficiency.
-        let count = business_offer.len();
+        let count = business_offers.len();
         let mut uuids = Vec::with_capacity(count);
         let mut business_uuids = Vec::with_capacity(count);
         let mut offering_corporation_uuids = Vec::with_capacity(count);
         let mut target_corporation_uuids = Vec::with_capacity(count);
         let mut offer_prices = Vec::with_capacity(count);
 
-        for bo in business_offer {
+        for bo in business_offers {
             uuids.push(bo.uuid);
             business_uuids.push(bo.business_uuid);
             offering_corporation_uuids.push(bo.offering_corporation_uuid);
@@ -148,7 +148,7 @@ impl BusinessOfferTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_business_offers_in_tick(
         &mut self,
         game_tick: i64,
-        business_offers: Vec<BusinessOffer>,
+        business_offers: &[BusinessOffer],
     ) -> RepositoryResult<()> {
         self.business_offer_repo
             .insert_business_offers_in_tick(&mut **self.tx, business_offers, game_tick)

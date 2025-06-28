@@ -180,10 +180,12 @@ mod tests {
             .insert(market_uuid, vec![business_one_uuid, business_two_uuid]);
 
         let mut state = GameState {
+            last_processed_tick: 0,
             units_map: HashMap::new(),
             corporations_map,
             markets_map,
             businesses_map,
+            building_ownerships_map: HashMap::new(),
             business_listings_map: HashMap::new(),
             business_offers_map: HashMap::new(),
             total_operation_expenses_by_market_uuid,

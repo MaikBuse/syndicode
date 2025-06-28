@@ -58,7 +58,7 @@ impl PgCorporationRepository {
     pub async fn insert_corporations_in_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
-        corporations: Vec<Corporation>,
+        corporations: &[Corporation],
         game_tick: i64,
     ) -> RepositoryResult<()> {
         // If there are no corporations, we don't need to do anything.
@@ -300,7 +300,7 @@ impl CorporationTxRepository for PgTransactionContext<'_, '_> {
     async fn insert_corporations_in_tick(
         &mut self,
         game_tick: i64,
-        corporations: Vec<Corporation>,
+        corporations: &[Corporation],
     ) -> RepositoryResult<()> {
         self.corporation_repo
             .insert_corporations_in_tick(&mut **self.tx, corporations, game_tick)

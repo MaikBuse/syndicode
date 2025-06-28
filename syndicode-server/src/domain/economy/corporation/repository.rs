@@ -36,7 +36,7 @@ pub trait CorporationTxRepository: Send + Sync {
     async fn insert_corporations_in_tick(
         &mut self,
         game_tick: i64,
-        corporations: Vec<Corporation>,
+        corporations: &[Corporation],
     ) -> RepositoryResult<()>;
 
     async fn delete_corporations_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64>;

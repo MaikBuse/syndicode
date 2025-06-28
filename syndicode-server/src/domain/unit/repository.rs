@@ -26,7 +26,8 @@ pub trait UnitTxRespository: Send + Sync {
     async fn insert_units_in_tick(
         &mut self,
         game_tick: i64,
-        units: Vec<Unit>,
+        units: &[Unit],
     ) -> RepositoryResult<()>;
+
     async fn delete_units_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64>;
 }

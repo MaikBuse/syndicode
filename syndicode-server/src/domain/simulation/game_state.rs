@@ -1,8 +1,8 @@
 use crate::domain::{
     economy::{
-        business::model::Business, business_listing::model::BusinessListing,
-        business_offer::model::BusinessOffer, corporation::model::Corporation,
-        market::model::Market,
+        building_ownership::model::BuildingOwnership, business::model::Business,
+        business_listing::model::BusinessListing, business_offer::model::BusinessOffer,
+        corporation::model::Corporation, market::model::Market,
     },
     unit::model::Unit,
 };
@@ -10,6 +10,8 @@ use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 pub struct GameState {
+    /// The last tick number that was successfully processed and persisted.
+    pub last_processed_tick: i64,
     // Game State Maps
     pub units_map: HashMap<Uuid, Unit>,
     pub corporations_map: HashMap<Uuid, Corporation>,
@@ -17,6 +19,7 @@ pub struct GameState {
     pub businesses_map: HashMap<Uuid, Business>,
     pub business_listings_map: HashMap<Uuid, BusinessListing>,
     pub business_offers_map: HashMap<Uuid, BusinessOffer>,
+    pub building_ownerships_map: HashMap<Uuid, BuildingOwnership>,
 
     // Aggregates
     pub total_operation_expenses_by_market_uuid: HashMap<Uuid, i64>,
@@ -33,12 +36,14 @@ pub struct GameState {
 
 impl GameState {
     pub fn build(
+        last_processed_tick: i64,
         units_vec: Vec<Unit>,
         corporations_vec: Vec<Corporation>,
         markets_vec: Vec<Market>,
         businesses_vec: Vec<Business>,
         business_listings_vec: Vec<BusinessListing>,
         business_offers_vec: Vec<BusinessOffer>,
+        building_ownerships_vec: Vec<BuildingOwnership>,
     ) -> Self {
         // Game State Maps
         let mut units_map = HashMap::with_capacity(units_vec.len());
@@ -47,6 +52,7 @@ impl GameState {
         let mut businesses_map = HashMap::with_capacity(businesses_vec.len());
         let mut business_listings_map = HashMap::with_capacity(business_listings_vec.len());
         let mut business_offers_map = HashMap::with_capacity(business_offers_vec.len());
+        let mut building_ownerships_map = HashMap::with_capacity(building_ownerships_vec.len());
 
         // Aggregates
         let mut total_operation_expenses_by_market_uuid = HashMap::with_capacity(markets_vec.len());
@@ -139,7 +145,12 @@ impl GameState {
             business_offers_map.insert(business_offer.uuid, business_offer);
         }
 
+        for building_ownership in building_ownerships_vec {
+            building_ownerships_map.insert(building_ownership.building_uuid, building_ownership);
+        }
+
         Self {
+            last_processed_tick,
             units_map,
             corporations_map,
             corporation_names,
@@ -147,6 +158,7 @@ impl GameState {
             businesses_map,
             business_listings_map,
             business_offers_map,
+            building_ownerships_map,
             total_operation_expenses_by_market_uuid,
             corporation_uuid_by_user_uuid,
             business_uuids_by_market_uuid,

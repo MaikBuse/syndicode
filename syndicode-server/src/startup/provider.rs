@@ -75,7 +75,7 @@ use crate::{
     },
 };
 use std::sync::Arc;
-use tokio::sync::OnceCell;
+use tokio::sync::Mutex;
 
 // Represents the standard configuration of the application state
 pub type DefaultProvider = AppProvider<
@@ -313,6 +313,7 @@ impl DefaultProvider {
         );
 
         let simulation = Arc::new(SimulationService);
+        let game_state = Arc::new(Mutex::new(None));
         let game_tick_processor = Arc::new(
             GameTickProcessor::builder()
                 .action_puller(valkey.clone())
@@ -320,11 +321,11 @@ impl DefaultProvider {
                 .outcome_store_writer(valkey.clone())
                 .simulation(simulation.clone())
                 .game_tick_repo(game_tick_service.clone())
+                .state(game_state)
                 .list_corporations_uc(list_corporations_uc.clone())
                 .list_units_uc(list_units_uc.clone())
                 .uow(uow.clone())
                 .init_repo(init_service.clone())
-                .init_check_cell(OnceCell::new())
                 .list_markets_uc(list_markets_uc.clone())
                 .list_businesses_uc(list_businesses_uc.clone())
                 .list_business_listings_uc(list_business_listings_uc.clone())

@@ -162,19 +162,19 @@ where
                     let game_tick = ctx.get_current_game_tick().await?;
 
                     tracing::info!("Inserting markets...");
-                    ctx.insert_markets_in_tick(game_tick, markets).await?;
+                    ctx.insert_markets_in_tick(game_tick, &markets).await?;
 
                     tracing::info!("Inserting businesses...");
-                    ctx.insert_businesses_in_tick(game_tick, businesses).await?;
+                    ctx.insert_businesses_in_tick(game_tick, &businesses).await?;
 
                     tracing::info!("Inserting business_listings...");
-                    ctx.insert_business_listings_in_tick(game_tick, business_listings).await?;
+                    ctx.insert_business_listings_in_tick(game_tick, &business_listings).await?;
 
                     tracing::info!("Inserting buildings...");
                     ctx.insert_buildings(buildings).await?;
 
                     tracing::info!("Inserting building ownerships...");
-                    ctx.insert_building_ownerships_in_tick(game_tick, building_ownerships).await?;
+                    ctx.insert_building_ownerships_in_tick(game_tick, &building_ownerships).await?;
 
                     ctx.set_flag(FlagKey::EconomyDomainInit).await?;
 

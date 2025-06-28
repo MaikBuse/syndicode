@@ -13,7 +13,8 @@ pub trait MarketTxRepository: Send + Sync {
     async fn insert_markets_in_tick(
         &mut self,
         game_tick: i64,
-        markets: Vec<Market>,
+        markets: &[Market],
     ) -> RepositoryResult<()>;
+
     async fn delete_markets_before_tick(&mut self, game_tick: i64) -> RepositoryResult<u64>;
 }
