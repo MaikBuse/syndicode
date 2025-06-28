@@ -36,7 +36,6 @@ impl PgBuildingRepository {
         let mut height_vec = Vec::with_capacity(count);
         let mut prefecture_vec: Vec<Option<String>> = Vec::with_capacity(count);
 
-        // --- GEOMETRY VECTORS ARE NOW STRINGS ---
         let mut center_wkt_vec: Vec<String> = Vec::with_capacity(count);
         let mut footprint_wkt_vec: Vec<String> = Vec::with_capacity(count);
 

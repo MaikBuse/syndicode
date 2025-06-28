@@ -43,214 +43,258 @@ where
         }
     }
 
-    /// Runs the leader election loop indefinitely
-    #[allow(clippy::cognitive_complexity)] // Okay for the main loop structure
+    /// Runs the leader election loop indefinitely.
+    ///
+    /// This function is the main entry point and acts as a state machine, delegating
+    /// to `handle_leader_state` or `handle_non_leader_state` based on whether this
+    /// instance is currently the leader.
     pub async fn run(self) {
         let mut is_leader = false;
-        // Tracks when the *next* tick processing cycle should begin.
         let mut next_tick_time: Option<Instant> = None;
 
         loop {
             if is_leader {
-                // --- Currently Leader ---
-                // We refresh periodically based on sleep logic below.
-                match self.leader_elector.refresh().await {
-                    Ok(()) => {
-                        // Still leader. Drive the fixed tick loop.
-                        tracing::trace!("Leader lock refreshed successfully.");
-
-                        // Initialize next_tick_time if this is the first time after becoming leader
-                        // or after a period of being behind schedule.
-                        if next_tick_time.is_none() {
-                            let first_tick_target = Instant::now() + self.game_tick_interval;
-                            next_tick_time = Some(first_tick_target);
-                            tracing::info!(
-                                "Initialized tick timer. First tick target: {:?}",
-                                first_tick_target
-                            );
-                        }
-                        // We must unwrap here; if it was None, it was just set.
-                        let mut current_tick_target = next_tick_time.unwrap();
-
-                        // Inner loop to process potentially multiple ticks if behind schedule.
-                        loop {
-                            let now = Instant::now();
-
-                            // Check if it's time for the next scheduled tick
-                            if now >= current_tick_target {
-                                let tick_start_offset = now - current_tick_target;
-                                tracing::debug!(
-                                    lag_ms = tick_start_offset.as_millis(),
-                                    "Starting tick processing for target time: {:?}",
-                                    current_tick_target
-                                );
-
-                                // *** Process the actual game tick ***
-                                match self.game_tick_processor.process_next_tick().await {
-                                    Ok(processed_tick) => {
-                                        let duration = Instant::now() - now;
-                                        tracing::info!(
-                                            tick = processed_tick,
-                                            duration_ms = duration.as_millis(),
-                                            target_interval_ms =
-                                                self.game_tick_interval.as_millis(),
-                                            lag_ms = tick_start_offset.as_millis(),
-                                            "Successfully processed game tick."
-                                        );
-
-                                        // Handle potential overruns where processing took longer than the interval
-                                        if duration > self.game_tick_interval {
-                                            tracing::warn!(
-                                                  duration_ms = duration.as_millis(),
-                                                  target_ms = self.game_tick_interval.as_millis(),
-                                                  "Tick processing duration exceeded target interval!"
-                                             );
-                                            // The scheduling logic below handles catch-up.
-                                        }
-
-                                        // *** Schedule the next tick ***
-                                        // Always advance the target time by the fixed interval,
-                                        // regardless of processing duration, to maintain a stable tick rate.
-                                        current_tick_target += self.game_tick_interval;
-                                        next_tick_time = Some(current_tick_target); // Update shared state
-
-                                        // If the *new* target time is still in the past, we are behind schedule.
-                                        // Loop again immediately to process the next tick.
-                                        if current_tick_target <= Instant::now() {
-                                            tracing::warn!("System is behind schedule. Processing next tick immediately.");
-                                            // continue loop; // Implicitly continues
-                                        } else {
-                                            // The next tick is in the future. Break the inner loop to sleep.
-                                            break;
-                                        }
-                                    }
-                                    // --- Start of modified section ---
-                                    Err(err) => {
-                                        match err {
-                                            // Check if it's the specific NotInitialized error
-                                            ProcessorError::NotInitialized => {
-                                                tracing::warn!("Tick processing skipped: Database not initialized yet. Will retry on next cycle.");
-                                                // *** IMPORTANT: Do NOT relinquish leadership ***
-                                                // Allow the outer loop's sleep logic to handle the retry timing.
-                                                // We break the inner loop because we can't proceed *this* tick.
-                                                break; // Break inner loop, go to outer loop sleep/refresh check
-                                            }
-                                            // Handle other known critical ProcessorErrors if desired
-                                            _ => {
-                                                tracing::error!("Game tick processing failed (ProcessorError: {}). Relinquishing leadership.", err);
-                                                // Treat other ProcessorErrors as critical: Relinquish leadership
-                                                if let Err(release_err) =
-                                                    self.leader_elector.release().await
-                                                {
-                                                    tracing::error!(error = %release_err, "Failed to release leader lock after critical processing error.");
-                                                }
-                                                is_leader = false;
-                                                next_tick_time = None;
-                                                // Wait before trying acquire again for critical errors
-                                                time::sleep(
-                                                    self.non_leader_acquisition_retry_interval,
-                                                )
-                                                .await;
-                                                break; // Break inner tick loop, go to outer acquire loop
-                                            }
-                                        }
-                                    } // --- End of modified section ---
-                                } // End match process_next_tick
-                            } else {
-                                // Not time for the current target tick yet. Break inner loop to sleep.
-                                break;
-                            }
-                        } // --- End of inner tick processing loop ---
-
-                        // If we are still leader after the inner loop (i.e., no critical processing error occurred)...
-                        if is_leader {
-                            // Calculate sleep duration. We need to wake up for the *earlier* of:
-                            // 1. The next scheduled game tick (`next_tick_time`).
-                            // 2. The next required lock refresh time.
-                            let now = Instant::now();
-                            // next_tick_time should be Some here, as it's set after successful processing
-                            // or initialization, or we broke inner loop due to NotInitialized.
-                            // If it somehow became None (e.g., critical error path, but is_leader is true?), default to now.
-                            let next_tick_due_at = next_tick_time.unwrap_or(now);
-
-                            let time_until_next_tick = if next_tick_due_at > now {
-                                next_tick_due_at - now
-                            } else {
-                                Duration::ZERO // Already due or past due
-                            };
-
-                            // Calculate time until the next refresh *check*. Check slightly before expiry.
-                            // Using 90% of the interval as a safety margin.
-                            let time_until_refresh_needed =
-                                self.leader_lock_refresh_interval.mul_f32(0.9);
-
-                            // Sleep until the *minimum* of the two durations.
-                            let sleep_duration =
-                                time_until_next_tick.min(time_until_refresh_needed);
-
-                            if sleep_duration > Duration::ZERO {
-                                tracing::trace!(
-                                    "Sleeping for {:?} (until next tick: {:?}, until refresh: {:?})",
-                                    sleep_duration, time_until_next_tick, time_until_refresh_needed
-                                );
-                                time::sleep(sleep_duration).await;
-                            } else {
-                                // If sleep duration is zero (e.g., we are behind schedule or refresh is due),
-                                // yield to allow other tasks to run and prevent hogging CPU.
-                                tracing::trace!(
-                                    "Calculated sleep duration is zero or negative. Yielding."
-                                );
-                                tokio::task::yield_now().await;
-                            }
-                        }
-                        // If !is_leader (due to critical processing error), the outer loop will handle the transition.
-                    } // End Ok(()) refresh case
-                    Err(LeaderElectionError::NotHoldingLock { key, instance_id }) => {
-                        // This can happen if the lock expired between the last refresh and this one,
-                        // or if another instance took over.
-                        tracing::info!(key=%key, current_instance=%self.instance_id , owner_instance=%instance_id, "Lost leadership or lock expired (refresh check failed).");
-                        is_leader = false;
-                        next_tick_time = None; // Reset timer state
-                                               // No sleep here, immediately try to re-acquire in the next outer loop iteration.
-                    }
-                    Err(e) => {
-                        // This indicates an error communicating with the lock provider (e.g., network issue).
-                        // It's safer to assume we might have lost leadership or might lose it soon.
-                        tracing::error!(error = %e, "Failed to refresh leader lock due to an error. Relinquishing leadership as a precaution.");
-                        is_leader = false;
-                        next_tick_time = None; // Reset timer state
-                                               // Attempt to release the lock gracefully, but ignore error as we might not hold it.
-                        if let Err(release_err) = self.leader_elector.release().await {
-                            tracing::warn!(error = %release_err,"Failed to release leader lock after refresh error (might have already lost it).");
-                        }
-                        // Wait before trying to acquire again, as the underlying issue might persist.
-                        time::sleep(self.non_leader_acquisition_retry_interval).await;
-                    }
-                } // End match leader_elector.refresh()
+                self.handle_leader_state(&mut is_leader, &mut next_tick_time)
+                    .await;
             } else {
-                // --- Not Currently Leader ---
-                tracing::debug!("Not leader. Attempting to acquire lock...");
-                match self.leader_elector.try_acquire().await {
-                    Ok(true) => {
-                        tracing::info!(instance_id = %self.instance_id, "Successfully acquired leadership!");
-                        is_leader = true;
-                        next_tick_time = None; // Ensure timer gets re-initialized on first leader cycle
-                                               // No sleep, immediately loop back to start leader duties (refresh/tick)
+                self.handle_non_leader_state(&mut is_leader, &mut next_tick_time)
+                    .await;
+            }
+        }
+    }
+
+    // --- State Handlers ---
+
+    /// Manages the logic for a single cycle when the instance believes it is the leader.
+    ///
+    /// It first refreshes the lock. If successful, it processes game ticks.
+    /// If the refresh fails or a critical error occurs during processing, it relinquishes leadership.
+    async fn handle_leader_state(
+        &self,
+        is_leader: &mut bool,
+        next_tick_time: &mut Option<Instant>,
+    ) {
+        match self.leader_elector.refresh().await {
+            Ok(()) => {
+                tracing::trace!("Leader lock refreshed successfully.");
+                // Still leader, so we drive the tick processing and sleeping logic.
+                self.drive_tick_processing_cycle(is_leader, next_tick_time)
+                    .await;
+            }
+            Err(LeaderElectionError::NotHoldingLock { key, instance_id }) => {
+                tracing::info!(key=%key, current_instance=%self.instance_id , owner_instance=%instance_id, "Lost leadership or lock expired (refresh check failed).");
+                *is_leader = false;
+                *next_tick_time = None;
+                // No sleep here; loop immediately to try re-acquiring leadership.
+            }
+            Err(e) => {
+                // This indicates an error communicating with the lock provider (e.g., network issue).
+                self.handle_refresh_error(is_leader, next_tick_time, e)
+                    .await;
+            }
+        }
+    }
+
+    /// Manages the logic for a single cycle when the instance is not the leader.
+    ///
+    /// It attempts to acquire the leader lock and sleeps on failure before the next attempt.
+    async fn handle_non_leader_state(
+        &self,
+        is_leader: &mut bool,
+        next_tick_time: &mut Option<Instant>,
+    ) {
+        tracing::debug!("Not leader. Attempting to acquire lock...");
+        match self.leader_elector.try_acquire().await {
+            Ok(true) => {
+                tracing::info!(instance_id = %self.instance_id, "Successfully acquired leadership!");
+                *is_leader = true;
+                // Ensure timer is re-initialized on the first leader cycle.
+                *next_tick_time = None;
+            }
+            Ok(false) => {
+                // Failed to acquire, someone else is leader. Wait before retrying.
+                tracing::debug!(
+                    "Failed to acquire lock (already held or unavailable). Retrying after interval."
+                );
+                time::sleep(self.non_leader_acquisition_retry_interval).await;
+            }
+            Err(e) => {
+                // Error during acquisition attempt. Wait before retrying.
+                tracing::error!(
+                    error = %e,
+                    "Error trying to acquire leader lock. Retrying after interval."
+                );
+                time::sleep(self.non_leader_acquisition_retry_interval).await;
+            }
+        }
+    }
+
+    // --- Leader-Specific Logic ---
+
+    /// Orchestrates a single cycle of the leader's duties: processing due ticks and then sleeping.
+    async fn drive_tick_processing_cycle(
+        &self,
+        is_leader: &mut bool,
+        next_tick_time: &mut Option<Instant>,
+    ) {
+        // This function will process any and all ticks that are currently due.
+        // It returns `true` if a critical, unrecoverable processing error occurred.
+        let had_critical_error = self.process_due_ticks(next_tick_time).await;
+
+        if had_critical_error {
+            self.handle_critical_processor_error(is_leader, next_tick_time)
+                .await;
+        } else if *is_leader {
+            // If we are still the leader, calculate the appropriate sleep time
+            // until the next event (either a game tick or a lock refresh).
+            self.sleep_until_next_event(*next_tick_time).await;
+        }
+    }
+
+    /// Processes game ticks in a loop until the system is "caught up" to the current time.
+    ///
+    /// Returns `true` if a critical processing error occurs that requires relinquishing
+    /// leadership. Returns `false` for successful processing or non-critical issues
+    /// (like the processor not being initialized yet).
+    async fn process_due_ticks(&self, next_tick_time: &mut Option<Instant>) -> bool {
+        // Initialize the tick timer on the very first run after becoming leader.
+        if next_tick_time.is_none() {
+            let first_tick_target = Instant::now() + self.game_tick_interval;
+            *next_tick_time = Some(first_tick_target);
+            tracing::info!(
+                "Initialized tick timer. First tick target: {:?}",
+                first_tick_target
+            );
+        }
+
+        // We can unwrap here; it was just set if None.
+        let mut current_tick_target = next_tick_time.unwrap();
+
+        // This loop processes ticks as long as their scheduled time is in the past.
+        loop {
+            let now = Instant::now();
+
+            // Check if it's time for the next scheduled tick. If not, we're caught up.
+            if now < current_tick_target {
+                *next_tick_time = Some(current_tick_target); // Persist the updated target time.
+                return false; // Not a critical error, exit the processing loop.
+            }
+
+            let tick_start_offset = now - current_tick_target;
+            tracing::debug!(
+                lag_ms = tick_start_offset.as_millis(),
+                "Starting tick processing for target time: {:?}",
+                current_tick_target
+            );
+
+            match self.game_tick_processor.process_next_tick().await {
+                Ok(processed_tick) => {
+                    let duration = Instant::now() - now;
+                    tracing::info!(
+                        tick = processed_tick,
+                        duration_ms = duration.as_millis(),
+                        target_interval_ms = self.game_tick_interval.as_millis(),
+                        lag_ms = tick_start_offset.as_millis(),
+                        "Successfully processed game tick."
+                    );
+
+                    if duration > self.game_tick_interval {
+                        tracing::warn!(
+                            duration_ms = duration.as_millis(),
+                            target_ms = self.game_tick_interval.as_millis(),
+                            "Tick processing duration exceeded target interval!"
+                        );
                     }
-                    Ok(false) => {
-                        // Failed to acquire, someone else is leader or lock unavailable. Wait before retrying.
-                        tracing::debug!("Failed to acquire lock (already held or unavailable). Retrying after interval.");
-                        time::sleep(self.non_leader_acquisition_retry_interval).await;
-                    }
-                    Err(e) => {
-                        // Error during acquisition attempt (e.g., network issue). Wait before retrying.
-                        tracing::error!(error = %e, "Error trying to acquire leader lock. Retrying after interval.");
-                        time::sleep(self.non_leader_acquisition_retry_interval).await;
-                    }
+
+                    // Always advance target time by the fixed interval to maintain a stable rate.
+                    current_tick_target += self.game_tick_interval;
+                    // The loop will continue on the next iteration if the new target is still in the past.
                 }
-            } // End if is_leader / else
-        } // End outer loop
-    } // End run()
+                Err(ProcessorError::NotInitialized) => {
+                    tracing::warn!("Tick processing skipped: Database not initialized yet. Will retry on next cycle.");
+                    *next_tick_time = Some(current_tick_target); // Persist target.
+                    return false; // Not a critical error.
+                }
+                Err(err) => {
+                    // Any other processor error is treated as critical.
+                    tracing::error!("Game tick processing failed (ProcessorError: {}). Relinquishing leadership.", err);
+                    return true; // Critical error.
+                }
+            }
+        }
+    }
+
+    /// Calculates the appropriate amount of time to sleep and then awaits that duration.
+    ///
+    /// The sleep duration is the *minimum* of the time until the next scheduled game tick
+    /// and the time until the next required lock refresh.
+    async fn sleep_until_next_event(&self, next_tick_time: Option<Instant>) {
+        let now = Instant::now();
+        // `next_tick_time` should be Some, but we default to `now` for safety.
+        let next_tick_due_at = next_tick_time.unwrap_or(now);
+
+        // `saturating_duration_since` handles cases where the tick is already past due (returns Duration::ZERO).
+        let time_until_next_tick = next_tick_due_at.saturating_duration_since(now);
+
+        // Check slightly before the refresh interval expires to be safe.
+        let time_until_refresh_needed = self.leader_lock_refresh_interval.mul_f32(0.9);
+
+        // We must wake up for whichever event is sooner.
+        let sleep_duration = time_until_next_tick.min(time_until_refresh_needed);
+
+        if sleep_duration > Duration::ZERO {
+            tracing::trace!(
+                "Sleeping for {:?} (until next tick: {:?}, until refresh: {:?})",
+                sleep_duration,
+                time_until_next_tick,
+                time_until_refresh_needed
+            );
+            time::sleep(sleep_duration).await;
+        } else {
+            // If sleep duration is zero (e.g., we are behind schedule), yield to allow
+            // other async tasks to run and prevent hogging the CPU.
+            tracing::trace!("Calculated sleep duration is zero or negative. Yielding.");
+            tokio::task::yield_now().await;
+        }
+    }
+
+    // --- Error Handling Helpers ---
+
+    /// Handles a critical error during game tick processing by relinquishing leadership.
+    async fn handle_critical_processor_error(
+        &self,
+        is_leader: &mut bool,
+        next_tick_time: &mut Option<Instant>,
+    ) {
+        if let Err(release_err) = self.leader_elector.release().await {
+            tracing::error!(
+                error = %release_err,
+                "Failed to release leader lock after critical processing error."
+            );
+        }
+        *is_leader = false;
+        *next_tick_time = None;
+        // Wait before trying to acquire again.
+        time::sleep(self.non_leader_acquisition_retry_interval).await;
+    }
+
+    /// Handles a non-specific error during the leader lock refresh attempt.
+    async fn handle_refresh_error(
+        &self,
+        is_leader: &mut bool,
+        next_tick_time: &mut Option<Instant>,
+        error: LeaderElectionError,
+    ) {
+        tracing::error!(error = %error, "Failed to refresh leader lock due to an error. Relinquishing leadership as a precaution.");
+        *is_leader = false;
+        *next_tick_time = None;
+        // Attempt to release the lock gracefully, but ignore the error as we might not hold it.
+        if let Err(release_err) = self.leader_elector.release().await {
+            tracing::warn!(error = %release_err,"Failed to release leader lock after refresh error (might have already lost it).");
+        }
+        // Wait before trying to acquire again, as the underlying issue might persist.
+        time::sleep(self.non_leader_acquisition_retry_interval).await;
+    }
 }
 
 #[cfg(test)]
