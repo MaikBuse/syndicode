@@ -8,9 +8,17 @@ CREATE TABLE IF NOT EXISTS system_flags (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Insert the specific flag row we'll check, ensuring it exists
+-- Insert the specific flag rows we'll check, ensuring it exists
 INSERT INTO system_flags (flag_key, is_set)
 VALUES ('database_initialized', FALSE)
+ON CONFLICT (flag_key) DO NOTHING;
+
+INSERT INTO system_flags (flag_key, is_set)
+VALUES ('admin_domain_initialized', FALSE)
+ON CONFLICT (flag_key) DO NOTHING;
+
+INSERT INTO system_flags (flag_key, is_set)
+VALUES ('economy_domain_initialized', FALSE)
 ON CONFLICT (flag_key) DO NOTHING;
 
 

@@ -1,7 +1,11 @@
 use crate::{
     application::{
         error::{ApplicationError, ApplicationResult},
-        ports::{crypto::PasswordHandler, uow::UnitOfWork},
+        ports::{
+            crypto::PasswordHandler,
+            init::{FlagKey, InitializationRepository},
+            uow::UnitOfWork,
+        },
     },
     domain::{
         economy::corporation::model::{name::CorporationName, Corporation},
@@ -17,20 +21,23 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct BootstrapAdminUseCase<UOW, P>
+pub struct BootstrapAdminUseCase<UOW, P, INI>
 where
     UOW: UnitOfWork,
     P: PasswordHandler,
+    INI: InitializationRepository,
 {
     pw: Arc<P>,
     uow: Arc<UOW>,
+    init_repo: Arc<INI>,
 }
 
 #[bon]
-impl<UOW, P> BootstrapAdminUseCase<UOW, P>
+impl<UOW, P, INI> BootstrapAdminUseCase<UOW, P, INI>
 where
     UOW: UnitOfWork,
     P: PasswordHandler,
+    INI: InitializationRepository,
 {
     #[builder]
     pub async fn execute(
@@ -39,7 +46,21 @@ where
         password: String,
         user_email: String,
         corporation_name: String,
-    ) -> ApplicationResult<User> {
+    ) -> ApplicationResult<()> {
+        if self.init_repo.is_flag_set(FlagKey::AdminDomainInit).await? {
+            tracing::info!("Admin Domain initialization flag is already set. Skipping.");
+
+            return Ok(());
+        }
+
+        tracing::info!(
+            "Admin Domain initialization flag not set or missing. Attempting initialization lock..."
+        );
+
+        self.init_repo.set_advisory_lock().await?;
+
+        tracing::info!("Acquired initialization advisory lock.");
+
         let user_name = UserName::new(user_name)?;
 
         let user_password = UserPassword::new(password)?;
@@ -55,8 +76,7 @@ where
             status: UserStatus::Active,
         };
 
-        let user_created = self
-            .uow
+        self.uow
             .execute(|ctx| {
                 Box::pin(async move {
                     let user_to_create = user.clone();
@@ -78,11 +98,19 @@ where
                         .await
                         .map_err(ApplicationError::from)?;
 
+                    ctx.set_flag(FlagKey::AdminDomainInit).await?;
+
                     Ok(user_to_create)
                 })
             })
             .await?;
 
-        Ok(user_created)
+        tracing::info!("Admin Domain initialization complete and flag set.");
+
+        self.init_repo.set_advisory_lock().await?;
+
+        tracing::info!("Released initialization advisory lock.");
+
+        Ok(())
     }
 }

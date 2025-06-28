@@ -16,7 +16,7 @@ use super::{
     warfare::list_units::ListUnitsUseCase,
 };
 use crate::{
-    application::ports::processor::ProcessorError,
+    application::ports::{init::FlagKey, processor::ProcessorError},
     domain::{
         economy::{
             building_ownership::repository::BuildingOwnershipRepository,
@@ -101,7 +101,7 @@ where
     async fn perform_db_initialization_check(&self) -> ProcessorResult<()> {
         tracing::debug!("Performing one-time database initialization check...");
 
-        let is_db_ini = self.init_repo.is_database_initialized().await?;
+        let is_db_ini = self.init_repo.is_flag_set(FlagKey::DatabaseInit).await?;
 
         match is_db_ini {
             true => {

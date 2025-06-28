@@ -1,5 +1,5 @@
 use crate::{
-    application::ports::init::{InitializationRepository, InitializationTxRepository},
+    application::ports::init::{FlagKey, InitializationRepository, InitializationTxRepository},
     domain::repository::RepositoryResult,
 };
 use sqlx::Postgres;
@@ -7,21 +7,20 @@ use std::sync::Arc;
 
 use super::{uow::PgTransactionContext, PostgresDatabase};
 
-const INIT_FLAG_KEY: &str = "database_initialized";
-
 const INIT_ADVISORY_LOCK_KEY: i64 = 42; // unique number
 
 #[derive(Clone)]
 pub struct PgInitializationRepository;
 
 impl PgInitializationRepository {
-    pub async fn is_database_initialized(
+    pub async fn is_flag_set(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
+        flag: FlagKey,
     ) -> RepositoryResult<bool> {
         let is_set: Option<bool> = sqlx::query_scalar!(
             "SELECT is_set FROM system_flags WHERE flag_key = $1",
-            INIT_FLAG_KEY
+            flag.to_string()
         )
         .fetch_optional(executor)
         .await?;
@@ -35,10 +34,11 @@ impl PgInitializationRepository {
     pub async fn set_database_initialization_flag(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
+        flag: FlagKey,
     ) -> RepositoryResult<()> {
         sqlx::query!(
             "UPDATE system_flags SET is_set = TRUE, updated_at = NOW() WHERE flag_key = $1",
-            INIT_FLAG_KEY
+            flag.to_string()
         )
         .execute(executor)
         .await?;
@@ -74,9 +74,13 @@ impl PgInitializationService {
 
 #[tonic::async_trait]
 impl InitializationRepository for PgInitializationService {
-    async fn is_database_initialized(&self) -> RepositoryResult<bool> {
+    async fn is_flag_set(&self, flag: FlagKey) -> RepositoryResult<bool> {
+        self.init_repo.is_flag_set(&self.pg_db.pool, flag).await
+    }
+
+    async fn set_flag(&self, flag: FlagKey) -> RepositoryResult<()> {
         self.init_repo
-            .is_database_initialized(&self.pg_db.pool)
+            .set_database_initialization_flag(&self.pg_db.pool, flag)
             .await
     }
 
@@ -87,13 +91,13 @@ impl InitializationRepository for PgInitializationService {
 
 #[tonic::async_trait]
 impl InitializationTxRepository for PgTransactionContext<'_, '_> {
-    async fn is_database_initialized(&mut self) -> RepositoryResult<bool> {
-        self.init_repo.is_database_initialized(&mut **self.tx).await
+    async fn is_flag_set(&mut self, flag: FlagKey) -> RepositoryResult<bool> {
+        self.init_repo.is_flag_set(&mut **self.tx, flag).await
     }
 
-    async fn set_database_initialization_flag(&mut self) -> RepositoryResult<()> {
+    async fn set_flag(&mut self, flag: FlagKey) -> RepositoryResult<()> {
         self.init_repo
-            .set_database_initialization_flag(&mut **self.tx)
+            .set_database_initialization_flag(&mut **self.tx, flag)
             .await
     }
 }

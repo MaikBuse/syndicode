@@ -8,6 +8,7 @@ use crate::{
             login::LoginUseCase, register_user::RegisterUserUseCase,
             resend_verification::ResendVerificationUseCase, verify_user::VerifyUserUseCase,
         },
+        bootstrap::BootstrapOrchestrator,
         economy::{
             acquire_listed_business::AcquireListedBusinessUseCase,
             bootstrap::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
@@ -25,6 +26,7 @@ use crate::{
             init::InitializationRepository,
             leader::LeaderElector,
             limiter::RateLimitEnforcer,
+            migration::MigrationRunner,
             outcome::OutcomeStoreReader,
             processor::GameTickProcessable,
             queuer::ActionQueueable,
@@ -58,6 +60,7 @@ use crate::{
             },
             game_tick::PgGameTickService,
             init::PgInitializationService,
+            migration::PostgresMigrator,
             unit::PgUnitService,
             uow::PostgresUnitOfWork,
             user::{PgUserRepository, PgUserService},
@@ -75,7 +78,7 @@ use std::sync::Arc;
 use tokio::sync::OnceCell;
 
 // Represents the standard configuration of the application state
-pub type DefaultAppState = AppState<
+pub type DefaultProvider = AppProvider<
     PgInitializationService,
     GameTickProcessor<
         PgInitializationService,
@@ -106,9 +109,10 @@ pub type DefaultAppState = AppState<
     PgGameTickService,
     EmailHandler,
     PgBusinessListingService,
+    PostgresMigrator,
 >;
 
-pub struct AppState<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL>
+pub struct AppProvider<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL, M>
 where
     INI: InitializationRepository + 'static,
     G: GameTickProcessable + 'static,
@@ -125,24 +129,24 @@ where
     GTR: GameTickRepository + 'static,
     VS: VerificationSendable + 'static,
     BL: BusinessListingRepository + 'static,
+    M: MigrationRunner + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub leader_elector: Arc<L>,
     pub crypto: Arc<CryptoService>,
-    pub bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
-    pub bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
+    pub bootstrap_orchestrator: Arc<BootstrapOrchestrator<UOW, INI, P, M>>,
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
     pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
 }
 
-impl DefaultAppState {
+impl DefaultProvider {
     pub async fn build_services(
         config: Arc<ServerConfig>,
         pg_db: Arc<PostgresDatabase>,
         valkey: Arc<ValkeyStore>,
         user_channels: UserChannels,
-    ) -> anyhow::Result<DefaultAppState> {
+    ) -> anyhow::Result<DefaultProvider> {
         // Crypto service
         let crypto = Arc::new(CryptoService::new(config.clone())?);
 
@@ -197,6 +201,7 @@ impl DefaultAppState {
             BootstrapAdminUseCase::builder()
                 .uow(uow.clone())
                 .pw(crypto.clone())
+                .init_repo(init_service.clone())
                 .build(),
         );
         let create_user_uc = Arc::new(
@@ -295,6 +300,18 @@ impl DefaultAppState {
                 .build(),
         );
 
+        // Bootstrap
+        let migrator = Arc::new(PostgresMigrator::new(pg_db.clone()));
+        let bootstrap_orchestrator = Arc::new(
+            BootstrapOrchestrator::builder()
+                .config(config.clone())
+                .migrator(migrator)
+                .init_repo(init_service.clone())
+                .bootstrap_admin_uc(bootstrap_admin_uc)
+                .bootstrap_economy_uc(bootstrap_economy_uc)
+                .build(),
+        );
+
         let simulation = Arc::new(SimulationService);
         let game_tick_processor = Arc::new(
             GameTickProcessor::builder()
@@ -349,11 +366,10 @@ impl DefaultAppState {
             .config(config.clone())
             .build();
 
-        Ok(AppState {
+        Ok(AppProvider {
             leader_elector: valkey.clone(),
             crypto,
-            bootstrap_admin_uc,
-            bootstrap_economy_uc,
+            bootstrap_orchestrator,
             game_presenter,
             admin_presenter,
             auth_presenter,

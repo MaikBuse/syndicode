@@ -1,19 +1,15 @@
-mod bootstrap;
 mod logging;
+mod provider;
 mod server;
-mod state;
 
 use crate::{
     application::leader::LeaderLoopManager,
     config::ServerConfig,
-    infrastructure::{
-        postgres::{migration::PostgresMigrator, PostgresDatabase},
-        valkey::ValkeyStore,
-    },
+    infrastructure::{postgres::PostgresDatabase, valkey::ValkeyStore},
     presentation::{broadcaster::GameTickBroadcaster, game::user_channel_guard::UserChannels},
 };
 use dashmap::DashMap;
-use state::AppState;
+use provider::AppProvider;
 use std::{sync::Arc, time::Duration};
 
 pub async fn start_server() -> anyhow::Result<()> {
@@ -27,7 +23,7 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     let valkey_store = Arc::new(ValkeyStore::new(config.clone()).await?);
 
-    let app_state = AppState::build_services(
+    let provider = AppProvider::build_services(
         config.clone(),
         pg_db.clone(),
         valkey_store.clone(),
@@ -36,19 +32,12 @@ pub async fn start_server() -> anyhow::Result<()> {
     .await?;
 
     // Bootstrap
-    let migrator = Arc::new(PostgresMigrator::new(pg_db.clone()));
-    bootstrap::run()
-        .config(config.clone())
-        .migrator(migrator)
-        .bootstrap_admin_uc(app_state.bootstrap_admin_uc.clone())
-        .bootstrap_economy_uc(app_state.bootstrap_economy_uc.clone())
-        .call()
-        .await?;
+    provider.bootstrap_orchestrator.run().await?;
 
     // Spawn leader loop
     let leader_loop_manager = LeaderLoopManager::builder()
-        .leader_elector(app_state.leader_elector.clone())
-        .game_tick_processor(app_state.game_tick_processor.clone())
+        .leader_elector(provider.leader_elector.clone())
+        .game_tick_processor(provider.game_tick_processor.clone())
         .instance_id(config.general.instance_id.clone())
         .leader_lock_refresh_interval(config.processor.leader_lock_refresh_interval)
         .non_leader_acquisition_retry_interval(
@@ -71,7 +60,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     // Grpc Server
     server::start_grpc_services()
         .config(config.clone())
-        .app(app_state)
+        .app(provider)
         .valkey(valkey_store.clone())
         .call()
         .await?;

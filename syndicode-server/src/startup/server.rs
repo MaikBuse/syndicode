@@ -1,4 +1,4 @@
-use super::state::DefaultAppState;
+use super::provider::DefaultProvider;
 use crate::{
     config::ServerConfig,
     infrastructure::{
@@ -21,7 +21,7 @@ const SOCKET_ADDR: &str = "[::]:50051";
 #[builder]
 pub async fn start_grpc_services(
     config: Arc<ServerConfig>,
-    app: DefaultAppState,
+    app: DefaultProvider,
     valkey: Arc<ValkeyStore>,
 ) -> anyhow::Result<()> {
     let addr = SOCKET_ADDR.parse()?;

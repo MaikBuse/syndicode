@@ -1,7 +1,10 @@
 use crate::{
     application::{
         error::ApplicationResult,
-        ports::{init::InitializationRepository, uow::UnitOfWork},
+        ports::{
+            init::{FlagKey, InitializationRepository},
+            uow::UnitOfWork,
+        },
     },
     config::ServerConfig,
     domain::economy::{
@@ -86,14 +89,18 @@ where
     INI: InitializationRepository,
 {
     pub async fn execute(&self) -> ApplicationResult<()> {
-        if self.init_repo.is_database_initialized().await? {
-            tracing::info!("Database initialization flag is already set. Skipping.");
+        if self
+            .init_repo
+            .is_flag_set(FlagKey::EconomyDomainInit)
+            .await?
+        {
+            tracing::info!("Economy Domain initialization flag is already set. Skipping.");
 
             return Ok(());
         }
 
         tracing::info!(
-            "Database initialization flag not set or missing. Attempting initialization lock..."
+            "Economy Domain initialization flag not set or missing. Attempting initialization lock..."
         );
 
         self.init_repo.set_advisory_lock().await?;
@@ -145,7 +152,7 @@ where
         self.uow
             .execute(|ctx| {
                 Box::pin(async move {
-                    let is_set_after_lock = ctx.is_database_initialized().await?;
+                    let is_set_after_lock = ctx.is_flag_set(FlagKey::EconomyDomainInit).await?;
 
                     if is_set_after_lock {
                         tracing::info!("Initialization flag was set by another instance after lock acquisition. Skipping.");
@@ -169,14 +176,14 @@ where
                     tracing::info!("Inserting building ownerships...");
                     ctx.insert_building_ownerships_in_tick(game_tick, building_ownerships).await?;
 
-                    ctx.set_database_initialization_flag().await?;
+                    ctx.set_flag(FlagKey::EconomyDomainInit).await?;
 
                     Ok(())
                 })
             })
             .await?;
 
-        tracing::info!("Database initialization complete and flag set.");
+        tracing::info!("Economy Domain initialization complete and flag set.");
 
         self.init_repo.set_advisory_lock().await?;
 

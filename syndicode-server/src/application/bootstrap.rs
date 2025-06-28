@@ -3,13 +3,13 @@ use bon::Builder;
 use super::{
     admin::bootstrap::BootstrapAdminUseCase,
     economy::bootstrap::BootstrapEconomyUseCase,
-    error::{ApplicationError, ApplicationResult},
+    error::ApplicationResult,
     ports::{
         crypto::PasswordHandler, init::InitializationRepository, migration::MigrationRunner,
         uow::UnitOfWork,
     },
 };
-use crate::config::ServerConfig;
+use crate::{application::ports::init::FlagKey, config::ServerConfig};
 use std::sync::Arc;
 
 #[derive(Builder)]
@@ -22,7 +22,8 @@ where
 {
     config: Arc<ServerConfig>,
     migrator: Arc<M>,
-    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P>>,
+    init_repo: Arc<INI>,
+    bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P, INI>>,
     bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
 }
 
@@ -38,23 +39,18 @@ where
 
         self.migrator.run_migration().await?;
 
-        if let Err(err) = self
-            .bootstrap_admin_uc
+        self.bootstrap_admin_uc
             .execute()
             .user_name(self.config.auth.admin_username.clone())
             .password(self.config.auth.admin_password.clone())
             .corporation_name(self.config.auth.admin_corporation_name.clone())
             .user_email(self.config.auth.admin_email.clone())
             .call()
-            .await
-        {
-            match err {
-                ApplicationError::UniqueConstraint => {}
-                _ => return Err(err),
-            };
-        };
+            .await?;
 
         self.bootstrap_economy_uc.execute().await?;
+
+        self.init_repo.set_flag(FlagKey::DatabaseInit).await?;
 
         Ok(())
     }
