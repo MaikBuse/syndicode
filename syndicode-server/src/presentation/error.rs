@@ -32,7 +32,7 @@ pub(super) enum PresentationError {
     PermissionDenied,
 
     /// Some resource has been exhausted.
-    ResourceExhausted,
+    ResourceExhausted(String),
 
     /// The system is not in a state required for the operation's execution.
     FailedPrecondition,
@@ -76,12 +76,15 @@ impl From<ApplicationError> for PresentationError {
             | ApplicationError::CorporationNameTooLong(_)
             | ApplicationError::VerificationCodeFalse
             | ApplicationError::UniqueConstraint => Self::InvalidArgument(err.to_string()),
-            ApplicationError::WrongUserCredentials | ApplicationError::UserInactive => {
-                Self::Unauthenticated
+            ApplicationError::UserInactive => {
+                Self::InvalidArgument("The user in inactive".to_string())
+            }
+            ApplicationError::WrongUserCredentials => {
+                Self::InvalidArgument("The provided credentials are invalid".to_string())
             }
             ApplicationError::Unauthorized => Self::PermissionDenied,
-            ApplicationError::Limitation(_)
-            | ApplicationError::Database(_)
+            ApplicationError::Limitation(err) => Self::ResourceExhausted(err.to_string()),
+            ApplicationError::Database(_)
             | ApplicationError::Queue(_)
             | ApplicationError::Pull(_)
             | ApplicationError::VerificationSendable(_)
@@ -110,7 +113,7 @@ impl Display for PresentationError {
                     "The caller does not have permission to execute the specified operation"
                 )
             }
-            Self::ResourceExhausted => write!(f, "Some resource has been exhausted"),
+            Self::ResourceExhausted(msg) => write!(f, "Some resource has been exhausted: {}", msg),
             Self::FailedPrecondition => {
                 write!(
                     f,
@@ -141,7 +144,7 @@ impl From<PresentationError> for Status {
             PresentationError::NotFound => Self::not_found(String::new()),
             PresentationError::AlreadyExists => Self::already_exists(String::new()),
             PresentationError::PermissionDenied => Self::permission_denied(String::new()),
-            PresentationError::ResourceExhausted => Self::resource_exhausted(String::new()),
+            PresentationError::ResourceExhausted(msg) => Self::resource_exhausted(msg),
             PresentationError::FailedPrecondition => Self::failed_precondition(String::new()),
             PresentationError::Aborted => Self::aborted(String::new()),
             PresentationError::OutOfRange => Self::out_of_range(String::new()),
