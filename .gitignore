@@ -10,4 +10,3 @@ syndicode-client.log
 
 # server
 /server_config.toml
-*.parquet

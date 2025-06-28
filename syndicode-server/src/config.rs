@@ -46,7 +46,6 @@ impl Default for AuthConfig {
 
 #[derive(Builder, Serialize, Deserialize, Debug, Clone)]
 pub struct BootstrapConfig {
-    pub parquet_path: String,
     pub business_count_x: usize,
     pub business_count_y: usize,
     pub boundary_min_lon: f64,
@@ -61,7 +60,6 @@ pub struct BootstrapConfig {
 impl Default for BootstrapConfig {
     fn default() -> Self {
         Self {
-            parquet_path: "./merged_building_lod0.parquet".to_string(),
             business_count_x: 100,
             business_count_y: 100,
             boundary_min_lon: 139.6,
@@ -262,9 +260,6 @@ impl ServerConfig {
         }
 
         // BootstrapConfig
-        if let Ok(val) = read_env_var("PARQUET_PATH") {
-            config.bootstrap.parquet_path = val;
-        }
         if let Ok(val) = int_from_env("BUSINESS_COUNT_X") {
             config.bootstrap.business_count_x = val;
         }
