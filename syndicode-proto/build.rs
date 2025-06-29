@@ -11,11 +11,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file_descriptor_set_path(&descriptor_path)
         .compile_protos(
             &[
-                "buffers/interface/v1/interface.proto",
-                "buffers/warfare/v1/warfare.proto",
-                "buffers/economy/v1/economy.proto",
+                "../protos/interface/v1/interface.proto",
+                "../protos/warfare/v1/warfare.proto",
+                "../protos/economy/v1/economy.proto",
             ],
-            &["buffers"],
+            &["../protos"],
         )?;
 
     println!("cargo:rerun-if-changed=buffers/");
