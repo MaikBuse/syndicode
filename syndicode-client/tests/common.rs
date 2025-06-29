@@ -17,9 +17,25 @@ use tonic::{Status, Streaming};
 
 static TRACING: OnceCell<()> = OnceCell::new();
 
+// A static guard to ensure crypto initialization happens only once.
+static CRYPTO_PROVIDER_INITIALIZED: OnceCell<()> = OnceCell::new();
+
 fn init_tracing() {
     TRACING.get_or_init(|| {
+        tracing::info!("Tracing provider initialized.");
         tracing_subscriber::fmt::init();
+    });
+}
+
+// Handle the one-time crypto initialization.
+fn init_crypto_provider() {
+    CRYPTO_PROVIDER_INITIALIZED.get_or_init(|| {
+        // This closure will only be executed on the very first call to init_crypto_provider()
+        // across all tests and all threads in this process.
+        rustls::crypto::ring::default_provider()
+            .install_default()
+            .expect("Failed to install rustls crypto provider on first attempt");
+        tracing::info!("rustls crypto provider installed successfully.");
     });
 }
 
@@ -30,9 +46,12 @@ pub struct TestSuite {
 
 pub async fn setup_test_suite() -> anyhow::Result<TestSuite> {
     init_tracing();
+    init_crypto_provider();
 
     let config = load_config()?;
 
+    // Now, this can be called in every test. The problematic code inside it
+    // is guarded by the OnceCell and will not be executed a second time.
     let grpc_handler = GrpcHandler::new(config.grpc.server_address.clone(), true).await?;
 
     Ok(TestSuite {

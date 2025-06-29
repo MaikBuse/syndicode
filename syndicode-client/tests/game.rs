@@ -1,6 +1,7 @@
 mod common;
 
 use common::{login_and_setup_stream, setup_test_suite, wait_for_stream_update};
+use serial_test::serial;
 use syndicode_client::domain::{
     admin::{AdminRepository, CreateUserDomainRequest, DeleteUserDomainRequest},
     game::{GameRepository, QueryBusinessListingsDomainRequest},
@@ -14,6 +15,7 @@ use syndicode_proto::{
 use uuid::Uuid;
 
 #[tokio::test]
+#[serial]
 async fn should_create_user() {
     tracing::info!("Set up test suite");
     let mut test_suite = setup_test_suite().await.unwrap();
@@ -152,6 +154,7 @@ async fn should_create_user() {
 }
 
 #[tokio::test]
+#[serial]
 async fn should_acquire_listed_business() {
     tracing::info!("Set up test suite");
     let mut test_suite = setup_test_suite().await.unwrap();

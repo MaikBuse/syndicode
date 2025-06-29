@@ -26,10 +26,6 @@ impl GrpcHandler {
     /// The address string should be a full URI like "http://localhost:50051"
     /// or "https://my-prod-server.com:443"
     pub async fn new(address: String, is_local_test: bool) -> anyhow::Result<Self> {
-        rustls::crypto::ring::default_provider()
-            .install_default()
-            .expect("Failed to install rustls crypto provider");
-
         let endpoint = Endpoint::from_str(&address)?;
 
         let channel = endpoint
