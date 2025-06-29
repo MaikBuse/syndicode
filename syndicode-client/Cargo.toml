@@ -17,6 +17,7 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 time = { workspace = true }
 toml = { workspace = true }
+once_cell = { workspace = true }
 ratatui = "0.29.0"
 tui-textarea = "0.7.0"
 tracing-error = "0.2.1"
@@ -26,6 +27,3 @@ directories = "6.0.0"
 lazy_static = "1.5.0"
 color-eyre = "0.6.4"
 crossterm = { version = "0.29", features = ["event-stream"] }
-
-[dev-dependencies]
-once_cell = "1.18"
