@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogPortal,
 } from '@/components/ui/dialog';
 import { useAuthModal } from '@/stores/use-auth-modal';
 import { LoginForm } from './login-form';
@@ -22,16 +23,18 @@ export function AuthDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={closeModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{titles[view]}</DialogTitle>
-        </DialogHeader>
-        <div className="mt-4">
-          {view === 'login' && <LoginForm />}
-          {view === 'register' && <RegisterForm />}
-          {view === 'verify' && <VerifyForm />}
-        </div>
-      </DialogContent>
+      <DialogPortal>
+        <DialogContent className="bg-card/80 border border-border shadow-lg sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{titles[view]}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {view === 'login' && <LoginForm />}
+            {view === 'register' && <RegisterForm />}
+            {view === 'verify' && <VerifyForm />}
+          </div>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 }

@@ -5,7 +5,6 @@ import { Map, useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { DeckProps, PickingInfo } from '@deck.gl/core';
 import { MVTLayer } from '@deck.gl/geo-layers';
-import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { AuthButton } from '@/components/auth/auth-button';
 
@@ -82,7 +81,7 @@ function App() {
   ], [ownedBuildingIds]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
+    <>
       <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 1 }}>
         <AuthButton />
       </div>
@@ -102,7 +101,7 @@ function App() {
           pickingRadius={5}
         />
       </Map>
-    </div>
+    </>
   );
 }
 
