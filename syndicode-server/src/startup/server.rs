@@ -12,7 +12,7 @@ use bon::builder;
 use std::sync::Arc;
 use syndicode_proto::syndicode_interface_v1::{
     admin_service_server::AdminServiceServer, auth_service_server::AuthServiceServer,
-    game_service_server::GameServiceServer,
+    economy_service_server::EconomyServiceServer, game_service_server::GameServiceServer,
 };
 use tonic::transport::Server;
 
@@ -59,6 +59,7 @@ pub async fn start_grpc_services(
         .add_service(GameServiceServer::new(app.game_presenter))
         .add_service(AdminServiceServer::new(app.admin_presenter))
         .add_service(AuthServiceServer::new(app.auth_presenter))
+        .add_service(EconomyServiceServer::new(app.economy_presenter))
         .serve(addr)
         .await?;
 

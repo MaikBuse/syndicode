@@ -3,9 +3,8 @@ use crate::{
         economy::business_listing::{
             model::BusinessListing,
             repository::{
-                BusinessListingQueryResult, BusinessListingRepository, BusinessListingTxRepository,
+                BusinessListingDetails, BusinessListingRepository, BusinessListingTxRepository,
                 DomainBusinessListingSortBy, QueryBusinessListingsRequest,
-                QueryBusinessListingsResult,
             },
         },
         repository::RepositoryResult,
@@ -79,7 +78,7 @@ impl PgBusinessListingRepository {
         executor: impl sqlx::Executor<'_, Database = Postgres> + Copy,
         game_tick: i64,
         req: &QueryBusinessListingsRequest,
-    ) -> RepositoryResult<QueryBusinessListingsResult> {
+    ) -> RepositoryResult<Vec<BusinessListingDetails>> {
         let mut qb = QueryBuilder::new(
             r#"
             SELECT
@@ -152,7 +151,7 @@ impl PgBusinessListingRepository {
         qb.push(format!(" ORDER BY {} {}", sort_column, sort_direction)); // Safe because sort_column comes from match
 
         // --- Add Pagination ---
-        let limit = req.limit.unwrap_or(10);
+        let limit = req.limit.unwrap_or(10).min(100);
         qb.push(" LIMIT ");
         qb.push_bind(limit);
 
@@ -165,15 +164,11 @@ impl PgBusinessListingRepository {
 
         // --- Execute Queries ---
         // Fetch the results
-        let query = qb.build_query_as::<BusinessListingQueryResult>();
+        let query = qb.build_query_as::<BusinessListingDetails>();
         tracing::debug!("Executing query: {}", query.sql()); // Log the query for debugging
         let listings = query.fetch_all(executor).await?;
-        let total_count = listings.len() as i64;
 
-        Ok(QueryBusinessListingsResult {
-            listings,
-            total_count,
-        })
+        Ok(listings)
     }
 
     pub async fn list_business_listings_in_tick(
@@ -251,7 +246,7 @@ impl BusinessListingRepository for PgBusinessListingService {
     async fn query_business_listings(
         &self,
         req: &QueryBusinessListingsRequest,
-    ) -> RepositoryResult<(i64, QueryBusinessListingsResult)> {
+    ) -> RepositoryResult<(i64, Vec<BusinessListingDetails>)> {
         let game_tick = self
             .game_tick_repo
             .get_current_game_tick(&self.pg_db.pool)

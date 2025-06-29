@@ -107,7 +107,7 @@ impl RateLimiterConfig {
     pub fn get_max_requests(&self, category: LimiterCategory) -> usize {
         match category {
             LimiterCategory::Middleware => self.middleware_max_req,
-            LimiterCategory::GameStream => self.game_stream_max_req,
+            LimiterCategory::Game => self.game_stream_max_req,
             LimiterCategory::Auth => self.auth_max_req,
             LimiterCategory::Admin => self.admin_max_req,
         }
@@ -116,7 +116,7 @@ impl RateLimiterConfig {
     pub fn get_window_secs(&self, category: LimiterCategory) -> usize {
         match category {
             LimiterCategory::Middleware => self.middleware_window_secs,
-            LimiterCategory::GameStream => self.game_stream_window_secs,
+            LimiterCategory::Game => self.game_stream_window_secs,
             LimiterCategory::Auth => self.auth_window_secs,
             LimiterCategory::Admin => self.admin_window_secs,
         }

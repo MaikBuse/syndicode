@@ -17,6 +17,7 @@ use crate::{
             list_business_offers::ListBusinessOffersUseCase,
             list_businesses::ListBusinessesUseCase, list_corporations::ListCorporationsUseCase,
             list_markets::ListMarketsUseCase,
+            query_building_ownerships::QueryBuildingOwnershipsUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
         },
         game::get_game_tick::GetGameTickUseCase,
@@ -42,6 +43,7 @@ use crate::{
     config::ServerConfig,
     domain::{
         economy::{
+            building_ownership::repository::BuildingOwnershipRepository,
             business_listing::repository::BusinessListingRepository,
             corporation::repository::CorporationRepository,
         },
@@ -71,6 +73,7 @@ use crate::{
     presentation::{
         admin::AdminPresenter,
         auth::AuthPresenter,
+        economy::EconomyPresenter,
         game::{user_channel_guard::UserChannels, GamePresenter},
     },
 };
@@ -110,9 +113,10 @@ pub type DefaultProvider = AppProvider<
     EmailHandler,
     PgBusinessListingService,
     PostgresMigrator,
+    PgBuildingOwnershipService,
 >;
 
-pub struct AppProvider<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL, M>
+pub struct AppProvider<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL, M, BUO>
 where
     INI: InitializationRepository + 'static,
     G: GameTickProcessable + 'static,
@@ -130,6 +134,7 @@ where
     VS: VerificationSendable + 'static,
     BL: BusinessListingRepository + 'static,
     M: MigrationRunner + 'static,
+    BUO: BuildingOwnershipRepository + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub leader_elector: Arc<L>,
@@ -138,6 +143,7 @@ where
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
     pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
+    pub economy_presenter: EconomyPresenter<R, BUO>,
 }
 
 impl DefaultProvider {
@@ -291,12 +297,17 @@ impl DefaultProvider {
         );
         let list_building_ownerships = Arc::new(
             ListBuildingOwnershipsUseCase::builder()
-                .building_ownership_repo(building_ownership_service)
+                .building_ownership_repo(building_ownership_service.clone())
                 .build(),
         );
         let query_business_listings_uc = Arc::new(
             QueryBusinessListingsUseCase::builder()
                 .business_listing_repo(business_listing_service.clone())
+                .build(),
+        );
+        let query_building_ownerships_uc = Arc::new(
+            QueryBuildingOwnershipsUseCase::builder()
+                .building_ownership_repo(building_ownership_service.clone())
                 .build(),
         );
 
@@ -367,6 +378,12 @@ impl DefaultProvider {
             .config(config.clone())
             .build();
 
+        let economy_presenter = EconomyPresenter::builder()
+            .config(config.clone())
+            .query_building_ownerships_uc(query_building_ownerships_uc.clone())
+            .limit(valkey.clone())
+            .build();
+
         Ok(AppProvider {
             leader_elector: valkey.clone(),
             crypto,
@@ -374,6 +391,7 @@ impl DefaultProvider {
             game_presenter,
             admin_presenter,
             auth_presenter,
+            economy_presenter,
             game_tick_processor,
         })
     }

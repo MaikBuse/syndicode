@@ -162,18 +162,19 @@ where
         .call()
         .await
     {
-        Ok((game_tick, result)) => {
-            let mut listings = Vec::with_capacity(result.listings.len());
+        Ok((game_tick, listing_details)) => {
+            let count = listing_details.len();
+            let mut listings = Vec::with_capacity(count);
 
-            for r in result.listings {
+            for l in listing_details {
                 let listing = BusinessListingDetails {
-                    listing_uuid: r.listing_uuid.to_string(),
-                    business_uuid: r.business_uuid.to_string(),
-                    business_name: r.business_name.to_string(),
-                    seller_corporation_uuid: r.seller_corporation_uuid.map(|s| s.to_string()),
-                    market_uuid: r.market_uuid.to_string(),
-                    asking_price: r.asking_price,
-                    operational_expenses: r.operational_expenses,
+                    listing_uuid: l.listing_uuid.to_string(),
+                    business_uuid: l.business_uuid.to_string(),
+                    business_name: l.business_name.to_string(),
+                    seller_corporation_uuid: l.seller_corporation_uuid.map(|s| s.to_string()),
+                    market_uuid: l.market_uuid.to_string(),
+                    asking_price: l.asking_price,
+                    operational_expenses: l.operational_expenses,
                 };
 
                 listings.push(listing);
@@ -185,7 +186,7 @@ where
                     QueryBusinessListingsResponse {
                         request_uuid: request_uuid.to_string(),
                         listings,
-                        total_count: result.total_count,
+                        total_count: count as i64,
                     },
                 )),
             })

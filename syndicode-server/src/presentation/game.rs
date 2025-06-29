@@ -152,9 +152,7 @@ where
             while let Some(stream_result) = stream.next().await {
                 match stream_result {
                     Ok(player_action) => {
-                        if let Err(err) =
-                            limit.check(LimiterCategory::GameStream, &ip_address).await
-                        {
+                        if let Err(err) = limit.check(LimiterCategory::Game, &ip_address).await {
                             let result =
                                 limitation_error_into_result(err, get_game_tick_uc.clone()).await;
                             if (*user_channel_tx_arc_for_action_task)

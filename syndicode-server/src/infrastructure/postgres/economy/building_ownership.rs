@@ -4,13 +4,18 @@ use crate::{
     domain::{
         economy::building_ownership::{
             model::BuildingOwnership,
-            repository::{BuildingOwnershipRepository, BuildingOwnershipTxRepository},
+            repository::{
+                BuildingOwnershipDetails, BuildingOwnershipRepository,
+                BuildingOwnershipTxRepository, QueryBuildingOwnershipsRequest,
+            },
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::{uow::PgTransactionContext, PostgresDatabase},
+    infrastructure::postgres::{
+        game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase,
+    },
 };
-use sqlx::Postgres;
+use sqlx::{Postgres, QueryBuilder};
 
 #[derive(Clone)]
 pub struct PgBuildingOwnershipRepository;
@@ -63,6 +68,65 @@ impl PgBuildingOwnershipRepository {
         .await?;
 
         Ok(())
+    }
+
+    pub async fn query_building_ownerships(
+        &self,
+        executor: impl sqlx::Executor<'_, Database = Postgres> + Copy,
+        game_tick: i64,
+        req: QueryBuildingOwnershipsRequest,
+    ) -> RepositoryResult<Vec<BuildingOwnershipDetails>> {
+        let mut qb = QueryBuilder::new(
+            r#"
+        SELECT
+            bui.gml_id
+        FROM building_ownerships bo
+        JOIN businesses b ON b.uuid = bo.owning_business_uuid AND b.game_tick = 
+        "#,
+        );
+        qb.push_bind(game_tick);
+
+        // The 'buildings' table is static and does not have a game_tick column.
+        qb.push(" JOIN buildings bui ON bui.uuid = bo.building_uuid ");
+
+        qb.push(" WHERE bo.game_tick = ");
+        qb.push_bind(game_tick);
+
+        // --- Build WHERE clause dynamically based on optional request parameters ---
+
+        if let Some(corp_uuid) = req.owning_corporation_uuid {
+            qb.push(" AND b.owning_corporation_uuid = ");
+            qb.push_bind(corp_uuid);
+        }
+
+        // A valid bounding box requires all four coordinate values.
+        if let (Some(min_lon), Some(min_lat), Some(max_lon), Some(max_lat)) =
+            (req.min_lon, req.min_lat, req.max_lon, req.max_lat)
+        {
+            // Use the '&&' operator for an efficient, index-based bounding box check.
+            // ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, srid)
+            qb.push(" AND bui.center && ST_MakeEnvelope(");
+            qb.push_bind(min_lon);
+            qb.push(", ");
+            qb.push_bind(min_lat);
+            qb.push(", ");
+            qb.push_bind(max_lon);
+            qb.push(", ");
+            qb.push_bind(max_lat);
+            qb.push(", 4326)"); // SRID 4326 for WGS 84
+        }
+
+        // --- Add Pagination ---
+        let limit = req.limit.unwrap_or(10).min(250);
+        qb.push(" LIMIT ");
+        qb.push_bind(limit);
+
+        // --- Execute Query ---
+        let query = qb.build_query_as::<BuildingOwnershipDetails>();
+
+        let ownership_details = query.fetch_all(executor).await?;
+
+        Ok(ownership_details)
     }
 
     pub async fn list_building_ownerships_in_tick(
@@ -118,6 +182,7 @@ impl PgBuildingOwnershipRepository {
 
 pub struct PgBuildingOwnershipService {
     pg_db: Arc<PostgresDatabase>,
+    game_tick_repo: PgGameTickRepository,
     building_ownership_repo: PgBuildingOwnershipRepository,
 }
 
@@ -125,6 +190,7 @@ impl PgBuildingOwnershipService {
     pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
             pg_db,
+            game_tick_repo: PgGameTickRepository,
             building_ownership_repo: PgBuildingOwnershipRepository,
         }
     }
@@ -139,6 +205,23 @@ impl BuildingOwnershipRepository for PgBuildingOwnershipService {
         self.building_ownership_repo
             .list_building_ownerships_in_tick(&self.pg_db.pool, game_tick)
             .await
+    }
+
+    async fn query_building_ownerships(
+        &self,
+        req: QueryBuildingOwnershipsRequest,
+    ) -> RepositoryResult<(i64, Vec<BuildingOwnershipDetails>)> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&self.pg_db.pool)
+            .await?;
+
+        let result = self
+            .building_ownership_repo
+            .query_building_ownerships(&self.pg_db.pool, game_tick, req)
+            .await?;
+
+        Ok((game_tick, result))
     }
 }
 

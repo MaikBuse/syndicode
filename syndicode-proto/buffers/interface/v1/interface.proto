@@ -6,3 +6,4 @@ import "interface/v1/auth.proto";
 import "interface/v1/admin.proto";
 import "interface/v1/game.proto";
 import "interface/v1/shared.proto";
+import "interface/v1/economy.proto";

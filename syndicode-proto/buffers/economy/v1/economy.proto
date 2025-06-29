@@ -5,6 +5,45 @@ package syndicode_economy_v1;
 import "interface/v1/shared.proto";
 import "google/protobuf/wrappers.proto"; // For optional primitive types
 
+// Request message for querying building ownerships.
+// Allows filtering by owning corporation and bounding box coordinates.
+// The 'limit' field restricts the maximum number of results returned (max 100).
+message QueryBuildingOwnershipsRequest {
+  // UUID of the owning corporation to filter by (optional).
+  google.protobuf.StringValue owning_corporation_uuid = 1;
+
+  // Minimum longitude of the bounding box (optional).
+  google.protobuf.DoubleValue min_lon = 2;
+
+  // Maximum longitude of the bounding box (optional).
+  google.protobuf.DoubleValue max_lon = 3;
+
+  // Minimum latitude of the bounding box (optional).
+  google.protobuf.DoubleValue min_lat = 4;
+
+  // Maximum latitude of the bounding box (optional).
+  google.protobuf.DoubleValue max_lat = 5;
+
+  // Maximum number of results to return (optional, maximum 100).
+  google.protobuf.Int64Value limit = 6;
+}
+
+// Represents detailed information about a building ownership.
+message BuildingOwnershipDetails {
+  string gml_id = 1;
+}
+
+// Response containing the list of matching building ownership details
+message BuildingOwnershipsResponse {
+  // The tick for which the update is relevant.
+  int64 game_tick = 1;
+
+  repeated BuildingOwnershipDetails ownerships = 2;
+
+  // Total number of ownerships matching the criteria
+  int64 total_count = 3;
+}
+
 // Request to query business listings based on criteria
 message QueryBusinessListingsRequest {
   // Filter by minimum asking price (inclusive)
@@ -57,12 +96,12 @@ message BusinessListingDetails {
   int64 operational_expenses = 7;
 }
 
-// Response containing the list of matching business listings
+// Response containing the list of matching business listing details.
 message QueryBusinessListingsResponse {
   // UUID generated on the client to match the response with the initial request.
   string request_uuid = 1;
   repeated BusinessListingDetails listings = 2;
-  // Total number of listings matching the criteria (ignoring limit/offset)
+  // Total number of listings matching the criteria
   int64 total_count = 3;
 }
 

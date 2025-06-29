@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package syndicode_interface_v1;
+
+import "economy/v1/economy.proto";
+
+// EconomyService provides methods for querying economy-related data.
+service EconomyService {
+  // Queries building ownerships with optional filters and pagination.
+  rpc QueryBuildingOwnerships(syndicode_economy_v1.QueryBuildingOwnershipsRequest) returns (syndicode_economy_v1.BuildingOwnershipsResponse);
+}

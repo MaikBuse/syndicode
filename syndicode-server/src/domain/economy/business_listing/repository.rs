@@ -34,7 +34,7 @@ pub struct QueryBusinessListingsRequest {
 }
 
 #[derive(sqlx::FromRow, Debug)]
-pub struct BusinessListingQueryResult {
+pub struct BusinessListingDetails {
     pub listing_uuid: Uuid,
     pub market_uuid: Uuid,
     pub business_uuid: Uuid,
@@ -44,18 +44,12 @@ pub struct BusinessListingQueryResult {
     pub operational_expenses: i64,
 }
 
-// Structure to hold both results and total count
-pub struct QueryBusinessListingsResult {
-    pub listings: Vec<BusinessListingQueryResult>,
-    pub total_count: i64,
-}
-
 #[async_trait]
 pub trait BusinessListingRepository: Send + Sync {
     async fn query_business_listings(
         &self,
         req: &QueryBusinessListingsRequest,
-    ) -> RepositoryResult<(i64, QueryBusinessListingsResult)>;
+    ) -> RepositoryResult<(i64, Vec<BusinessListingDetails>)>;
 
     async fn list_business_listings_in_tick(
         &self,

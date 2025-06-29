@@ -2,8 +2,8 @@ use crate::{
     application::error::ApplicationResult,
     domain::{
         economy::business_listing::repository::{
-            BusinessListingRepository, DomainBusinessListingSortBy, QueryBusinessListingsRequest,
-            QueryBusinessListingsResult,
+            BusinessListingDetails, BusinessListingRepository, DomainBusinessListingSortBy,
+            QueryBusinessListingsRequest,
         },
         repository::DomainSortDirection,
     },
@@ -38,7 +38,7 @@ where
         sort_direction: Option<DomainSortDirection>,
         limit: Option<i64>,
         offset: Option<i64>,
-    ) -> ApplicationResult<(i64, QueryBusinessListingsResult)> {
+    ) -> ApplicationResult<(i64, Vec<BusinessListingDetails>)> {
         let req = QueryBusinessListingsRequest::builder()
             .maybe_market_uuid(market_uuid)
             .maybe_min_asking_price(min_asking_price)
