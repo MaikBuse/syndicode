@@ -7,6 +7,8 @@ import type { DeckProps, PickingInfo } from '@deck.gl/core';
 import { MVTLayer } from '@deck.gl/geo-layers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
+import { AuthButton } from '@/components/auth/auth-button';
+
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => {
     return new MapboxOverlay({
@@ -37,8 +39,7 @@ const TOKYO_INITIAL_VIEW_STATE = {
 const TILE_URL = 'https://syndicode-web-map-assets.s3.eu-central-1.amazonaws.com/tokyo-tiles/{z}/{x}/{y}.pbf';
 
 function App() {
-  const stadiaApiKey = process.env.NEXT_PUBLIC_STADIA_API_KEY;
-  const mapStyle = `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key=${stadiaApiKey}`;
+  const mapStyle = `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json`;
 
   // State to track which buildings are "owned" or selected
   const [ownedBuildingIds, setOwnedBuildingIds] = useState<string[]>([]);
@@ -80,21 +81,12 @@ function App() {
     })
   ], [ownedBuildingIds]);
 
-  if (!stadiaApiKey) {
-    return (
-      <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-        <h2>Configuration Error</h2>
-        <p>
-          Stadia Maps API key is not configured. Please add{' '}
-          <code>NEXT_PUBLIC_STADIA_API_KEY</code> to your{' '}
-          <code>.env.local</code> file and restart the development server.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
+      <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 1 }}>
+        <AuthButton />
+      </div>
+
       <Map
         initialViewState={TOKYO_INITIAL_VIEW_STATE}
         mapStyle={mapStyle}
