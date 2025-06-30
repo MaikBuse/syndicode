@@ -7,6 +7,16 @@ help:
 build:
   cargo build -p syndicode-client
 
+# Run clippy
+[group('cargo')]
+clippy:
+  cargo clippy -p syndicode-client
+
+# Apply clippy fixes
+[group('cargo')]
+clippy-fix:
+  cargo clippy --fix --lib -p syndicode-client
+
 # Test the client crate
 [group('cargo')]
 test:
