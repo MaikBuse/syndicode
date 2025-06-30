@@ -3,7 +3,7 @@ use crate::application::ports::limiter::{LimiterCategory, RateLimitEnforcer};
 use crate::config::ServerConfig;
 use crate::presentation::common::limitation_error_into_status;
 use http::{HeaderValue, Request, Response};
-use once_cell::sync::Lazy; // Using once_cell for idiomatic statics
+use once_cell::sync::Lazy;
 use std::collections::HashSet;
 use std::future::Future;
 use std::pin::Pin;
@@ -15,7 +15,8 @@ use tower::{BoxError, Layer, Service};
 
 const PROXY_IP_ADDRESS_HEADER: &str = "proxy-ip-address";
 const PROXY_API_KEY_HEADER: &str = "proxy-api-key";
-pub const USER_UUID_KEY: &str = "user-uuid";
+pub(super) const USER_IP_ADDRESS_KEY: &str = "user-ip-address";
+pub(super) const USER_UUID_KEY: &str = "user-uuid";
 pub const AUTHORIZATION_HEADER: &str = "authorization";
 const HEALTH_CHECK_PATH: &str = "/grpc.health.v1.Health/Check";
 
@@ -136,11 +137,19 @@ where
                 .ok_or_else(|| {
                     tracing::warn!("Failed to get IP from header '{}'", ip_header_name);
                     Status::invalid_argument("Missing required client identification")
-                })?;
+                })?
+                .to_string();
+
+            let ip_address_header_value = HeaderValue::from_str(&ip_address).map_err(|e| {
+                tracing::error!(ip_address = %ip_address, error = ?e, "Failed to create HeaderValue");
+                Status::internal("Internal server error")
+            })?;
+            req.headers_mut()
+                .insert(USER_IP_ADDRESS_KEY, ip_address_header_value);
 
             state
                 .limit
-                .check(LimiterCategory::Middleware, ip_address)
+                .check(LimiterCategory::Middleware, ip_address.as_str())
                 .await
                 .map_err(limitation_error_into_status)?;
 

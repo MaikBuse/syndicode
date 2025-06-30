@@ -14,7 +14,6 @@ use crate::{
         economy::query_building_ownerships::QueryBuildingOwnershipsUseCase,
         ports::limiter::{LimiterCategory, RateLimitEnforcer},
     },
-    config::ServerConfig,
     domain::economy::building_ownership::repository::BuildingOwnershipRepository,
 };
 
@@ -29,7 +28,6 @@ where
     R: RateLimitEnforcer,
     BUO: BuildingOwnershipRepository,
 {
-    pub config: Arc<ServerConfig>,
     pub limit: Arc<R>,
     pub query_building_ownerships_uc: Arc<QueryBuildingOwnershipsUseCase<BUO>>,
 }
@@ -47,7 +45,6 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Game,
         )
         .await

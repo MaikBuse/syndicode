@@ -1,5 +1,6 @@
 'use server';
 
+import { headers } from 'next/headers'; // <--- Import this
 import authService from '@/application/auth-service';
 import { z } from 'zod';
 
@@ -33,8 +34,15 @@ export async function loginAction(values: z.infer<typeof loginSchema>): Promise<
     return { success: false, message: "Invalid input." };
   }
 
+  const requestHeaders = await headers();
+
+  // Extract the IP address
+  // 'x-forwarded-for' is the standard header for proxies (like Vercel)
+  // Fallback to 'x-real-ip' or a default value
+  const ipAddress = requestHeaders.get('x-forwarded-for') || requestHeaders.get('x-real-ip') || '127.0.0.1';
+
   try {
-    await authService.login(validatedFields.data);
+    await authService.login(validatedFields.data, ipAddress);
     return { success: true, message: "Login successful!" };
   } catch (error) {
     console.error(error); // Log the real error

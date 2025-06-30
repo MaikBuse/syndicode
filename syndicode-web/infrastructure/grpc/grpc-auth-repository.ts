@@ -1,5 +1,8 @@
 import type { AuthRepository } from '@/domain/auth/auth-repository';
 import type { UserCredentials, UserRegistration, VerificationInfo } from '@/domain/auth/auth.types';
+import * as grpc from '@grpc/grpc-js';
+
+const PROXY_API_KEY = process.env.PROXY_API_KEY || '';
 
 // Import the client and the generated message classes
 import { getAuthServiceClient, LoginRequest, RegisterRequest, VerifyUserRequest, ResendVerificationEmailRequest } from '@/lib/grpc/auth-client';
@@ -7,13 +10,17 @@ import { getAuthServiceClient, LoginRequest, RegisterRequest, VerifyUserRequest,
 export class GrpcAuthRepository implements AuthRepository {
   private client = getAuthServiceClient();
 
-  async login(credentials: UserCredentials): Promise<{ jwt: string }> {
+  async login(credentials: UserCredentials, ipAddress: string): Promise<{ jwt: string }> {
     return new Promise((resolve, reject) => {
       const request = new LoginRequest();
       request.setUserName(credentials.userName);
       request.setUserPassword(credentials.userPassword);
 
-      this.client.login(request, (error, response) => {
+      const metadata = new grpc.Metadata();
+      metadata.set('proxy-ip-address', ipAddress);
+      metadata.set('proxy-api-key', PROXY_API_KEY);
+
+      this.client.login(request, metadata, (error, response) => {
         if (error) {
           return reject(error);
         }

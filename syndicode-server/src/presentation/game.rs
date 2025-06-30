@@ -69,7 +69,6 @@ where
     GTR: GameTickRepository,
     BL: BusinessListingRepository,
 {
-    pub ip_address_header_lowercase: String,
     pub valkey_client: redis::Client,
     pub limit: Arc<R>,
     pub outcome_store_reader: Arc<OSR>,
@@ -99,11 +98,7 @@ where
         &self,
         request: Request<Streaming<PlayerAction>>,
     ) -> Result<Response<Self::PlayStreamStream>, Status> {
-        let ip_address = ip_address_from_metadata(
-            request.metadata(),
-            self.ip_address_header_lowercase.as_str(),
-        )
-        .map_err(|status| *status)?;
+        let ip_address = ip_address_from_metadata(request.metadata()).map_err(|status| *status)?;
 
         let user_uuid = uuid_from_metadata(request.metadata()).map_err(|status| *status)?;
 

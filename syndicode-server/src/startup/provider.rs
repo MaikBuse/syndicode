@@ -347,7 +347,6 @@ impl DefaultProvider {
 
         // Presenter
         let game_presenter = GamePresenter::builder()
-            .ip_address_header_lowercase(config.rate_limiter.ip_address_header.to_lowercase())
             .limit(valkey.clone())
             .user_channels(user_channels.clone())
             .get_game_tick_uc(get_game_tick_uc.clone())
@@ -361,7 +360,6 @@ impl DefaultProvider {
             .build();
 
         let admin_presenter = AdminPresenter::builder()
-            .config(config.clone())
             .limit(valkey.clone())
             .create_user_uc(create_user_uc.clone())
             .get_user_uc(get_user_uc.clone())
@@ -375,11 +373,9 @@ impl DefaultProvider {
             .login_uc(login_uc.clone())
             .verify_user_uc(verify_user_uc.clone())
             .resend_verification_uc(resend_verification_uc.clone())
-            .config(config.clone())
             .build();
 
         let economy_presenter = EconomyPresenter::builder()
-            .config(config.clone())
             .query_building_ownerships_uc(query_building_ownerships_uc.clone())
             .limit(valkey.clone())
             .build();

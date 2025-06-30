@@ -18,8 +18,8 @@ class AuthService {
     return this.authRepository.resendVerificationEmail(userName);
   }
 
-  async login(credentials: UserCredentials) {
-    const { jwt } = await this.authRepository.login(credentials);
+  async login(credentials: UserCredentials, ipAddress: string) {
+    const { jwt } = await this.authRepository.login(credentials, ipAddress);
 
     // After successful login, set the auth cookie
     const cookieStore = await cookies();

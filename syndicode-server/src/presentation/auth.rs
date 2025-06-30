@@ -17,7 +17,6 @@ use crate::{
             verification::VerificationSendable,
         },
     },
-    config::ServerConfig,
     domain::{
         economy::corporation::repository::CorporationRepository, user::repository::UserRepository,
     },
@@ -43,7 +42,6 @@ where
     Q: ActionQueueable + 'static,
     CRP: CorporationRepository + 'static,
 {
-    config: Arc<ServerConfig>,
     limit: Arc<R>,
     get_user_uc: Arc<GetUserUseCase<USR>>,
     register_user_uc: Arc<RegisterUserUseCase<Q, UOW, P, VS, CRP>>,
@@ -71,7 +69,6 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Auth,
         )
         .await
@@ -103,7 +100,6 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Auth,
         )
         .await
@@ -129,7 +125,6 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Auth,
         )
         .await
@@ -154,7 +149,6 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Auth,
         )
         .await
@@ -183,7 +177,6 @@ where
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
-            self.config.rate_limiter.ip_address_header.as_str(),
             LimiterCategory::Auth,
         )
         .await

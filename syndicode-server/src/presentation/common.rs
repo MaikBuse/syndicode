@@ -1,4 +1,4 @@
-use super::middleware::USER_UUID_KEY;
+use super::middleware::{USER_IP_ADDRESS_KEY, USER_UUID_KEY};
 use crate::application::ports::limiter::{LimitationError, LimiterCategory, RateLimitEnforcer};
 use anyhow::Result;
 use std::{str::FromStr, sync::Arc};
@@ -59,12 +59,9 @@ pub(super) fn uuid_from_metadata(metadata: &MetadataMap) -> Result<Uuid, Box<Sta
     parse_uuid(uuid_str)
 }
 
-pub(super) fn ip_address_from_metadata(
-    metadata: &MetadataMap,
-    ip_address_header: &str,
-) -> Result<String, Box<Status>> {
+pub(super) fn ip_address_from_metadata(metadata: &MetadataMap) -> Result<String, Box<Status>> {
     metadata
-        .get(ip_address_header)
+        .get(USER_IP_ADDRESS_KEY)
         .and_then(|h| h.to_str().ok())
         .map(|s| s.to_owned())
         .ok_or_else(|| {
@@ -78,13 +75,12 @@ pub(super) fn ip_address_from_metadata(
 pub(super) async fn check_rate_limit<R>(
     limit: Arc<R>,
     metadata: &MetadataMap,
-    ip_address_header: &str,
     category: LimiterCategory,
 ) -> Result<(), Box<Status>>
 where
     R: RateLimitEnforcer,
 {
-    let ip_address = ip_address_from_metadata(metadata, ip_address_header)?;
+    let ip_address = ip_address_from_metadata(metadata)?;
 
     if let Err(err) = limit.check(category, &ip_address).await {
         return Err(Box::new(limitation_error_into_status(err)));

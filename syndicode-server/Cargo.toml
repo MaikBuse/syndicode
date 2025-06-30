@@ -43,7 +43,6 @@ arrow = "55.1.0"
 indicatif = { version = "0.17.11", features = ["rayon"] }
 wkt = "0.14.0"
 geozero = { version = "0.14", features = ["with-postgis-sqlx"] }
-pin-project-lite = "0.2.16"
 
 [dev-dependencies]
 mockall = "0.13.1"
