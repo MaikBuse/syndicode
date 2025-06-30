@@ -2,8 +2,10 @@ use crate::application::ports::crypto::JwtHandler;
 use crate::application::ports::limiter::{LimiterCategory, RateLimitEnforcer};
 use crate::config::ServerConfig;
 use crate::presentation::common::limitation_error_into_status;
-use http::HeaderValue;
+use http::{HeaderValue, Request, Response};
+use once_cell::sync::Lazy; // Using once_cell for idiomatic statics
 use std::collections::HashSet;
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -13,14 +15,12 @@ use tower::{BoxError, Layer, Service};
 
 const PROXY_IP_ADDRESS_HEADER: &str = "proxy-ip-address";
 const PROXY_API_KEY_HEADER: &str = "proxy-api-key";
-
 pub const USER_UUID_KEY: &str = "user-uuid";
 pub const AUTHORIZATION_HEADER: &str = "authorization";
-
 const HEALTH_CHECK_PATH: &str = "/grpc.health.v1.Health/Check";
 
-lazy_static::lazy_static! {
-    static ref AUTH_EXCEPTED_PATHS: HashSet<&'static str> = [
+static AUTH_EXCEPTED_PATHS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+    [
         "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
         HEALTH_CHECK_PATH,
         "/syndicode_interface_v1.AuthService/Register",
@@ -30,20 +30,19 @@ lazy_static::lazy_static! {
     ]
     .iter()
     .cloned()
-    .collect();
+    .collect()
+});
+
+struct MiddlewareState<J, R> {
+    ip_header_name: String,
+    proxy_api_key: String,
+    jwt: Arc<J>,
+    limit: Arc<R>,
 }
 
 #[derive(Clone)]
-pub struct MiddlewareLayer<J, R>
-where
-    J: JwtHandler + Clone,
-    R: RateLimitEnforcer + Clone,
-{
-    ip_header_name: Arc<String>,
-    proxy_api_key: Arc<String>,
-    jwt: Arc<J>,
-    limit: Arc<R>,
-    auth_excepted_paths: Arc<HashSet<&'static str>>,
+pub struct MiddlewareLayer<J, R> {
+    state: Arc<MiddlewareState<J, R>>,
 }
 
 impl<J, R> MiddlewareLayer<J, R>
@@ -52,16 +51,13 @@ where
     R: RateLimitEnforcer + Clone,
 {
     pub fn new(config: Arc<ServerConfig>, jwt: Arc<J>, limit: Arc<R>) -> Self {
-        let ip_header_name = Arc::new(config.rate_limiter.ip_address_header.clone());
-        let proxy_api_key = Arc::new(config.rate_limiter.proxy_api_key.clone());
-
-        let auth_excepted_paths = Arc::new(AUTH_EXCEPTED_PATHS.clone());
         Self {
-            ip_header_name,
-            proxy_api_key,
-            jwt,
-            limit,
-            auth_excepted_paths,
+            state: Arc::new(MiddlewareState {
+                ip_header_name: config.rate_limiter.ip_address_header.clone(),
+                proxy_api_key: config.rate_limiter.proxy_api_key.clone(),
+                jwt,
+                limit,
+            }),
         }
     }
 }
@@ -76,173 +72,136 @@ where
     fn layer(&self, service: S) -> Self::Service {
         Middleware {
             inner: service,
-            ip_header_name: Arc::clone(&self.ip_header_name),
-            proxy_api_key: Arc::clone(&self.proxy_api_key),
-            jwt: Arc::clone(&self.jwt),
-            limit: Arc::clone(&self.limit),
-            auth_excepted_paths: Arc::clone(&self.auth_excepted_paths),
+            state: self.state.clone(),
         }
     }
 }
 
 #[derive(Clone)]
-pub struct Middleware<S, J, R>
-where
-    J: JwtHandler + Clone,
-    R: RateLimitEnforcer + Clone,
-{
+pub struct Middleware<S, J, R> {
     inner: S,
-    ip_header_name: Arc<String>,
-    proxy_api_key: Arc<String>,
-    jwt: Arc<J>,
-    limit: Arc<R>,
-    auth_excepted_paths: Arc<HashSet<&'static str>>,
+    state: Arc<MiddlewareState<J, R>>,
 }
 
-type BoxFuture<'a, T> = Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
-
-impl<S, J, R, ReqBody, ResBody> Service<http::Request<ReqBody>> for Middleware<S, J, R>
+impl<S, J, R, ReqBody, ResBody> Service<Request<ReqBody>> for Middleware<S, J, R>
 where
-    S: Service<http::Request<ReqBody>, Response = http::Response<ResBody>> + Clone + Send + 'static,
+    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
+    S::Error: Into<BoxError> + Send + Sync + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError> + Send + Sync + std::fmt::Debug + std::fmt::Display + 'static,
     ReqBody: Send + 'static,
-    J: JwtHandler + Clone + 'static,        // Add necessary bounds
-    R: RateLimitEnforcer + Clone + 'static, // Add necessary bounds
+    J: JwtHandler + Clone + Send + Sync + 'static,
+    R: RateLimitEnforcer + Clone + Send + Sync + 'static,
 {
     type Response = S::Response;
-    type Error = BoxError; // BoxError is often convenient for middleware
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+    type Error = BoxError;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Into::into)
     }
 
-    fn call(&mut self, mut req: http::Request<ReqBody>) -> Self::Future {
-        // Use tower::ServiceExt::oneshot or clone manually like before.
-        // Cloning is often simpler to reason about.
-        let clone = self.inner.clone();
-        let mut inner = std::mem::replace(&mut self.inner, clone);
-
-        // Clone Arcs needed for the future
-        let jwt = Arc::clone(&self.jwt);
-        let limit = Arc::clone(&self.limit);
-        let mut ip_header_name = Arc::clone(&self.ip_header_name);
-        let proxy_api_key = Arc::clone(&self.proxy_api_key);
-        let auth_excepted_paths = Arc::clone(&self.auth_excepted_paths);
+    fn call(&mut self, mut req: Request<ReqBody>) -> Self::Future {
+        let mut inner = self.inner.clone();
+        let state = self.state.clone();
 
         Box::pin(async move {
-            let start_time = Instant::now();
-            let path = req.uri().path().to_string(); // Clone path for logging etc.
+            let path = req.uri().path().to_string();
 
-            let skip_auth = auth_excepted_paths.contains(path.as_str());
-            let is_health_check = path == HEALTH_CHECK_PATH;
-
-            if !is_health_check {
-                // Check for provided api key to retrieve the client ip key from an alternative
-                // header
-                let maybe_provided_api_key = req
-                    .headers()
-                    .get(PROXY_API_KEY_HEADER)
-                    .and_then(|h| h.to_str().ok());
-
-                if let Some(provided_api_key) = maybe_provided_api_key {
-                    if provided_api_key == proxy_api_key.as_str() {
-                        ip_header_name = Arc::new(PROXY_IP_ADDRESS_HEADER.to_string());
-                    }
-                }
-
-                // IP Address Extraction
-                let ip_address = req
-                    .headers()
-                    .get(ip_header_name.as_str())
-                    .and_then(|h| h.to_str().ok())
-                    .ok_or_else(|| {
-                        tracing::warn!(
-                            "Failed to retrieve client IP address from header '{}'",
-                            *ip_header_name
-                        );
-
-                        Status::invalid_argument("Missing required client identification")
-                    })?;
-
-                // Rate Limiting
-                if let Err(err) = limit.check(LimiterCategory::Middleware, ip_address).await {
-                    return Err(limitation_error_into_status(err).into());
-                }
-
-                // Use structured logging
-                tracing::info!(
-                    method = %req.method(),
-                    uri = %req.uri(),
-                    version = ?req.version(),
-                    ip = %ip_address, // Log IP earlier
-                    action = "request_start",
-                    auth_skipped = skip_auth,
-                );
+            if path == HEALTH_CHECK_PATH {
+                return inner.call(req).await.map_err(Into::into);
             }
 
-            // Authorization
-            let user_uuid_str_opt: Option<String> = if skip_auth {
-                None
-            } else {
-                // Extract Bearer token
-                let token = req
+            let start_time = Instant::now();
+
+            let ip_header_name: &str = {
+                if let Some(key) = req
                     .headers()
-                    .get(AUTHORIZATION_HEADER)
-                    .and_then(|val| val.to_str().ok())
-                    .and_then(|s| s.strip_prefix("Bearer "))
-                    .ok_or_else(|| Status::unauthenticated("Missing or malformed Bearer token"))?;
-
-                // Decode JWT
-                let token_data = jwt.decode_jwt(token).map_err(|e| {
-                    tracing::warn!(error = ?e, "JWT decoding failed");
-
-                    Status::unauthenticated("Invalid token")
-                })?;
-
-                // Inject UUID
-                let user_uuid = token_data.claims.sub; // Assuming this is already a String or easily convertible
-                if let Ok(uuid_header) = HeaderValue::from_str(&user_uuid) {
-                    req.headers_mut().insert(USER_UUID_KEY, uuid_header);
+                    .get(PROXY_API_KEY_HEADER)
+                    .and_then(|h| h.to_str().ok())
+                {
+                    if key == state.proxy_api_key.as_str() {
+                        PROXY_IP_ADDRESS_HEADER
+                    } else {
+                        &state.ip_header_name
+                    }
                 } else {
-                    // This case should ideally not happen if UUIDs are valid strings
-                    tracing::error!(user_uuid = %user_uuid, "Failed to create HeaderValue from user UUID");
-
-                    return Err(Status::internal("Internal processing error").into());
+                    &state.ip_header_name
                 }
-                Some(user_uuid)
             };
 
-            // Call Inner Service
-            let response_result = inner.call(req).await;
-            let elapsed_ms = start_time.elapsed().as_millis();
+            let ip_address = req
+                .headers()
+                .get(ip_header_name)
+                .and_then(|h| h.to_str().ok())
+                .ok_or_else(|| {
+                    tracing::warn!("Failed to get IP from header '{}'", ip_header_name);
+                    Status::invalid_argument("Missing required client identification")
+                })?;
 
-            // Response Logging
-            match &response_result {
+            state
+                .limit
+                .check(LimiterCategory::Middleware, ip_address)
+                .await
+                .map_err(limitation_error_into_status)?;
+
+            tracing::info!(method = %req.method(), uri = %req.uri(), ip = %ip_address, action = "request_start");
+
+            let user_uuid_opt: Option<String> = {
+                let skip_auth = AUTH_EXCEPTED_PATHS.contains(path.as_str());
+                if skip_auth {
+                    None
+                } else {
+                    let token = req
+                        .headers()
+                        .get(AUTHORIZATION_HEADER)
+                        .and_then(|v| v.to_str().ok())
+                        .and_then(|s| s.strip_prefix("Bearer "))
+                        .ok_or_else(|| {
+                            Status::unauthenticated("Missing or malformed Bearer token")
+                        })?;
+
+                    let token_data = state.jwt.decode_jwt(token).map_err(|e| {
+                        tracing::warn!(error = ?e, "JWT decoding failed");
+                        Status::unauthenticated("Invalid token")
+                    })?;
+
+                    let user_uuid = token_data.claims.sub;
+                    let header_value = HeaderValue::from_str(&user_uuid).map_err(|e| {
+                        tracing::error!(user_uuid = %user_uuid, error = ?e, "Failed to create HeaderValue");
+                        Status::internal("Internal server error")
+                    })?;
+
+                    req.headers_mut().insert(USER_UUID_KEY, header_value);
+                    Some(user_uuid)
+                }
+            };
+
+            // Call the inner service
+            let response = inner.call(req).await.map_err(Into::into);
+
+            let elapsed_ms = start_time.elapsed().as_millis();
+            match &response {
                 Ok(res) => {
-                    if !is_health_check {
-                        tracing::info!(
-                            status = %res.status(), // Log HTTP status if available/relevant
-                            user_uuid = user_uuid_str_opt.as_deref().unwrap_or("anonymous"),
-                            elapsed_ms,
-                            action = "request_success",
-                            path = %path, // Log path again for context
-                        );
-                    }
+                    tracing::info!(
+                        status = %res.status(),
+                        user_uuid = user_uuid_opt.as_deref().unwrap_or("anonymous"),
+                        elapsed_ms,
+                        path = %path,
+                        action = "request_success",
+                    );
                 }
                 Err(err) => {
                     tracing::error!(
-                        user_uuid = user_uuid_str_opt.as_deref().unwrap_or("anonymous"),
+                        user_uuid = user_uuid_opt.as_deref().unwrap_or("anonymous"),
                         elapsed_ms,
                         error = %err,
-                        action = "request_failure",
                         path = %path,
+                        action = "request_failure",
                     );
                 }
             }
 
-            response_result.map_err(Into::into)
+            response
         })
     }
 }
