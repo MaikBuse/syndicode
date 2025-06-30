@@ -11,6 +11,9 @@ use std::time::Instant;
 use tonic::Status;
 use tower::{BoxError, Layer, Service};
 
+const PROXY_IP_ADDRESS_HEADER: &str = "proxy-ip-address";
+const PROXY_API_KEY_HEADER: &str = "proxy-api-key";
+
 pub const USER_UUID_KEY: &str = "user-uuid";
 pub const AUTHORIZATION_HEADER: &str = "authorization";
 
@@ -37,6 +40,7 @@ where
     R: RateLimitEnforcer + Clone,
 {
     ip_header_name: Arc<String>,
+    proxy_api_key: Arc<String>,
     jwt: Arc<J>,
     limit: Arc<R>,
     auth_excepted_paths: Arc<HashSet<&'static str>>,
@@ -49,10 +53,12 @@ where
 {
     pub fn new(config: Arc<ServerConfig>, jwt: Arc<J>, limit: Arc<R>) -> Self {
         let ip_header_name = Arc::new(config.rate_limiter.ip_address_header.clone());
+        let proxy_api_key = Arc::new(config.rate_limiter.proxy_api_key.clone());
 
         let auth_excepted_paths = Arc::new(AUTH_EXCEPTED_PATHS.clone());
         Self {
             ip_header_name,
+            proxy_api_key,
             jwt,
             limit,
             auth_excepted_paths,
@@ -71,6 +77,7 @@ where
         Middleware {
             inner: service,
             ip_header_name: Arc::clone(&self.ip_header_name),
+            proxy_api_key: Arc::clone(&self.proxy_api_key),
             jwt: Arc::clone(&self.jwt),
             limit: Arc::clone(&self.limit),
             auth_excepted_paths: Arc::clone(&self.auth_excepted_paths),
@@ -86,6 +93,7 @@ where
 {
     inner: S,
     ip_header_name: Arc<String>,
+    proxy_api_key: Arc<String>,
     jwt: Arc<J>,
     limit: Arc<R>,
     auth_excepted_paths: Arc<HashSet<&'static str>>,
@@ -119,7 +127,8 @@ where
         // Clone Arcs needed for the future
         let jwt = Arc::clone(&self.jwt);
         let limit = Arc::clone(&self.limit);
-        let ip_header_name = Arc::clone(&self.ip_header_name);
+        let mut ip_header_name = Arc::clone(&self.ip_header_name);
+        let proxy_api_key = Arc::clone(&self.proxy_api_key);
         let auth_excepted_paths = Arc::clone(&self.auth_excepted_paths);
 
         Box::pin(async move {
@@ -130,6 +139,19 @@ where
             let is_health_check = path == HEALTH_CHECK_PATH;
 
             if !is_health_check {
+                // Check for provided api key to retrieve the client ip key from an alternative
+                // header
+                let maybe_provided_api_key = req
+                    .headers()
+                    .get(PROXY_API_KEY_HEADER)
+                    .and_then(|h| h.to_str().ok());
+
+                if let Some(provided_api_key) = maybe_provided_api_key {
+                    if provided_api_key == proxy_api_key.as_str() {
+                        ip_header_name = Arc::new(PROXY_IP_ADDRESS_HEADER.to_string());
+                    }
+                }
+
                 // IP Address Extraction
                 let ip_address = req
                     .headers()

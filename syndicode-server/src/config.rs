@@ -76,6 +76,7 @@ impl Default for BootstrapConfig {
 pub struct RateLimiterConfig {
     pub disable_rate_limitting: bool,
     pub ip_address_header: String,
+    pub proxy_api_key: String,
     pub middleware_max_req: usize,
     pub middleware_window_secs: usize,
     pub game_stream_max_req: usize,
@@ -91,6 +92,7 @@ impl Default for RateLimiterConfig {
         Self {
             disable_rate_limitting: false,
             ip_address_header: "CF-Connecting-IP".to_string(),
+            proxy_api_key: "super-secret-api-key".to_string(),
             middleware_max_req: 150,
             middleware_window_secs: 60,
             game_stream_max_req: 100,
@@ -305,6 +307,9 @@ impl ServerConfig {
         }
         if let Ok(val) = read_env_var("IP_ADDRESS_HEADER") {
             config.rate_limiter.ip_address_header = val;
+        }
+        if let Ok(val) = read_env_var("PROXY_API_KEY") {
+            config.rate_limiter.proxy_api_key = val;
         }
         if let Ok(val) = int_from_env("MIDDLEWARE_MAX_REQ") {
             config.rate_limiter.middleware_max_req = val;
