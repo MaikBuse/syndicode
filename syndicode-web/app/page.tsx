@@ -5,8 +5,8 @@ import { Map, useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { DeckProps, PickingInfo } from '@deck.gl/core';
 import { MVTLayer } from '@deck.gl/geo-layers';
-
 import { AuthButton } from '@/components/auth/auth-button';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => {
@@ -42,6 +42,8 @@ function App() {
 
   // State to track which buildings are "owned" or selected
   const [ownedBuildingIds, setOwnedBuildingIds] = useState<string[]>([]);
+
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const handleLayerClick = useCallback((info: PickingInfo) => {
     if (info && info.object) {
@@ -83,7 +85,7 @@ function App() {
   return (
     <>
       <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 1 }}>
-        <AuthButton />
+        {!isAuthenticated && <AuthButton />}
       </div>
 
       <Map

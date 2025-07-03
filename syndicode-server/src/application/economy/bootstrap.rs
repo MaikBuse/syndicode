@@ -89,11 +89,7 @@ where
     INI: InitializationRepository,
 {
     pub async fn execute(&self) -> ApplicationResult<()> {
-        if self
-            .init_repo
-            .is_flag_set(FlagKey::EconomyDomainInit)
-            .await?
-        {
+        if self.init_repo.is_flag_set(FlagKey::EconomyDomain).await? {
             tracing::info!("Economy Domain initialization flag is already set. Skipping.");
 
             return Ok(());
@@ -152,7 +148,7 @@ where
         self.uow
             .execute(|ctx| {
                 Box::pin(async move {
-                    let is_set_after_lock = ctx.is_flag_set(FlagKey::EconomyDomainInit).await?;
+                    let is_set_after_lock = ctx.is_flag_set(FlagKey::EconomyDomain).await?;
 
                     if is_set_after_lock {
                         tracing::info!("Initialization flag was set by another instance after lock acquisition. Skipping.");
@@ -176,7 +172,7 @@ where
                     tracing::info!("Inserting building ownerships...");
                     ctx.insert_building_ownerships_in_tick(game_tick, &building_ownerships).await?;
 
-                    ctx.set_flag(FlagKey::EconomyDomainInit).await?;
+                    ctx.set_flag(FlagKey::EconomyDomain).await?;
 
                     Ok(())
                 })

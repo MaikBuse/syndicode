@@ -8,49 +8,49 @@ import * as jspb from "google-protobuf";
 import * as interface_v1_shared_pb from "../../interface/v1/shared_pb";
 import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
 
-export class QueryBuildingOwnershipsRequest extends jspb.Message { 
+export class QueryBuildingsRequest extends jspb.Message { 
 
     hasOwningCorporationUuid(): boolean;
     clearOwningCorporationUuid(): void;
     getOwningCorporationUuid(): google_protobuf_wrappers_pb.StringValue | undefined;
-    setOwningCorporationUuid(value?: google_protobuf_wrappers_pb.StringValue): QueryBuildingOwnershipsRequest;
+    setOwningCorporationUuid(value?: google_protobuf_wrappers_pb.StringValue): QueryBuildingsRequest;
 
     hasMinLon(): boolean;
     clearMinLon(): void;
     getMinLon(): google_protobuf_wrappers_pb.DoubleValue | undefined;
-    setMinLon(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingOwnershipsRequest;
+    setMinLon(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingsRequest;
 
     hasMaxLon(): boolean;
     clearMaxLon(): void;
     getMaxLon(): google_protobuf_wrappers_pb.DoubleValue | undefined;
-    setMaxLon(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingOwnershipsRequest;
+    setMaxLon(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingsRequest;
 
     hasMinLat(): boolean;
     clearMinLat(): void;
     getMinLat(): google_protobuf_wrappers_pb.DoubleValue | undefined;
-    setMinLat(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingOwnershipsRequest;
+    setMinLat(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingsRequest;
 
     hasMaxLat(): boolean;
     clearMaxLat(): void;
     getMaxLat(): google_protobuf_wrappers_pb.DoubleValue | undefined;
-    setMaxLat(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingOwnershipsRequest;
+    setMaxLat(value?: google_protobuf_wrappers_pb.DoubleValue): QueryBuildingsRequest;
 
     hasLimit(): boolean;
     clearLimit(): void;
     getLimit(): google_protobuf_wrappers_pb.Int64Value | undefined;
-    setLimit(value?: google_protobuf_wrappers_pb.Int64Value): QueryBuildingOwnershipsRequest;
+    setLimit(value?: google_protobuf_wrappers_pb.Int64Value): QueryBuildingsRequest;
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): QueryBuildingOwnershipsRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: QueryBuildingOwnershipsRequest): QueryBuildingOwnershipsRequest.AsObject;
+    toObject(includeInstance?: boolean): QueryBuildingsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: QueryBuildingsRequest): QueryBuildingsRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: QueryBuildingOwnershipsRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): QueryBuildingOwnershipsRequest;
-    static deserializeBinaryFromReader(message: QueryBuildingOwnershipsRequest, reader: jspb.BinaryReader): QueryBuildingOwnershipsRequest;
+    static serializeBinaryToWriter(message: QueryBuildingsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): QueryBuildingsRequest;
+    static deserializeBinaryFromReader(message: QueryBuildingsRequest, reader: jspb.BinaryReader): QueryBuildingsRequest;
 }
 
-export namespace QueryBuildingOwnershipsRequest {
+export namespace QueryBuildingsRequest {
     export type AsObject = {
         owningCorporationUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
         minLon?: google_protobuf_wrappers_pb.DoubleValue.AsObject,
@@ -61,50 +61,50 @@ export namespace QueryBuildingOwnershipsRequest {
     }
 }
 
-export class BuildingOwnershipDetails extends jspb.Message { 
+export class BuildingDetails extends jspb.Message { 
     getGmlId(): string;
-    setGmlId(value: string): BuildingOwnershipDetails;
+    setGmlId(value: string): BuildingDetails;
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): BuildingOwnershipDetails.AsObject;
-    static toObject(includeInstance: boolean, msg: BuildingOwnershipDetails): BuildingOwnershipDetails.AsObject;
+    toObject(includeInstance?: boolean): BuildingDetails.AsObject;
+    static toObject(includeInstance: boolean, msg: BuildingDetails): BuildingDetails.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: BuildingOwnershipDetails, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): BuildingOwnershipDetails;
-    static deserializeBinaryFromReader(message: BuildingOwnershipDetails, reader: jspb.BinaryReader): BuildingOwnershipDetails;
+    static serializeBinaryToWriter(message: BuildingDetails, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): BuildingDetails;
+    static deserializeBinaryFromReader(message: BuildingDetails, reader: jspb.BinaryReader): BuildingDetails;
 }
 
-export namespace BuildingOwnershipDetails {
+export namespace BuildingDetails {
     export type AsObject = {
         gmlId: string,
     }
 }
 
-export class BuildingOwnershipsResponse extends jspb.Message { 
+export class QueryBuildingsResponse extends jspb.Message { 
     getGameTick(): number;
-    setGameTick(value: number): BuildingOwnershipsResponse;
-    clearOwnershipsList(): void;
-    getOwnershipsList(): Array<BuildingOwnershipDetails>;
-    setOwnershipsList(value: Array<BuildingOwnershipDetails>): BuildingOwnershipsResponse;
-    addOwnerships(value?: BuildingOwnershipDetails, index?: number): BuildingOwnershipDetails;
+    setGameTick(value: number): QueryBuildingsResponse;
+    clearBuildingsList(): void;
+    getBuildingsList(): Array<BuildingDetails>;
+    setBuildingsList(value: Array<BuildingDetails>): QueryBuildingsResponse;
+    addBuildings(value?: BuildingDetails, index?: number): BuildingDetails;
     getTotalCount(): number;
-    setTotalCount(value: number): BuildingOwnershipsResponse;
+    setTotalCount(value: number): QueryBuildingsResponse;
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): BuildingOwnershipsResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: BuildingOwnershipsResponse): BuildingOwnershipsResponse.AsObject;
+    toObject(includeInstance?: boolean): QueryBuildingsResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: QueryBuildingsResponse): QueryBuildingsResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: BuildingOwnershipsResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): BuildingOwnershipsResponse;
-    static deserializeBinaryFromReader(message: BuildingOwnershipsResponse, reader: jspb.BinaryReader): BuildingOwnershipsResponse;
+    static serializeBinaryToWriter(message: QueryBuildingsResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): QueryBuildingsResponse;
+    static deserializeBinaryFromReader(message: QueryBuildingsResponse, reader: jspb.BinaryReader): QueryBuildingsResponse;
 }
 
-export namespace BuildingOwnershipsResponse {
+export namespace QueryBuildingsResponse {
     export type AsObject = {
         gameTick: number,
-        ownershipsList: Array<BuildingOwnershipDetails.AsObject>,
+        buildingsList: Array<BuildingDetails.AsObject>,
         totalCount: number,
     }
 }

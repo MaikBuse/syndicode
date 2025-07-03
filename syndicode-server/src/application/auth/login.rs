@@ -45,6 +45,6 @@ where
             return Err(ApplicationError::WrongUserCredentials);
         }
 
-        Ok(self.jwt.encode_jwt(user.uuid, user.role)?)
+        Ok(self.jwt.encode_jwt(&user)?)
     }
 }

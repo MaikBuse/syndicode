@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::application::error::{ApplicationError, ApplicationResult};
 use email_address::*;
 
@@ -15,6 +17,12 @@ impl UserEmail {
 
     pub fn into_inner(self) -> String {
         self.0
+    }
+}
+
+impl Display for UserEmail {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

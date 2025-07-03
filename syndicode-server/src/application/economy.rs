@@ -7,5 +7,5 @@ pub mod list_business_offers;
 pub mod list_businesses;
 pub mod list_corporations;
 pub mod list_markets;
-pub mod query_building_ownerships;
+pub mod query_buildings;
 pub mod query_business_listings;

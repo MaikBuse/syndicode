@@ -35,7 +35,7 @@ pub(super) enum PresentationError {
     ResourceExhausted(String),
 
     /// The system is not in a state required for the operation's execution.
-    FailedPrecondition,
+    FailedPrecondition(String),
 
     /// The operation was aborted.
     Aborted,
@@ -62,9 +62,7 @@ pub(super) enum PresentationError {
 impl From<ApplicationError> for PresentationError {
     fn from(err: ApplicationError) -> Self {
         match err {
-            ApplicationError::CorporationForUserNotFound | ApplicationError::UserNotPending => {
-                Self::FailedPrecondition
-            }
+            ApplicationError::CorporationForUserNotFound => Self::Unknown,
             ApplicationError::VerificationCodeExpired => Self::DeadlineExceeded,
             ApplicationError::PasswordTooShort(_)
             | ApplicationError::PasswordTooLong(_)
@@ -77,7 +75,10 @@ impl From<ApplicationError> for PresentationError {
             | ApplicationError::VerificationCodeFalse
             | ApplicationError::UniqueConstraint => Self::InvalidArgument(err.to_string()),
             ApplicationError::UserInactive => {
-                Self::InvalidArgument("The user in inactive".to_string())
+                Self::FailedPrecondition("The user is inactive".to_string())
+            }
+            ApplicationError::UserNotPending => {
+                Self::FailedPrecondition("The user should be in a pending state".to_string())
             }
             ApplicationError::WrongUserCredentials => {
                 Self::InvalidArgument("The provided credentials are invalid".to_string())
@@ -114,10 +115,11 @@ impl Display for PresentationError {
                 )
             }
             Self::ResourceExhausted(msg) => write!(f, "Some resource has been exhausted: {}", msg),
-            Self::FailedPrecondition => {
+            Self::FailedPrecondition(msg) => {
                 write!(
                     f,
-                    "The system is not in a state required for the operation's execution"
+                    "The system is not in a state required for the operation's execution: {}",
+                    msg
                 )
             }
             Self::Aborted => write!(f, "The operation was aborted"),
@@ -145,7 +147,7 @@ impl From<PresentationError> for Status {
             PresentationError::AlreadyExists => Self::already_exists(String::new()),
             PresentationError::PermissionDenied => Self::permission_denied(String::new()),
             PresentationError::ResourceExhausted(msg) => Self::resource_exhausted(msg),
-            PresentationError::FailedPrecondition => Self::failed_precondition(String::new()),
+            PresentationError::FailedPrecondition(msg) => Self::failed_precondition(msg),
             PresentationError::Aborted => Self::aborted(String::new()),
             PresentationError::OutOfRange => Self::out_of_range(String::new()),
             PresentationError::Unimplemented => Self::unimplemented(String::new()),

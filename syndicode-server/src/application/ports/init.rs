@@ -3,17 +3,17 @@ use std::fmt::Display;
 use crate::domain::repository::RepositoryResult;
 
 pub enum FlagKey {
-    DatabaseInit,
-    AdminDomainInit,
-    EconomyDomainInit,
+    Database,
+    AdminDomain,
+    EconomyDomain,
 }
 
 impl Display for FlagKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FlagKey::DatabaseInit => write!(f, "database_initialized"),
-            FlagKey::AdminDomainInit => write!(f, "admin_domain_initialized"),
-            FlagKey::EconomyDomainInit => write!(f, "economy_domain_initialized"),
+            FlagKey::Database => write!(f, "database_initialized"),
+            FlagKey::AdminDomain => write!(f, "admin_domain_initialized"),
+            FlagKey::EconomyDomain => write!(f, "economy_domain_initialized"),
         }
     }
 }

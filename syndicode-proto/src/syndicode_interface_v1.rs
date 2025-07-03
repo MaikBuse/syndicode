@@ -1818,16 +1818,14 @@ pub mod economy_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// Queries building ownerships with optional filters and pagination.
-        pub async fn query_building_ownerships(
+        /// Queries buildings with optional filters and pagination.
+        pub async fn query_buildings(
             &mut self,
             request: impl tonic::IntoRequest<
-                super::super::syndicode_economy_v1::QueryBuildingOwnershipsRequest,
+                super::super::syndicode_economy_v1::QueryBuildingsRequest,
             >,
         ) -> std::result::Result<
-            tonic::Response<
-                super::super::syndicode_economy_v1::BuildingOwnershipsResponse,
-            >,
+            tonic::Response<super::super::syndicode_economy_v1::QueryBuildingsResponse>,
             tonic::Status,
         > {
             self.inner
@@ -1840,14 +1838,14 @@ pub mod economy_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/syndicode_interface_v1.EconomyService/QueryBuildingOwnerships",
+                "/syndicode_interface_v1.EconomyService/QueryBuildings",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "syndicode_interface_v1.EconomyService",
-                        "QueryBuildingOwnerships",
+                        "QueryBuildings",
                     ),
                 );
             self.inner.unary(req, path, codec).await
@@ -1867,16 +1865,14 @@ pub mod economy_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with EconomyServiceServer.
     #[async_trait]
     pub trait EconomyService: std::marker::Send + std::marker::Sync + 'static {
-        /// Queries building ownerships with optional filters and pagination.
-        async fn query_building_ownerships(
+        /// Queries buildings with optional filters and pagination.
+        async fn query_buildings(
             &self,
             request: tonic::Request<
-                super::super::syndicode_economy_v1::QueryBuildingOwnershipsRequest,
+                super::super::syndicode_economy_v1::QueryBuildingsRequest,
             >,
         ) -> std::result::Result<
-            tonic::Response<
-                super::super::syndicode_economy_v1::BuildingOwnershipsResponse,
-            >,
+            tonic::Response<super::super::syndicode_economy_v1::QueryBuildingsResponse>,
             tonic::Status,
         >;
     }
@@ -1957,15 +1953,15 @@ pub mod economy_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/syndicode_interface_v1.EconomyService/QueryBuildingOwnerships" => {
+                "/syndicode_interface_v1.EconomyService/QueryBuildings" => {
                     #[allow(non_camel_case_types)]
-                    struct QueryBuildingOwnershipsSvc<T: EconomyService>(pub Arc<T>);
+                    struct QueryBuildingsSvc<T: EconomyService>(pub Arc<T>);
                     impl<
                         T: EconomyService,
                     > tonic::server::UnaryService<
-                        super::super::syndicode_economy_v1::QueryBuildingOwnershipsRequest,
-                    > for QueryBuildingOwnershipsSvc<T> {
-                        type Response = super::super::syndicode_economy_v1::BuildingOwnershipsResponse;
+                        super::super::syndicode_economy_v1::QueryBuildingsRequest,
+                    > for QueryBuildingsSvc<T> {
+                        type Response = super::super::syndicode_economy_v1::QueryBuildingsResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -1973,15 +1969,12 @@ pub mod economy_service_server {
                         fn call(
                             &mut self,
                             request: tonic::Request<
-                                super::super::syndicode_economy_v1::QueryBuildingOwnershipsRequest,
+                                super::super::syndicode_economy_v1::QueryBuildingsRequest,
                             >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as EconomyService>::query_building_ownerships(
-                                        &inner,
-                                        request,
-                                    )
+                                <T as EconomyService>::query_buildings(&inner, request)
                                     .await
                             };
                             Box::pin(fut)
@@ -1993,7 +1986,7 @@ pub mod economy_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = QueryBuildingOwnershipsSvc(inner);
+                        let method = QueryBuildingsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

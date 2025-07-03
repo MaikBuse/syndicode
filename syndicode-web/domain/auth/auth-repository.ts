@@ -1,8 +1,9 @@
-import type { UserCredentials, UserRegistration, VerificationInfo } from './auth.types';
+import type { User, UserCredentials, UserRegistration, VerificationInfo } from './auth.types';
 
 export interface AuthRepository {
-  register(data: UserRegistration): Promise<{ userUuid: string }>;
-  verifyUser(data: VerificationInfo): Promise<{ userUuid: string }>;
-  resendVerificationEmail(userName: string): Promise<void>;
+  register(data: UserRegistration, ipAddress: string): Promise<{ userUuid: string }>;
+  verifyUser(data: VerificationInfo, ipAddress: string): Promise<{ userUuid: string }>;
+  resendVerificationEmail(userName: string, ipAddress: string): Promise<void>;
   login(credentials: UserCredentials, ipAddress: string): Promise<{ jwt: string }>;
+  getCurrentUser(ipAddress: string, jwt: string): Promise<User>;
 }

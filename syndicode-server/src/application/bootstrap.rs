@@ -50,7 +50,7 @@ where
 
         self.bootstrap_economy_uc.execute().await?;
 
-        self.init_repo.set_flag(FlagKey::DatabaseInit).await?;
+        self.init_repo.set_flag(FlagKey::Database).await?;
 
         Ok(())
     }

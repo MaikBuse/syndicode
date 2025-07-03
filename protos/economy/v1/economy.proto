@@ -5,10 +5,10 @@ package syndicode_economy_v1;
 import "interface/v1/shared.proto";
 import "google/protobuf/wrappers.proto"; // For optional primitive types
 
-// Request message for querying building ownerships.
+// Request message for querying buildings.
 // Allows filtering by owning corporation and bounding box coordinates.
 // The 'limit' field restricts the maximum number of results returned (max 100).
-message QueryBuildingOwnershipsRequest {
+message QueryBuildingsRequest {
   // UUID of the owning corporation to filter by (optional).
   google.protobuf.StringValue owning_corporation_uuid = 1;
 
@@ -28,19 +28,19 @@ message QueryBuildingOwnershipsRequest {
   google.protobuf.Int64Value limit = 6;
 }
 
-// Represents detailed information about a building ownership.
-message BuildingOwnershipDetails {
+// Represents detailed information about a building.
+message BuildingDetails {
   string gml_id = 1;
 }
 
-// Response containing the list of matching building ownership details
-message BuildingOwnershipsResponse {
+// Response containing the list of matching building details
+message QueryBuildingsResponse {
   // The tick for which the update is relevant.
   int64 game_tick = 1;
 
-  repeated BuildingOwnershipDetails ownerships = 2;
+  repeated BuildingDetails buildings = 2;
 
-  // Total number of ownerships matching the criteria
+  // Total number of buildings matching the criteria
   int64 total_count = 3;
 }
 

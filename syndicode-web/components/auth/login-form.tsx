@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 const loginSchema = z.object({
   userName: z.string().min(1, "Username is required"),
@@ -20,7 +21,7 @@ const loginSchema = z.object({
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
-  const { setView, closeModal } = useAuthModal();
+  const { setView, closeModal, setUserNameToVerify } = useAuthModal();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -30,11 +31,22 @@ export function LoginForm() {
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     startTransition(async () => {
       const result = await loginAction(values);
+      if (result.isInactive) {
+        toast.error(result.message);
+
+        // Pass the username to the store so the verify form knows who to verify
+        setUserNameToVerify(values.userName);
+        // Switch the modal to the 'verify' view
+        setView('verify');
+      }
       if (result.success) {
         toast.success(result.message);
 
+        if (result.user) {
+          useAuthStore.getState().login(result.user);
+        }
+
         closeModal();
-        window.location.reload(); // Simple way to refresh logged-in state
       } else {
         toast.error(result.message);
       }

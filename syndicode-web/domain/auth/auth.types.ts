@@ -1,3 +1,10 @@
+export type User = {
+  uuid: string;
+  name: string;
+  role: string;
+  email: string;
+};
+
 export type UserRegistration = {
   userName: string;
   userPassword: string;

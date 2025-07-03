@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const verifySchema = z.object({
-  code: z.string().length(6, "Verification code must be 6 characters."),
+  code: z.string().length(10, "Verification code must be 10 characters."),
 });
 
 export function VerifyForm() {
@@ -79,7 +79,7 @@ export function VerifyForm() {
   return (
     <div className="flex flex-col items-center justify-center">
       <p className="text-sm text-muted-foreground mb-4">
-        Enter the 6-digit code sent to your email for <span className="font-semibold">{userNameToVerify}</span>.
+        Enter the 10-digit code sent to your email for <span className="font-semibold">{userNameToVerify}</span>.
       </p>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -90,7 +90,7 @@ export function VerifyForm() {
               <FormItem>
                 <FormLabel>Verification Code</FormLabel>
                 <FormControl>
-                  <InputOTP maxLength={6} {...field}>
+                  <InputOTP maxLength={10} {...field}>
                     <InputOTPGroup>
                       <InputOTPSlot index={0} />
                       <InputOTPSlot index={1} />
@@ -98,6 +98,10 @@ export function VerifyForm() {
                       <InputOTPSlot index={3} />
                       <InputOTPSlot index={4} />
                       <InputOTPSlot index={5} />
+                      <InputOTPSlot index={6} />
+                      <InputOTPSlot index={7} />
+                      <InputOTPSlot index={8} />
+                      <InputOTPSlot index={9} />
                     </InputOTPGroup>
                   </InputOTP>
                 </FormControl>

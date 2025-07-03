@@ -104,7 +104,7 @@ where
     /// It's called only when the processor's internal state is empty.
     async fn initialize_state(&self) -> ProcessorResult<GameState> {
         // First, confirm the database itself has been initialized.
-        let is_db_initialized = self.init_repo.is_flag_set(FlagKey::DatabaseInit).await?;
+        let is_db_initialized = self.init_repo.is_flag_set(FlagKey::Database).await?;
         if !is_db_initialized {
             tracing::warn!("Processor waiting: Database initialization flag is not yet set.");
             return Err(ProcessorError::NotInitialized);

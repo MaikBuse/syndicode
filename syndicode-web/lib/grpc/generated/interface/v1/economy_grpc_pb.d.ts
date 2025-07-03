@@ -9,34 +9,34 @@ import * as interface_v1_economy_pb from "../../interface/v1/economy_pb";
 import * as economy_v1_economy_pb from "../../economy/v1/economy_pb";
 
 interface IEconomyServiceService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
-    queryBuildingOwnerships: IEconomyServiceService_IQueryBuildingOwnerships;
+    queryBuildings: IEconomyServiceService_IQueryBuildings;
 }
 
-interface IEconomyServiceService_IQueryBuildingOwnerships extends grpc.MethodDefinition<economy_v1_economy_pb.QueryBuildingOwnershipsRequest, economy_v1_economy_pb.BuildingOwnershipsResponse> {
-    path: "/syndicode_interface_v1.EconomyService/QueryBuildingOwnerships";
+interface IEconomyServiceService_IQueryBuildings extends grpc.MethodDefinition<economy_v1_economy_pb.QueryBuildingsRequest, economy_v1_economy_pb.QueryBuildingsResponse> {
+    path: "/syndicode_interface_v1.EconomyService/QueryBuildings";
     requestStream: false;
     responseStream: false;
-    requestSerialize: grpc.serialize<economy_v1_economy_pb.QueryBuildingOwnershipsRequest>;
-    requestDeserialize: grpc.deserialize<economy_v1_economy_pb.QueryBuildingOwnershipsRequest>;
-    responseSerialize: grpc.serialize<economy_v1_economy_pb.BuildingOwnershipsResponse>;
-    responseDeserialize: grpc.deserialize<economy_v1_economy_pb.BuildingOwnershipsResponse>;
+    requestSerialize: grpc.serialize<economy_v1_economy_pb.QueryBuildingsRequest>;
+    requestDeserialize: grpc.deserialize<economy_v1_economy_pb.QueryBuildingsRequest>;
+    responseSerialize: grpc.serialize<economy_v1_economy_pb.QueryBuildingsResponse>;
+    responseDeserialize: grpc.deserialize<economy_v1_economy_pb.QueryBuildingsResponse>;
 }
 
 export const EconomyServiceService: IEconomyServiceService;
 
 export interface IEconomyServiceServer extends grpc.UntypedServiceImplementation {
-    queryBuildingOwnerships: grpc.handleUnaryCall<economy_v1_economy_pb.QueryBuildingOwnershipsRequest, economy_v1_economy_pb.BuildingOwnershipsResponse>;
+    queryBuildings: grpc.handleUnaryCall<economy_v1_economy_pb.QueryBuildingsRequest, economy_v1_economy_pb.QueryBuildingsResponse>;
 }
 
 export interface IEconomyServiceClient {
-    queryBuildingOwnerships(request: economy_v1_economy_pb.QueryBuildingOwnershipsRequest, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.BuildingOwnershipsResponse) => void): grpc.ClientUnaryCall;
-    queryBuildingOwnerships(request: economy_v1_economy_pb.QueryBuildingOwnershipsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.BuildingOwnershipsResponse) => void): grpc.ClientUnaryCall;
-    queryBuildingOwnerships(request: economy_v1_economy_pb.QueryBuildingOwnershipsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.BuildingOwnershipsResponse) => void): grpc.ClientUnaryCall;
+    queryBuildings(request: economy_v1_economy_pb.QueryBuildingsRequest, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBuildingsResponse) => void): grpc.ClientUnaryCall;
+    queryBuildings(request: economy_v1_economy_pb.QueryBuildingsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBuildingsResponse) => void): grpc.ClientUnaryCall;
+    queryBuildings(request: economy_v1_economy_pb.QueryBuildingsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBuildingsResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class EconomyServiceClient extends grpc.Client implements IEconomyServiceClient {
     constructor(address: string, credentials: grpc.ChannelCredentials, options?: Partial<grpc.ClientOptions>);
-    public queryBuildingOwnerships(request: economy_v1_economy_pb.QueryBuildingOwnershipsRequest, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.BuildingOwnershipsResponse) => void): grpc.ClientUnaryCall;
-    public queryBuildingOwnerships(request: economy_v1_economy_pb.QueryBuildingOwnershipsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.BuildingOwnershipsResponse) => void): grpc.ClientUnaryCall;
-    public queryBuildingOwnerships(request: economy_v1_economy_pb.QueryBuildingOwnershipsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.BuildingOwnershipsResponse) => void): grpc.ClientUnaryCall;
+    public queryBuildings(request: economy_v1_economy_pb.QueryBuildingsRequest, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBuildingsResponse) => void): grpc.ClientUnaryCall;
+    public queryBuildings(request: economy_v1_economy_pb.QueryBuildingsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBuildingsResponse) => void): grpc.ClientUnaryCall;
+    public queryBuildings(request: economy_v1_economy_pb.QueryBuildingsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBuildingsResponse) => void): grpc.ClientUnaryCall;
 }

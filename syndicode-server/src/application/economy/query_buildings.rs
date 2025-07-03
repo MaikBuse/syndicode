@@ -1,7 +1,7 @@
 use crate::{
     application::error::ApplicationResult,
-    domain::economy::building_ownership::repository::{
-        BuildingOwnershipDetails, BuildingOwnershipRepository, QueryBuildingOwnershipsRequest,
+    domain::economy::building::repository::{
+        BuildingDetails, BuildingRepository, QueryBuildingsRequest,
     },
 };
 use bon::{bon, Builder};
@@ -9,17 +9,17 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct QueryBuildingOwnershipsUseCase<BUO>
+pub struct QueryBuildingsUseCase<BUI>
 where
-    BUO: BuildingOwnershipRepository,
+    BUI: BuildingRepository,
 {
-    building_ownership_repo: Arc<BUO>,
+    building_repo: Arc<BUI>,
 }
 
 #[bon]
-impl<BUO> QueryBuildingOwnershipsUseCase<BUO>
+impl<BUI> QueryBuildingsUseCase<BUI>
 where
-    BUO: BuildingOwnershipRepository,
+    BUI: BuildingRepository,
 {
     #[builder]
     pub async fn execute(
@@ -30,8 +30,8 @@ where
         min_lat: Option<f64>,
         max_lat: Option<f64>,
         limit: Option<i64>,
-    ) -> ApplicationResult<(i64, Vec<BuildingOwnershipDetails>)> {
-        let req = QueryBuildingOwnershipsRequest::builder()
+    ) -> ApplicationResult<(i64, Vec<BuildingDetails>)> {
+        let req = QueryBuildingsRequest::builder()
             .maybe_owning_corporation_uuid(owning_corporation_uuid)
             .maybe_min_lon(min_lon)
             .maybe_max_lon(max_lon)
@@ -40,9 +40,6 @@ where
             .maybe_limit(limit)
             .build();
 
-        Ok(self
-            .building_ownership_repo
-            .query_building_ownerships(req)
-            .await?)
+        Ok(self.building_repo.query_buildings(req).await?)
     }
 }

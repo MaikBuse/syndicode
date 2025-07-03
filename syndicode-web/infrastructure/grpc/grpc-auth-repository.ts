@@ -1,14 +1,42 @@
 import type { AuthRepository } from '@/domain/auth/auth-repository';
-import type { UserCredentials, UserRegistration, VerificationInfo } from '@/domain/auth/auth.types';
+import type { User, UserCredentials, UserRegistration, VerificationInfo } from '@/domain/auth/auth.types';
 import * as grpc from '@grpc/grpc-js';
 
-const PROXY_API_KEY = process.env.PROXY_API_KEY || '';
-
 // Import the client and the generated message classes
-import { getAuthServiceClient, LoginRequest, RegisterRequest, VerifyUserRequest, ResendVerificationEmailRequest } from '@/lib/grpc/auth-client';
+import { getAuthServiceClient, LoginRequest, RegisterRequest, VerifyUserRequest, ResendVerificationEmailRequest, GetCurrentUserRequest } from '@/lib/grpc/auth-client';
+import { CallContext } from './types';
 
 export class GrpcAuthRepository implements AuthRepository {
   private client = getAuthServiceClient();
+
+  async getCurrentUser(ipAddress: string, jwt: string): Promise<User> {
+    return new Promise((resolve, reject) => {
+      const request = new GetCurrentUserRequest();
+
+      const metadata = new grpc.Metadata();
+
+      const ctx: CallContext = { ipAddress, jwt };
+
+      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+        customContext: ctx,
+      };
+
+      this.client.getCurrentUser(request, metadata, callOptions, (error, response) => {
+        if (error) {
+          return reject(error);
+        }
+
+        resolve(
+          {
+            uuid: response.getUserUuid(),
+            name: response.getEmail(),
+            email: response.getEmail(),
+            role: response.getUserRole().toString()
+          }
+        );
+      });
+    });
+  }
 
   async login(credentials: UserCredentials, ipAddress: string): Promise<{ jwt: string }> {
     return new Promise((resolve, reject) => {
@@ -17,10 +45,14 @@ export class GrpcAuthRepository implements AuthRepository {
       request.setUserPassword(credentials.userPassword);
 
       const metadata = new grpc.Metadata();
-      metadata.set('proxy-ip-address', ipAddress);
-      metadata.set('proxy-api-key', PROXY_API_KEY);
 
-      this.client.login(request, metadata, (error, response) => {
+      const customContext: CallContext = { ipAddress };
+
+      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+        customContext: customContext,
+      };
+
+      this.client.login(request, metadata, callOptions, (error, response) => {
         if (error) {
           return reject(error);
         }
@@ -30,7 +62,7 @@ export class GrpcAuthRepository implements AuthRepository {
     });
   }
 
-  async register(data: UserRegistration): Promise<{ userUuid: string }> {
+  async register(data: UserRegistration, ipAddress: string): Promise<{ userUuid: string }> {
     return new Promise((resolve, reject) => {
       const request = new RegisterRequest();
       request.setUserName(data.userName);
@@ -38,7 +70,15 @@ export class GrpcAuthRepository implements AuthRepository {
       request.setEmail(data.email);
       request.setCorporationName(data.corporationName);
 
-      this.client.register(request, (error, response) => {
+      const metadata = new grpc.Metadata();
+
+      const customContext: CallContext = { ipAddress };
+
+      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+        customContext: customContext,
+      };
+
+      this.client.register(request, metadata, callOptions, (error, response) => {
         if (error) {
           return reject(error);
         }
@@ -47,13 +87,21 @@ export class GrpcAuthRepository implements AuthRepository {
     });
   }
 
-  async verifyUser(data: VerificationInfo): Promise<{ userUuid: string }> {
+  async verifyUser(data: VerificationInfo, ipAddress: string): Promise<{ userUuid: string }> {
     return new Promise((resolve, reject) => {
       const request = new VerifyUserRequest();
       request.setUserName(data.userName);
       request.setCode(data.code);
 
-      this.client.verifyUser(request, (error, response) => {
+      const metadata = new grpc.Metadata();
+
+      const customContext: CallContext = { ipAddress };
+
+      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+        customContext: customContext,
+      };
+
+      this.client.verifyUser(request, metadata, callOptions, (error, response) => {
         if (error) {
           return reject(error);
         }
@@ -62,12 +110,20 @@ export class GrpcAuthRepository implements AuthRepository {
     });
   }
 
-  async resendVerificationEmail(userName: string): Promise<void> {
+  async resendVerificationEmail(userName: string, ipAddress: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const request = new ResendVerificationEmailRequest();
       request.setUserName(userName);
 
-      this.client.resendVerificationEmail(request, (error, response) => {
+      const metadata = new grpc.Metadata();
+
+      const customContext: CallContext = { ipAddress };
+
+      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+        customContext: customContext,
+      };
+
+      this.client.resendVerificationEmail(request, metadata, callOptions, (error, response) => {
         if (error) {
           return reject(error);
         }

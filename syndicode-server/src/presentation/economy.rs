@@ -2,19 +2,17 @@ use std::sync::Arc;
 
 use bon::Builder;
 use syndicode_proto::{
-    syndicode_economy_v1::{
-        BuildingOwnershipDetails, BuildingOwnershipsResponse, QueryBuildingOwnershipsRequest,
-    },
+    syndicode_economy_v1::{BuildingDetails, QueryBuildingsRequest, QueryBuildingsResponse},
     syndicode_interface_v1::economy_service_server::EconomyService,
 };
 use tonic::Response;
 
 use crate::{
     application::{
-        economy::query_building_ownerships::QueryBuildingOwnershipsUseCase,
+        economy::query_buildings::QueryBuildingsUseCase,
         ports::limiter::{LimiterCategory, RateLimitEnforcer},
     },
-    domain::economy::building_ownership::repository::BuildingOwnershipRepository,
+    domain::economy::building::repository::BuildingRepository,
 };
 
 use super::{
@@ -23,25 +21,25 @@ use super::{
 };
 
 #[derive(Builder)]
-pub struct EconomyPresenter<R, BUO>
+pub struct EconomyPresenter<R, BUI>
 where
     R: RateLimitEnforcer,
-    BUO: BuildingOwnershipRepository,
+    BUI: BuildingRepository,
 {
     pub limit: Arc<R>,
-    pub query_building_ownerships_uc: Arc<QueryBuildingOwnershipsUseCase<BUO>>,
+    pub query_buildings_uc: Arc<QueryBuildingsUseCase<BUI>>,
 }
 
 #[tonic::async_trait]
-impl<R, BUO> EconomyService for EconomyPresenter<R, BUO>
+impl<R, BUI> EconomyService for EconomyPresenter<R, BUI>
 where
     R: RateLimitEnforcer + 'static,
-    BUO: BuildingOwnershipRepository + 'static,
+    BUI: BuildingRepository + 'static,
 {
-    async fn query_building_ownerships(
+    async fn query_buildings(
         &self,
-        request: tonic::Request<QueryBuildingOwnershipsRequest>,
-    ) -> Result<tonic::Response<BuildingOwnershipsResponse>, tonic::Status> {
+        request: tonic::Request<QueryBuildingsRequest>,
+    ) -> Result<tonic::Response<QueryBuildingsResponse>, tonic::Status> {
         check_rate_limit(
             self.limit.clone(),
             request.metadata(),
@@ -56,8 +54,8 @@ where
             parse_maybe_uuid(request.owning_corporation_uuid, "owning corporation uuid")
                 .map_err(|status| *status)?;
 
-        let (game_tick, application_ownerships) = self
-            .query_building_ownerships_uc
+        let (game_tick, domain_buildings) = self
+            .query_buildings_uc
             .execute()
             .maybe_owning_corporation_uuid(owning_corporation_uuid)
             .maybe_min_lon(request.min_lon)
@@ -69,17 +67,17 @@ where
             .await
             .map_err(PresentationError::from)?;
 
-        let total_count = application_ownerships.len();
-        let mut ownerships = Vec::with_capacity(total_count);
+        let total_count = domain_buildings.len();
+        let mut buildings = Vec::with_capacity(total_count);
 
-        for o in application_ownerships {
-            ownerships.push(BuildingOwnershipDetails { gml_id: o.gml_id });
+        for o in domain_buildings {
+            buildings.push(BuildingDetails { gml_id: o.gml_id });
         }
 
-        Ok(Response::new(BuildingOwnershipsResponse {
+        Ok(Response::new(QueryBuildingsResponse {
             game_tick,
             total_count: total_count as i64,
-            ownerships,
+            buildings,
         }))
     }
 }

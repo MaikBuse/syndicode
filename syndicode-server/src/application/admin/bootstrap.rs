@@ -47,7 +47,7 @@ where
         user_email: String,
         corporation_name: String,
     ) -> ApplicationResult<()> {
-        if self.init_repo.is_flag_set(FlagKey::AdminDomainInit).await? {
+        if self.init_repo.is_flag_set(FlagKey::AdminDomain).await? {
             tracing::info!("Admin Domain initialization flag is already set. Skipping.");
 
             return Ok(());
@@ -98,7 +98,7 @@ where
                         .await
                         .map_err(ApplicationError::from)?;
 
-                    ctx.set_flag(FlagKey::AdminDomainInit).await?;
+                    ctx.set_flag(FlagKey::AdminDomain).await?;
 
                     Ok(user_to_create)
                 })

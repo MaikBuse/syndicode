@@ -16,8 +16,7 @@ use crate::{
             list_business_listings::ListBusinessListingUseCase,
             list_business_offers::ListBusinessOffersUseCase,
             list_businesses::ListBusinessesUseCase, list_corporations::ListCorporationsUseCase,
-            list_markets::ListMarketsUseCase,
-            query_building_ownerships::QueryBuildingOwnershipsUseCase,
+            list_markets::ListMarketsUseCase, query_buildings::QueryBuildingsUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
         },
         game::get_game_tick::GetGameTickUseCase,
@@ -43,7 +42,7 @@ use crate::{
     config::ServerConfig,
     domain::{
         economy::{
-            building_ownership::repository::BuildingOwnershipRepository,
+            building::repository::BuildingRepository,
             business_listing::repository::BusinessListingRepository,
             corporation::repository::CorporationRepository,
         },
@@ -56,9 +55,10 @@ use crate::{
         email::EmailHandler,
         postgres::{
             economy::{
-                building_ownership::PgBuildingOwnershipService, business::PgBusinessService,
-                business_listing::PgBusinessListingService, business_offer::PgBusinessOfferService,
-                corporation::PgCorporationService, market::PgMarketService,
+                building::PgBuildingService, building_ownership::PgBuildingOwnershipService,
+                business::PgBusinessService, business_listing::PgBusinessListingService,
+                business_offer::PgBusinessOfferService, corporation::PgCorporationService,
+                market::PgMarketService,
             },
             game_tick::PgGameTickService,
             init::PgInitializationService,
@@ -113,10 +113,10 @@ pub type DefaultProvider = AppProvider<
     EmailHandler,
     PgBusinessListingService,
     PostgresMigrator,
-    PgBuildingOwnershipService,
+    PgBuildingService,
 >;
 
-pub struct AppProvider<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL, M, BUO>
+pub struct AppProvider<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL, M, BUI>
 where
     INI: InitializationRepository + 'static,
     G: GameTickProcessable + 'static,
@@ -134,7 +134,7 @@ where
     VS: VerificationSendable + 'static,
     BL: BusinessListingRepository + 'static,
     M: MigrationRunner + 'static,
-    BUO: BuildingOwnershipRepository + 'static,
+    BUI: BuildingRepository + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub leader_elector: Arc<L>,
@@ -143,7 +143,7 @@ where
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
     pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
-    pub economy_presenter: EconomyPresenter<R, BUO>,
+    pub economy_presenter: EconomyPresenter<R, BUI>,
 }
 
 impl DefaultProvider {
@@ -172,6 +172,7 @@ impl DefaultProvider {
         let business_service = Arc::new(PgBusinessService::new(pg_db.clone()));
         let business_listing_service = Arc::new(PgBusinessListingService::new(pg_db.clone()));
         let business_offer_service = Arc::new(PgBusinessOfferService::new(pg_db.clone()));
+        let building_service = Arc::new(PgBuildingService::new(pg_db.clone()));
         let building_ownership_service = Arc::new(PgBuildingOwnershipService::new(pg_db.clone()));
 
         // System use cases
@@ -305,9 +306,9 @@ impl DefaultProvider {
                 .business_listing_repo(business_listing_service.clone())
                 .build(),
         );
-        let query_building_ownerships_uc = Arc::new(
-            QueryBuildingOwnershipsUseCase::builder()
-                .building_ownership_repo(building_ownership_service.clone())
+        let query_buildings_uc = Arc::new(
+            QueryBuildingsUseCase::builder()
+                .building_repo(building_service.clone())
                 .build(),
         );
 
@@ -376,7 +377,7 @@ impl DefaultProvider {
             .build();
 
         let economy_presenter = EconomyPresenter::builder()
-            .query_building_ownerships_uc(query_building_ownerships_uc.clone())
+            .query_buildings_uc(query_buildings_uc.clone())
             .limit(valkey.clone())
             .build();
 

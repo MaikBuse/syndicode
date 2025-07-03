@@ -6,16 +6,16 @@ import { cookies } from 'next/headers';
 class AuthService {
   constructor(private authRepository: AuthRepository) { }
 
-  async register(data: UserRegistration) {
-    return this.authRepository.register(data);
+  async register(data: UserRegistration, ipAddress: string) {
+    return this.authRepository.register(data, ipAddress);
   }
 
-  async verifyUser(data: VerificationInfo) {
-    return this.authRepository.verifyUser(data);
+  async verifyUser(data: VerificationInfo, ipAddress: string) {
+    return this.authRepository.verifyUser(data, ipAddress);
   }
 
-  async resendVerificationEmail(userName: string) {
-    return this.authRepository.resendVerificationEmail(userName);
+  async resendVerificationEmail(userName: string, ipAddress: string) {
+    return this.authRepository.resendVerificationEmail(userName, ipAddress);
   }
 
   async login(credentials: UserCredentials, ipAddress: string) {
@@ -30,7 +30,10 @@ class AuthService {
       path: '/',
     });
 
-    return { success: true };
+
+    const user = await this.authRepository.getCurrentUser(ipAddress, jwt);
+
+    return user;
   }
 }
 
