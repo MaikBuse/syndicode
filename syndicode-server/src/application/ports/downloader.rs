@@ -14,6 +14,6 @@ pub type DownloadResult<T> = Result<T, DownloadError>;
 
 /// Returns a readable stream of the backup data.
 #[async_trait]
-pub trait BackupDownloader {
+pub trait BackupDownloader: Send + Sync {
     async fn download(&self, source: String) -> DownloadResult<Box<dyn AsyncRead + Unpin + Send>>;
 }

@@ -122,7 +122,7 @@ jobs:
           SQLX_OFFLINE: true
 
       - name: Start server in background
-        run: ./target/release/syndicode-server &> server.log &
+        run: ./target/release/syndicode-server --restore ${{ env.SERVER_DB_DUMP_URL }} &> server.log &
         env:
           # Cargo
           RUST_LOG: "syndicode_client=debug,syndicode_server=info,info"

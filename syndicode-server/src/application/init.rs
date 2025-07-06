@@ -41,6 +41,8 @@ where
     M: MigrationRunner,
 {
     pub async fn run(&self, maybe_restore_url: Option<String>) -> ApplicationResult<()> {
+        self.migrator.run_migration().await?;
+
         let is_initialized = self.init_repo.is_flag_set(FlagKey::Database).await?;
         if is_initialized {
             tracing::info!("Database has already been initialized...");
@@ -50,16 +52,14 @@ where
 
         match maybe_restore_url {
             Some(url) => {
-                tracing::info!("Restoring database...");
-
+                tracing::info!("Downloading database dump...");
                 let stream = self.downloader.download(url).await?;
 
+                tracing::info!("Restoring database...");
                 self.restorer.restore(self.config.clone(), stream).await?;
             }
             None => {
                 tracing::info!("Bootstrapping database...");
-                self.migrator.run_migration().await?;
-
                 self.bootstrap_admin_uc
                     .execute()
                     .user_name(self.config.auth.admin_username.clone())

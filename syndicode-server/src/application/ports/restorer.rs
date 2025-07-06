@@ -21,7 +21,7 @@ pub type RestoreResult<T> = Result<T, RestoreError>;
 
 /// Readable stream of data to perform a database restore.
 #[async_trait]
-pub trait DatabaseRestorer {
+pub trait DatabaseRestorer: Send + Sync {
     async fn restore(
         &self,
         config: Arc<ServerConfig>,
