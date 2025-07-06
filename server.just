@@ -15,7 +15,7 @@ run:
 # Run clippy
 [group('cargo')]
 clippy:
-  cargo clippy -p syndicode-server
+  cargo clippy -p syndicode-server --all-targets --all-features -- -D warnings
 
 # Apply clippy fixes
 [group('cargo')]

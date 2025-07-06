@@ -10,7 +10,7 @@ build:
 # Run clippy
 [group('cargo')]
 clippy:
-  cargo clippy -p syndicode-client
+  cargo clippy -p syndicode-client --all-targets --all-features -- -D warnings
 
 # Apply clippy fixes
 [group('cargo')]
