@@ -230,9 +230,7 @@ impl ServerConfig {
             toml::from_str::<ServerConfig>(&content)
                 .with_context(|| format!("Failed to parse TOML from {CONFIG_FILE_PATH}"))?
         } else {
-            println!(
-                "Config file not found at {CONFIG_FILE_PATH}, creating with default values."
-            );
+            println!("Config file not found at {CONFIG_FILE_PATH}, creating with default values.");
             let default_config = ServerConfig::default();
             save_config(&default_config)?;
             default_config

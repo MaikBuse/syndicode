@@ -133,21 +133,17 @@ where
                         game_update
                     );
                 }
-                Some(Err(status)) => panic!(
-                    "Stream returned an error while waiting for {description}: {status:?}"
-                ),
-                None => panic!(
-                    "Stream closed unexpectedly while waiting for {description}"
-                ),
+                Some(Err(status)) => {
+                    panic!("Stream returned an error while waiting for {description}: {status:?}")
+                }
+                None => panic!("Stream closed unexpectedly while waiting for {description}"),
             }
         }
     };
 
     match timeout(wait_duration, operation).await {
         Ok(result) => result,
-        Err(_) => panic!(
-            "Timed out after {wait_duration:?} waiting for {description}"
-        ),
+        Err(_) => panic!("Timed out after {wait_duration:?} waiting for {description}"),
     }
 }
 

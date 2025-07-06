@@ -57,9 +57,7 @@ pub fn load_config() -> Result<ClientConfig> {
         toml::from_str::<ClientConfig>(&content)
             .with_context(|| format!("Failed to parse TOML from {path_str}"))?
     } else {
-        println!(
-            "Config file not found at {path_str}, creating with default values."
-        );
+        println!("Config file not found at {path_str}, creating with default values.");
         let default_config = ClientConfig::default();
         save_config(&default_config)?;
         default_config

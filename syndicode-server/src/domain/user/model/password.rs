@@ -55,9 +55,7 @@ mod tests {
         // Check for the specific error type
         match result.err().unwrap() {
             ApplicationError::PasswordTooShort(_) => (),
-            other_err => panic!(
-                "Expected ApplicationError::PasswordTooShort, got {other_err:?}"
-            ),
+            other_err => panic!("Expected ApplicationError::PasswordTooShort, got {other_err:?}"),
         }
     }
 
@@ -72,9 +70,7 @@ mod tests {
         // Check for the specific error type
         match result.err().unwrap() {
             ApplicationError::PasswordTooLong(_) => (),
-            other_err => panic!(
-                "Expected ApplicationError::PasswordTooLong, got {other_err:?}"
-            ),
+            other_err => panic!("Expected ApplicationError::PasswordTooLong, got {other_err:?}"),
         }
     }
 }
