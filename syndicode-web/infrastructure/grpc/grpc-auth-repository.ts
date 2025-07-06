@@ -65,12 +65,15 @@ export class GrpcAuthRepository implements AuthRepository {
           switch (error.code) {
             case grpc.status.FAILED_PRECONDITION:
               reject(new UserInactiveError());
+              break;
 
             case grpc.status.UNAUTHENTICATED:
               reject(new UnauthenticatedError());
+              break;
 
             default:
               reject(new UnknownAuthError());
+              break;
           }
         }
 
@@ -149,12 +152,15 @@ export class GrpcAuthRepository implements AuthRepository {
           switch (error.code) {
             case grpc.status.DEADLINE_EXCEEDED:
               reject(new UserInactiveError());
+              break;
 
             case grpc.status.INVALID_ARGUMENT:
               reject(new VerificationCodeFalse());
+              break;
 
             default:
               reject(new UnknownAuthError());
+              break;
           }
         }
 

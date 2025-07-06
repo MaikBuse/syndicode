@@ -7,7 +7,6 @@ import { BuildingDetails } from '@/lib/grpc/generated/economy/v1/economy_pb';
 import { CallContext } from './types';
 import { UnknownAuthError } from '@/domain/auth/auth.error';
 import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
-import { fi } from 'zod/v4/locales';
 
 export class GrpcEconomyRepository implements EconomyRepository {
   private client = getEconomyServiceClient();
