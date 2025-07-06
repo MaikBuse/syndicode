@@ -88,6 +88,21 @@ jobs:
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install PostgreSQL Client v17
+        run: |
+          # Add the PostgreSQL GPG key and repository
+          sudo apt-get update
+          sudo apt-get install -y curl ca-certificates gnupg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          
+          # Update and install the client
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+        
+          # Verify the installation
+          which pg_restore
+          pg_restore --version
       - name: Cache dependencies
         uses: actions/cache@v4
         with:

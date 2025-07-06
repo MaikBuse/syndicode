@@ -97,6 +97,8 @@ impl From<ApplicationError> for PresentationError {
             ApplicationError::Unauthorized => Self::PermissionDenied,
             ApplicationError::Limitation(err) => Self::ResourceExhausted(err.to_string()),
             ApplicationError::Queue(_)
+            | ApplicationError::Download(_)
+            | ApplicationError::Restore(_)
             | ApplicationError::Pull(_)
             | ApplicationError::VerificationSendable(_)
             | ApplicationError::Sqlx(_)

@@ -1,10 +1,10 @@
 pub mod action;
 pub mod admin;
 pub mod auth;
-pub mod bootstrap;
 pub mod economy;
 pub mod error;
 pub mod game;
+pub mod init;
 pub mod leader;
 pub mod ports;
 pub mod processor;

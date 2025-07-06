@@ -4,15 +4,19 @@ mod server;
 
 use crate::{
     application::leader::LeaderLoopManager,
+    cli::Cli,
     config::ServerConfig,
     infrastructure::{postgres::PostgresDatabase, valkey::ValkeyStore},
     presentation::{broadcaster::GameTickBroadcaster, game::user_channel_guard::UserChannels},
 };
+use clap::Parser;
 use dashmap::DashMap;
 use provider::AppProvider;
 use std::{sync::Arc, time::Duration};
 
 pub async fn start_server() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
     let config = Arc::new(ServerConfig::new()?);
 
     logging::init();
@@ -31,8 +35,11 @@ pub async fn start_server() -> anyhow::Result<()> {
     )
     .await?;
 
-    // Bootstrap
-    provider.bootstrap_orchestrator.run().await?;
+    // Initializer
+    provider
+        .initialization_orchestrator
+        .run(cli.restore)
+        .await?;
 
     // Spawn leader loop
     let leader_loop_manager = LeaderLoopManager::builder()
