@@ -19,6 +19,7 @@ uuid = { workspace = true }
 toml = { workspace = true }
 once_cell = { workspace = true }
 tonic-health = "0.13.0"
+tonic-types = "0.13.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
 sqlx = { version = "0.8.3", features = [ "postgres", "time", "macros", "runtime-tokio", "tls-native-tls", "uuid" ] }

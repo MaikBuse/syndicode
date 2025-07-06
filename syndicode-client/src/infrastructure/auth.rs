@@ -8,13 +8,13 @@ use crate::domain::{
 };
 use syndicode_proto::syndicode_interface_v1::{
     GetCurrentUserRequest, GetUserResponse, LoginRequest, LoginResponse, RegisterRequest,
-    ResendVerificationEmailRequest, VerifyUserRequest,
+    RegisterResponse, ResendVerificationEmailRequest, VerifyUserRequest,
 };
 use tonic::Request;
 
 #[tonic::async_trait]
 impl AuthenticationRepository for GrpcHandler {
-    async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<DomainResponse> {
+    async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<RegisterResponse> {
         let mut request = Request::new(RegisterRequest {
             user_name: req.user_name,
             user_password: req.user_password,
@@ -26,8 +26,12 @@ impl AuthenticationRepository for GrpcHandler {
             self.add_ip_metadata(request.metadata_mut())?;
         }
 
-        let result = self.auth_client.register(request).await;
-        self.response_from_result(result)
+        Ok(self
+            .auth_client
+            .register(request)
+            .await
+            .map_err(|status| anyhow::anyhow!("{}", status))?
+            .into_inner())
     }
 
     async fn verifiy_user(&mut self, req: VerifyUserReq) -> anyhow::Result<DomainResponse> {

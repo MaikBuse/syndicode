@@ -71,8 +71,8 @@ export async function registerAction(values: z.infer<typeof registerSchema>): Pr
   try {
     await authService.register(validatedFields.data, ipAddress);
     return { success: true, message: "Registration successful! Please check your email for a verification code." };
-  } catch (error) {
-    return { success: false, message: "Registration failed. This user may already exist." };
+  } catch (error: any) {
+    return { success: false, message: error.message };
   }
 }
 

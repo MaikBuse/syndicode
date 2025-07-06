@@ -30,25 +30,26 @@ export function LoginForm() {
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     startTransition(async () => {
-      const result = await loginAction(values);
-      if (result.isInactive) {
-        toast.error(result.message);
+      const loginResult = await loginAction(values);
+      if (loginResult.isInactive) {
+        toast.error(loginResult.message);
 
         // Pass the username to the store so the verify form knows who to verify
         setUserNameToVerify(values.userName);
         // Switch the modal to the 'verify' view
         setView('verify');
       }
-      if (result.success) {
-        toast.success(result.message);
+      if (loginResult.success) {
+        toast.success(loginResult.message);
 
-        if (result.user) {
-          useAuthStore.getState().login(result.user);
+
+        if (loginResult.user) {
+          useAuthStore.getState().login(loginResult.user);
         }
 
         closeModal();
       } else {
-        toast.error(result.message);
+        toast.error(loginResult.message);
       }
     });
   };

@@ -1,6 +1,6 @@
 use crate::domain::response::DomainResponse;
 use bon::Builder;
-use syndicode_proto::syndicode_interface_v1::{GetUserResponse, LoginResponse};
+use syndicode_proto::syndicode_interface_v1::{GetUserResponse, LoginResponse, RegisterResponse};
 
 #[derive(Builder)]
 pub struct RegisterUserReq {
@@ -26,7 +26,7 @@ pub struct LoginUserReq {
 
 #[tonic::async_trait]
 pub trait AuthenticationRepository {
-    async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<DomainResponse>;
+    async fn register_user(&mut self, req: RegisterUserReq) -> anyhow::Result<RegisterResponse>;
 
     async fn verifiy_user(&mut self, req: VerifyUserReq) -> anyhow::Result<DomainResponse>;
 

@@ -2,12 +2,51 @@ import type { AuthRepository } from '@/domain/auth/auth-repository';
 import type { User, UserCredentials, UserRegistration, VerificationInfo } from '@/domain/auth/auth.types';
 import * as grpc from '@grpc/grpc-js';
 
-// Import the client and the generated message classes
 import { getAuthServiceClient, LoginRequest, RegisterRequest, VerifyUserRequest, ResendVerificationEmailRequest, GetCurrentUserRequest } from '@/lib/grpc/auth-client';
 import { CallContext } from './types';
+import { InvalidCredentialsError, UnauthenticatedError, UniqueConstraint, UnknownAuthError, UserInactiveError, VerificationCodeFalse } from '@/domain/auth/auth.error';
 
 export class GrpcAuthRepository implements AuthRepository {
   private client = getAuthServiceClient();
+
+  async register(data: UserRegistration, ipAddress: string): Promise<{ userUuid: string }> {
+    return new Promise((resolve, reject) => {
+      const request = new RegisterRequest();
+      request.setUserName(data.userName);
+      request.setUserPassword(data.userPassword);
+      request.setEmail(data.email);
+      request.setCorporationName(data.corporationName);
+
+      const metadata = new grpc.Metadata();
+      const customContext: CallContext = { ipAddress };
+      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+        customContext: customContext,
+      };
+
+      // The error handling now lives inside the callback
+      this.client.register(request, metadata, callOptions, (error, response) => {
+        if (error) {
+          switch (error.code) {
+            case grpc.status.ALREADY_EXISTS:
+              return reject(new UniqueConstraint(error.details));
+
+            case grpc.status.FAILED_PRECONDITION:
+              return reject(new UserInactiveError(error.details));
+
+            default:
+              return reject(new UnknownAuthError("An unexpected error occurred during registration."));
+          }
+        }
+
+        if (response) {
+          resolve({ userUuid: response.getUserUuid() });
+        } else {
+          // This case is unlikely but good to handle
+          reject(new UnknownAuthError("Received an empty response from the server."));
+        }
+      });
+    });
+  }
 
   async getCurrentUser(ipAddress: string, jwt: string): Promise<User> {
     return new Promise((resolve, reject) => {
@@ -23,17 +62,31 @@ export class GrpcAuthRepository implements AuthRepository {
 
       this.client.getCurrentUser(request, metadata, callOptions, (error, response) => {
         if (error) {
-          return reject(error);
+          switch (error.code) {
+            case grpc.status.FAILED_PRECONDITION:
+              reject(new UserInactiveError());
+
+            case grpc.status.UNAUTHENTICATED:
+              reject(new UnauthenticatedError());
+
+            default:
+              reject(new UnknownAuthError());
+          }
         }
 
-        resolve(
-          {
-            uuid: response.getUserUuid(),
-            name: response.getEmail(),
-            email: response.getEmail(),
-            role: response.getUserRole().toString()
-          }
-        );
+        if (response) {
+          resolve(
+            {
+              uuid: response.getUserUuid(),
+              name: response.getEmail(),
+              email: response.getEmail(),
+              role: response.getUserRole().toString()
+            }
+          );
+        } else {
+          // This case is unlikely but good to handle
+          reject(new UnknownAuthError("Received an empty response from the server."));
+        }
       });
     });
   }
@@ -54,38 +107,28 @@ export class GrpcAuthRepository implements AuthRepository {
 
       this.client.login(request, metadata, callOptions, (error, response) => {
         if (error) {
-          return reject(error);
+          switch (error.code) {
+            case grpc.status.FAILED_PRECONDITION:
+              throw new UserInactiveError();
+
+            case grpc.status.INVALID_ARGUMENT:
+              throw new InvalidCredentialsError();
+
+            default:
+              throw new UnknownAuthError();
+          }
         }
 
-        resolve({ jwt: response.getJwt() });
+        if (response) {
+          resolve({ jwt: response.getJwt() });
+        } else {
+          // This case is unlikely but good to handle
+          reject(new UnknownAuthError("Received an empty response from the server."));
+        }
       });
     });
   }
 
-  async register(data: UserRegistration, ipAddress: string): Promise<{ userUuid: string }> {
-    return new Promise((resolve, reject) => {
-      const request = new RegisterRequest();
-      request.setUserName(data.userName);
-      request.setUserPassword(data.userPassword);
-      request.setEmail(data.email);
-      request.setCorporationName(data.corporationName);
-
-      const metadata = new grpc.Metadata();
-
-      const customContext: CallContext = { ipAddress };
-
-      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
-        customContext: customContext,
-      };
-
-      this.client.register(request, metadata, callOptions, (error, response) => {
-        if (error) {
-          return reject(error);
-        }
-        resolve({ userUuid: response.getUserUuid() });
-      });
-    });
-  }
 
   async verifyUser(data: VerificationInfo, ipAddress: string): Promise<{ userUuid: string }> {
     return new Promise((resolve, reject) => {
@@ -103,9 +146,24 @@ export class GrpcAuthRepository implements AuthRepository {
 
       this.client.verifyUser(request, metadata, callOptions, (error, response) => {
         if (error) {
-          return reject(error);
+          switch (error.code) {
+            case grpc.status.DEADLINE_EXCEEDED:
+              reject(new UserInactiveError());
+
+            case grpc.status.INVALID_ARGUMENT:
+              reject(new VerificationCodeFalse());
+
+            default:
+              reject(new UnknownAuthError());
+          }
         }
-        resolve({ userUuid: response.getUserUuid() });
+
+        if (response) {
+          resolve({ userUuid: response.getUserUuid() });
+        } else {
+          // This case is unlikely but good to handle
+          reject(new UnknownAuthError("Received an empty response from the server."));
+        }
       });
     });
   }
@@ -125,10 +183,28 @@ export class GrpcAuthRepository implements AuthRepository {
 
       this.client.resendVerificationEmail(request, metadata, callOptions, (error, response) => {
         if (error) {
-          return reject(error);
+          switch (error.code) {
+            case grpc.status.FAILED_PRECONDITION:
+              reject(new UserInactiveError());
+              break;
+            case grpc.status.UNAUTHENTICATED:
+              reject(new InvalidCredentialsError());
+              break;
+            default:
+              reject(new UnknownAuthError());
+              break;
+          }
         }
-        resolve();
+
+        if (response) {
+          resolve();
+        } else {
+          // This case is unlikely but good to handle
+          reject(new UnknownAuthError("Received an empty response from the server."));
+        }
       });
     });
   }
 }
+
+

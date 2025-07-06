@@ -8,14 +8,17 @@ pub type ApplicationResult<T> = std::result::Result<T, ApplicationError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationError {
-    #[error("The database returned with a violation of a unique/primary key constraint")]
-    UniqueConstraint,
+    #[error("The provided corporation name has already been taken")]
+    CorporationNameAlreadyTaken,
+
+    #[error("The provided user name has already been taken")]
+    UserNameAlreadyTaken,
+
+    #[error("The provided email is already in use")]
+    EmailInUse,
 
     #[error("Failed to retrieve the corporation of the provided user")]
     CorporationForUserNotFound,
-
-    #[error("The provided corporation name is already taken")]
-    CorporationNameAlreadyTaken,
 
     #[error("The provided corporation name can't be longer than {0} characters")]
     CorporationNameTooLong(usize),
@@ -69,11 +72,18 @@ pub enum ApplicationError {
     Limitation(#[from] LimitationError),
 
     #[error(transparent)]
-    Database(#[from] RepositoryError),
-
-    #[error(transparent)]
     Sqlx(#[from] sqlx::Error),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+impl From<RepositoryError> for ApplicationError {
+    fn from(value: RepositoryError) -> Self {
+        match value {
+            RepositoryError::UserNameAlreadyTaken => ApplicationError::UserNameAlreadyTaken,
+            RepositoryError::EmailInUse => ApplicationError::EmailInUse,
+            _ => ApplicationError::from(value),
+        }
+    }
 }

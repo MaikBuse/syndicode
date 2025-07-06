@@ -5,8 +5,9 @@ import './globals.css';
 
 import { AuthDialog } from '@/components/auth/auth-dialog';
 import { Toaster } from '@/components/ui/sonner';
-import AuthStoreInitializer from './AuthStoreInitializer';
+import AuthStoreInitializer from '../components/initializers/auth-store-initializer';
 import { getCurrentUser } from './actions/auth';
+import { SessionDataInitializer } from '@/components/initializers/session-data-initializer';
 
 export const metadata: Metadata = {
   title: 'Syndicode',
@@ -28,6 +29,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${firaCode.className}`}>
       <body className={`antialiased`}>
+        <SessionDataInitializer />
         <AuthStoreInitializer user={user} />
         {children}
         <AuthDialog />

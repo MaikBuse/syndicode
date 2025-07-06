@@ -1,36 +1,88 @@
 import type { EconomyRepository } from '@/domain/economy/economy-repository';
-import type { QueryBuildingsFilters, QueryBuildingsResult } from '@/domain/economy/economy.types';
+import type { Corporation, QueryBuildingsFilters, QueryBuildingsResult } from '@/domain/economy/economy.types';
 import { getEconomyServiceClient } from '@/lib/grpc/economy-client';
 import * as grpc from '@grpc/grpc-js';
-
-import { QueryBuildingsRequest, QueryBuildingsResponse } from '@/lib/grpc/generated/economy/v1/economy_pb';
+import { GetCorporationRequest, QueryBuildingsRequest, QueryBuildingsResponse } from '@/lib/grpc/generated/economy/v1/economy_pb';
 import { BuildingDetails } from '@/lib/grpc/generated/economy/v1/economy_pb';
 import { CallContext } from './types';
-
+import { UnknownAuthError } from '@/domain/auth/auth.error';
+import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
+import { fi } from 'zod/v4/locales';
 
 export class GrpcEconomyRepository implements EconomyRepository {
   private client = getEconomyServiceClient();
+
+  getCorporation(ipAddress: string, jwt: string): Promise<Corporation> {
+    return new Promise((resolve, reject) => {
+      const request = new GetCorporationRequest();
+
+      const metadata = new grpc.Metadata();
+
+      const customContext: CallContext = { ipAddress, jwt };
+
+      const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+        customContext: customContext,
+      };
+
+      this.client.getCurrentCorporation(
+        request,
+        metadata,
+        callOptions,
+        (error, response) => {
+          if (error) {
+            console.log(error);
+            reject(error);
+            return;
+          }
+
+          if (response) {
+            resolve({
+              uuid: response.getUuid(),
+              name: response.getName(),
+              cash_balance: response.getBalance(),
+            });
+          } else {
+            // This case is unlikely but good to handle
+            reject(new UnknownAuthError("Received an empty response from the server."));
+          }
+        }
+      );
+    });
+  }
+
 
   async queryBuildings(filters: QueryBuildingsFilters, ipAddress: string, jwt: string): Promise<QueryBuildingsResult> {
     const grpcRequest = new QueryBuildingsRequest();
 
     if (filters.owningCorporationUuid) {
-      grpcRequest.setOwningCorporationUuid(filters.owningCorporationUuid);
+      const uuidValue = new google_protobuf_wrappers_pb.StringValue();
+      uuidValue.setValue(filters.owningCorporationUuid);
+      grpcRequest.setOwningCorporationUuid(uuidValue);
     }
     if (filters.minLon != null) {
-      grpcRequest.setMinLon(filters.minLon);
+      const minLonValue = new google_protobuf_wrappers_pb.DoubleValue();
+      minLonValue.setValue(filters.minLon);
+      grpcRequest.setMinLon(minLonValue);
     }
     if (filters.maxLon != null) {
-      grpcRequest.setMaxLon(filters.maxLon);
+      const maxLonValue = new google_protobuf_wrappers_pb.DoubleValue();
+      maxLonValue.setValue(filters.maxLon);
+      grpcRequest.setMaxLon(maxLonValue);
     }
     if (filters.minLat != null) {
-      grpcRequest.setMinLat(filters.minLat);
+      const minLatValue = new google_protobuf_wrappers_pb.DoubleValue();
+      minLatValue.setValue(filters.minLat);
+      grpcRequest.setMinLat(minLatValue);
     }
     if (filters.maxLat != null) {
-      grpcRequest.setMaxLat(filters.maxLat);
+      const maxLatValue = new google_protobuf_wrappers_pb.DoubleValue();
+      maxLatValue.setValue(filters.maxLat);
+      grpcRequest.setMaxLat(maxLatValue);
     }
     if (filters.limit) {
-      grpcRequest.setLimit(filters.limit);
+      const limitValue = new google_protobuf_wrappers_pb.DoubleValue();
+      limitValue.setValue(filters.limit);
+      grpcRequest.setLimit(limitValue);
     }
 
     const metadata = new grpc.Metadata();

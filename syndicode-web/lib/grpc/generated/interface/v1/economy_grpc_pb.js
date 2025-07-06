@@ -4,6 +4,28 @@
 var grpc = require('@grpc/grpc-js');
 var economy_v1_economy_pb = require('../../economy/v1/economy_pb.js');
 
+function serialize_syndicode_economy_v1_Corporation(arg) {
+  if (!(arg instanceof economy_v1_economy_pb.Corporation)) {
+    throw new Error('Expected argument of type syndicode_economy_v1.Corporation');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_economy_v1_Corporation(buffer_arg) {
+  return economy_v1_economy_pb.Corporation.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_syndicode_economy_v1_GetCorporationRequest(arg) {
+  if (!(arg instanceof economy_v1_economy_pb.GetCorporationRequest)) {
+    throw new Error('Expected argument of type syndicode_economy_v1.GetCorporationRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_economy_v1_GetCorporationRequest(buffer_arg) {
+  return economy_v1_economy_pb.GetCorporationRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_syndicode_economy_v1_QueryBuildingsRequest(arg) {
   if (!(arg instanceof economy_v1_economy_pb.QueryBuildingsRequest)) {
     throw new Error('Expected argument of type syndicode_economy_v1.QueryBuildingsRequest');
@@ -29,6 +51,18 @@ function deserialize_syndicode_economy_v1_QueryBuildingsResponse(buffer_arg) {
 
 // EconomyService provides methods for querying economy-related data.
 var EconomyServiceService = exports.EconomyServiceService = {
+  // Request to fetch corporation data.
+getCurrentCorporation: {
+    path: '/syndicode_interface_v1.EconomyService/GetCurrentCorporation',
+    requestStream: false,
+    responseStream: false,
+    requestType: economy_v1_economy_pb.GetCorporationRequest,
+    responseType: economy_v1_economy_pb.Corporation,
+    requestSerialize: serialize_syndicode_economy_v1_GetCorporationRequest,
+    requestDeserialize: deserialize_syndicode_economy_v1_GetCorporationRequest,
+    responseSerialize: serialize_syndicode_economy_v1_Corporation,
+    responseDeserialize: deserialize_syndicode_economy_v1_Corporation,
+  },
   // Queries buildings with optional filters and pagination.
 queryBuildings: {
     path: '/syndicode_interface_v1.EconomyService/QueryBuildings',

@@ -1,6 +1,6 @@
 use super::uow::PgTransactionContext;
 use crate::domain::{
-    repository::{RepositoryError, RepositoryResult},
+    repository::RepositoryResult,
     user_verify::{
         model::{code::VerificationCode, UserVerification},
         repository::UserVerificationTxRepository,
@@ -23,7 +23,7 @@ impl PgUserVerificationRepository {
         let expires_at = user_verification.get_expires_at();
         let created_at = user_verification.get_created_at();
 
-        if let Err(err) = sqlx::query!(
+        sqlx::query!(
             r#"
             INSERT INTO user_verifications (
                 user_uuid,
@@ -39,17 +39,7 @@ impl PgUserVerificationRepository {
             created_at
         )
         .execute(executor)
-        .await
-        {
-            match err {
-                sqlx::Error::Database(database_error) => match database_error.is_unique_violation()
-                {
-                    true => return Err(RepositoryError::UniqueConstraint),
-                    false => return Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
-                },
-                _ => return Err(err.into()),
-            };
-        }
+        .await?;
 
         Ok(())
     }

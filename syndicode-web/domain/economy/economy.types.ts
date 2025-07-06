@@ -1,3 +1,9 @@
+export type Corporation = {
+  uuid: string;
+  name: string;
+  cash_balance: number,
+};
+
 // Represents the filters that can be used to query buildings.
 export type QueryBuildingsFilters = {
   owningCorporationUuid?: string | null;

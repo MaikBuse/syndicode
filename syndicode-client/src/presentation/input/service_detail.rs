@@ -197,7 +197,7 @@ where
                                 anyhow::anyhow!("Failed to retrieve corporation name from textarea")
                             })?;
 
-                        let response = app
+                        let result = app
                             .register_uc
                             .execute()
                             .user_name(user_name.to_owned())
@@ -205,9 +205,9 @@ where
                             .email(email.to_owned())
                             .corporation_name(corporation_name.to_owned())
                             .call()
-                            .await?;
+                            .await;
 
-                        app.response_list_widget.push(response);
+                        app.response_list_widget.push(result.into());
                         app.maybe_selected_service = None;
                         app.current_screen = CurrentScreen::Main(CurrentScreenMain::Services);
                     }

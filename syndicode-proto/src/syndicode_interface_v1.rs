@@ -1818,6 +1818,38 @@ pub mod economy_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
+        /// Request to fetch corporation data.
+        pub async fn get_current_corporation(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                super::super::syndicode_economy_v1::GetCorporationRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<super::super::syndicode_economy_v1::Corporation>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/syndicode_interface_v1.EconomyService/GetCurrentCorporation",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "syndicode_interface_v1.EconomyService",
+                        "GetCurrentCorporation",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
         /// Queries buildings with optional filters and pagination.
         pub async fn query_buildings(
             &mut self,
@@ -1865,6 +1897,16 @@ pub mod economy_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with EconomyServiceServer.
     #[async_trait]
     pub trait EconomyService: std::marker::Send + std::marker::Sync + 'static {
+        /// Request to fetch corporation data.
+        async fn get_current_corporation(
+            &self,
+            request: tonic::Request<
+                super::super::syndicode_economy_v1::GetCorporationRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<super::super::syndicode_economy_v1::Corporation>,
+            tonic::Status,
+        >;
         /// Queries buildings with optional filters and pagination.
         async fn query_buildings(
             &self,
@@ -1953,6 +1995,58 @@ pub mod economy_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
+                "/syndicode_interface_v1.EconomyService/GetCurrentCorporation" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetCurrentCorporationSvc<T: EconomyService>(pub Arc<T>);
+                    impl<
+                        T: EconomyService,
+                    > tonic::server::UnaryService<
+                        super::super::syndicode_economy_v1::GetCorporationRequest,
+                    > for GetCurrentCorporationSvc<T> {
+                        type Response = super::super::syndicode_economy_v1::Corporation;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::super::syndicode_economy_v1::GetCorporationRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as EconomyService>::get_current_corporation(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = GetCurrentCorporationSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/syndicode_interface_v1.EconomyService/QueryBuildings" => {
                     #[allow(non_camel_case_types)]
                     struct QueryBuildingsSvc<T: EconomyService>(pub Arc<T>);

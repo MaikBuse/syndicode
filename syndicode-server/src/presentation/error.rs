@@ -3,7 +3,8 @@ use std::fmt::Display;
 use syndicode_proto::syndicode_interface_v1::{
     game_update::Update, ActionFailedResponse, GameUpdate,
 };
-use tonic::Status;
+use tonic::{Code, Status};
+use tonic_types::{ErrorDetails, StatusExt};
 
 use crate::application::error::ApplicationError;
 
@@ -26,7 +27,7 @@ pub(super) enum PresentationError {
     NotFound,
 
     /// Some entity that we attempted to create already exists.
-    AlreadyExists,
+    AlreadyExists { field: String, description: String },
 
     /// The caller does not have permission to execute the specified operation.
     PermissionDenied,
@@ -69,11 +70,21 @@ impl From<ApplicationError> for PresentationError {
             | ApplicationError::EmailInvalid(_)
             | ApplicationError::UserNameTooLong(_)
             | ApplicationError::UserNameTooShort(_)
-            | ApplicationError::CorporationNameAlreadyTaken
             | ApplicationError::CorporationNameTooShort(_)
             | ApplicationError::CorporationNameTooLong(_)
-            | ApplicationError::VerificationCodeFalse
-            | ApplicationError::UniqueConstraint => Self::InvalidArgument(err.to_string()),
+            | ApplicationError::VerificationCodeFalse => Self::InvalidArgument(err.to_string()),
+            ApplicationError::UserNameAlreadyTaken => Self::AlreadyExists {
+                field: "user_name".to_string(),
+                description: err.to_string(),
+            },
+            ApplicationError::CorporationNameAlreadyTaken => Self::AlreadyExists {
+                field: "corporation_name".to_string(),
+                description: err.to_string(),
+            },
+            ApplicationError::EmailInUse => Self::AlreadyExists {
+                field: "email".to_string(),
+                description: err.to_string(),
+            },
             ApplicationError::UserInactive => {
                 Self::FailedPrecondition("The user is inactive".to_string())
             }
@@ -85,8 +96,7 @@ impl From<ApplicationError> for PresentationError {
             }
             ApplicationError::Unauthorized => Self::PermissionDenied,
             ApplicationError::Limitation(err) => Self::ResourceExhausted(err.to_string()),
-            ApplicationError::Database(_)
-            | ApplicationError::Queue(_)
+            ApplicationError::Queue(_)
             | ApplicationError::Pull(_)
             | ApplicationError::VerificationSendable(_)
             | ApplicationError::Sqlx(_)
@@ -105,8 +115,8 @@ impl Display for PresentationError {
             }
             Self::DeadlineExceeded => write!(f, "Deadline expired before operation could complete"),
             Self::NotFound => write!(f, "Some requested entity was not found"),
-            Self::AlreadyExists => {
-                write!(f, "Some entity that we attempted to create already exists")
+            Self::AlreadyExists { description, .. } => {
+                write!(f, "{}", description)
             }
             Self::PermissionDenied => {
                 write!(
@@ -144,7 +154,13 @@ impl From<PresentationError> for Status {
             PresentationError::InvalidArgument(msg) => Self::invalid_argument(msg),
             PresentationError::DeadlineExceeded => Self::deadline_exceeded(String::new()),
             PresentationError::NotFound => Self::not_found(String::new()),
-            PresentationError::AlreadyExists => Self::already_exists(String::new()),
+            PresentationError::AlreadyExists { field, description } => {
+                let mut err_details = ErrorDetails::new();
+
+                err_details.add_bad_request_violation(field, description.clone());
+
+                Self::with_error_details(Code::AlreadyExists, description, err_details)
+            }
             PresentationError::PermissionDenied => Self::permission_denied(String::new()),
             PresentationError::ResourceExhausted(msg) => Self::resource_exhausted(msg),
             PresentationError::FailedPrecondition(msg) => Self::failed_precondition(msg),

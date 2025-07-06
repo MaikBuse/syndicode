@@ -6,6 +6,9 @@ import "economy/v1/economy.proto";
 
 // EconomyService provides methods for querying economy-related data.
 service EconomyService {
+    // Request to fetch corporation data.
+    rpc GetCurrentCorporation(syndicode_economy_v1.GetCorporationRequest) returns(syndicode_economy_v1.Corporation);
+
   // Queries buildings with optional filters and pagination.
   rpc QueryBuildings(syndicode_economy_v1.QueryBuildingsRequest) returns (syndicode_economy_v1.QueryBuildingsResponse);
 }

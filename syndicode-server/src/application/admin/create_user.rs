@@ -93,14 +93,10 @@ where
             status: UserStatus::Active,
         };
 
-        if let Err(err) = self.user_repo.create_user(&user).await {
-            match err {
-                RepositoryError::UniqueConstraint => {
-                    return Err(ApplicationError::UniqueConstraint)
-                }
-                _ => return Err(ApplicationError::from(err)),
-            }
-        };
+        self.user_repo
+            .create_user(&user)
+            .await
+            .map_err(ApplicationError::from)?;
 
         let action = QueuedActionPayload::builder()
             .request_uuid(request_uuid)

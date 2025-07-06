@@ -1,4 +1,5 @@
 use std::fmt::Display;
+
 pub type RepositoryResult<T> = std::result::Result<T, RepositoryError>;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -44,8 +45,11 @@ pub enum RepositoryError {
     #[error("Failed to retrieve geometry from center")]
     GeometryMissing,
 
-    #[error("The database returned with a violation of a unique/primary key constraint")]
-    UniqueConstraint,
+    #[error("The provided user name has already been taken")]
+    UserNameAlreadyTaken,
+
+    #[error("The provided email is already in use")]
+    EmailInUse,
 
     #[error("The database failed to return a result for the provided query")]
     NotFound,

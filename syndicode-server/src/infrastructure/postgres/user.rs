@@ -47,16 +47,19 @@ impl PgUserRepository {
         .execute(executor)
         .await
         {
-            tracing::error!("[Postgres] Failed to create user with error: {}", err);
+            if let sqlx::Error::Database(database_error) = &err {
+                if let Some(c) = database_error.constraint() {
+                    match c {
+                        "users_name_key" => return Err(RepositoryError::UserNameAlreadyTaken),
+                        "users_email_key" => return Err(RepositoryError::EmailInUse),
+                        _ => {
+                            return Err(anyhow::anyhow!("{}", database_error.to_string()).into());
+                        }
+                    }
+                }
+            }
 
-            match err {
-                sqlx::Error::Database(database_error) => match database_error.is_unique_violation()
-                {
-                    true => return Err(RepositoryError::UniqueConstraint),
-                    false => return Err(anyhow::anyhow!("{}", database_error.to_string()).into()),
-                },
-                _ => return Err(err.into()),
-            };
+            return Err(err.into());
         }
 
         Ok(())

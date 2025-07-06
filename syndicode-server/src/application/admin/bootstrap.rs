@@ -9,7 +9,6 @@ use crate::{
     },
     domain::{
         economy::corporation::model::{name::CorporationName, Corporation},
-        repository::RepositoryError,
         user::model::{
             email::UserEmail, name::UserName, password::UserPassword, role::UserRole,
             status::UserStatus, User,
@@ -81,14 +80,9 @@ where
                 Box::pin(async move {
                     let user_to_create = user.clone();
 
-                    if let Err(err) = ctx.create_user(&user_to_create).await {
-                        match err {
-                            RepositoryError::UniqueConstraint => {
-                                return Err(ApplicationError::UniqueConstraint)
-                            }
-                            _ => return Err(ApplicationError::from(err)),
-                        }
-                    }
+                    ctx.create_user(&user_to_create)
+                        .await
+                        .map_err(ApplicationError::from)?;
 
                     let corporation_name = CorporationName::new(corporation_name)?;
 

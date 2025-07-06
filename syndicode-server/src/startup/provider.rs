@@ -143,7 +143,7 @@ where
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
     pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
-    pub economy_presenter: EconomyPresenter<R, BUI>,
+    pub economy_presenter: EconomyPresenter<R, BUI, CRP>,
 }
 
 impl DefaultProvider {
@@ -378,6 +378,7 @@ impl DefaultProvider {
 
         let economy_presenter = EconomyPresenter::builder()
             .query_buildings_uc(query_buildings_uc.clone())
+            .get_corporation_uc(get_corporation_uc.clone())
             .limit(valkey.clone())
             .build();
 

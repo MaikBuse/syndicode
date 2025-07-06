@@ -12,14 +12,14 @@ function getJwtSecretKey() {
 
 export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get('auth_token')?.value;
+  const jwt = cookieStore.get('auth_token')?.value;
 
-  if (!token) {
+  if (!jwt) {
     return null;
   }
 
   try {
-    const { payload } = await jwtVerify(token, getJwtSecretKey());
+    const { payload } = await jwtVerify(jwt, getJwtSecretKey());
 
     return {
       uuid: payload.sub as string,
