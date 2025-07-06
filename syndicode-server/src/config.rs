@@ -230,7 +230,9 @@ impl ServerConfig {
             toml::from_str::<ServerConfig>(&content)
                 .with_context(|| format!("Failed to parse TOML from {CONFIG_FILE_PATH}"))?
         } else {
-            println!("Config file not found at {CONFIG_FILE_PATH}, creating with default values.");
+            tracing::info!(
+                "Config file not found at {CONFIG_FILE_PATH}, creating with default values."
+            );
             let default_config = ServerConfig::default();
             save_config(&default_config)?;
             default_config
@@ -401,7 +403,7 @@ pub fn save_config(config: &ServerConfig) -> anyhow::Result<()> {
         toml::to_string_pretty(config).context("Failed to serialize config to TOML")?;
     std::fs::write(CONFIG_FILE_PATH, toml_string)
         .with_context(|| format!("Failed to write config file to {CONFIG_FILE_PATH}"))?;
-    println!("Configuration saved to {CONFIG_FILE_PATH}");
+    tracing::info!("Configuration saved to {CONFIG_FILE_PATH}");
     Ok(())
 }
 
