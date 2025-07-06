@@ -125,7 +125,7 @@ where
     let market_uuid = parse_maybe_uuid(req.market_uuid, "market uuid").map_err(|status| *status)?;
 
     let sort_by = BusinessListingSortBy::try_from(req.sort_by)
-        .map_err(|err| Status::invalid_argument(format!("Failed to parse sort by: {}", err)))?;
+        .map_err(|err| Status::invalid_argument(format!("Failed to parse sort by: {err}")))?;
 
     let maybe_sort_by = match sort_by {
         BusinessListingSortBy::SortByUnspecified => None,
@@ -138,7 +138,7 @@ where
     };
 
     let sort_direction = SortDirection::try_from(req.sort_direction).map_err(|err| {
-        Status::invalid_argument(format!("Failed to parse sort direction: {}", err))
+        Status::invalid_argument(format!("Failed to parse sort direction: {err}"))
     })?;
 
     let maybe_domain_sort_direction = match sort_direction {

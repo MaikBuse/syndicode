@@ -868,7 +868,7 @@ pub fn generate_business_name(market_name: MarketName) -> String {
                     choose_or_default(GENERIC_SUFFIXES, &mut rng, "Systems")
                 )
             } else {
-                format!("{} {} {}", prefix, core, suffix) // CamelCase or similar
+                format!("{prefix} {core} {suffix}") // CamelCase or similar
             }
         }
         1 => {
@@ -885,7 +885,7 @@ pub fn generate_business_name(market_name: MarketName) -> String {
                     suffix
                 )
             } else {
-                format!("{} {} {}", adjective, core, suffix) // Space after adjective
+                format!("{adjective} {core} {suffix}") // Space after adjective
             }
         }
         2 => {
@@ -902,7 +902,7 @@ pub fn generate_business_name(market_name: MarketName) -> String {
                     suffix
                 )
             } else {
-                format!("{} {} {}", core1, core2, suffix) // Space between cores
+                format!("{core1} {core2} {suffix}") // Space between cores
             }
         }
         _ => {
@@ -914,7 +914,7 @@ pub fn generate_business_name(market_name: MarketName) -> String {
                 choose_or_default(GENERIC_CORES, &mut rng, "Flow").to_string()
             // Simple fallback
             } else {
-                format!("{} {}", prefix, core)
+                format!("{prefix} {core}")
             }
         }
     }

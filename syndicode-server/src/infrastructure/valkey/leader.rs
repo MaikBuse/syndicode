@@ -67,7 +67,7 @@ impl LeaderElector for ValkeyStore {
             }
             _ => Err(LeaderElectionError::LockReleaseFailed {
                 key: LOCK_KEY.to_string(),
-                details: format!("Unexpected response from release script: {}", result),
+                details: format!("Unexpected response from release script: {result}"),
             }),
         }
     }
@@ -109,7 +109,7 @@ impl LeaderElector for ValkeyStore {
             }
             _ => Err(LeaderElectionError::LockRefreshFailed {
                 key: LOCK_KEY.to_string(),
-                details: format!("Unexpected response from refresh script: {}", result),
+                details: format!("Unexpected response from refresh script: {result}"),
             }),
         }
     }

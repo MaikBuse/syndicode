@@ -67,8 +67,7 @@ impl EmailHandler {
         // We ignore the Result because writing to a String should not fail.
         let _ = write!(
             &mut output,
-            r#"<span style="display: inline-block; border: 1px solid #555; padding: 5px 8px; margin: 0 3px; background-color: #1a1a1a; color: #00ffff; font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; min-width: 20px; text-align: center;">{}</span>"#,
-            c
+            r#"<span style="display: inline-block; border: 1px solid #555; padding: 5px 8px; margin: 0 3px; background-color: #1a1a1a; color: #00ffff; font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; min-width: 20px; text-align: center;">{c}</span>"#
         );
         // Return the modified string buffer for the next iteration
         output
@@ -107,11 +106,11 @@ impl EmailHandler {
 <body>
     <div class="container">
         <div class="header">
-            <img src="{logo_url}" alt="Syndicode Logo" class="logo" width="160" height="160">
+            <img src="{LOGO_URL}" alt="Syndicode Logo" class="logo" width="160" height="160">
             <h2 style="color: #ff004f; margin: 0; font-weight: normal;">// Authentication Sequence Initiated //</h2>
         </div>
         <div class="banner">
-            <img src="{banner_url}" alt="Syndicode Network">
+            <img src="{BANNER_URL}" alt="Syndicode Network">
         </div>
         <div class="content">
             <h1>Access Protocol: Verify Identity</h1>
@@ -125,17 +124,12 @@ impl EmailHandler {
             <p>Stay vigilant,<br/>The Syndicode Network</p>
         </div>
         <div class="footer">
-            <img src="{footer_image_url}" alt="Syndicode Environment" style="max-width: 100%; height: auto; margin-bottom: 15px;">
+            <img src="{FOOTER_IMAGE_URL}" alt="Syndicode Environment" style="max-width: 100%; height: auto; margin-bottom: 15px;">
             <p>© {current_year} Syndicode. All rights reserved. Secure connection established.</p>
         </div>
     </div>
 </body>
-</html>"#,
-            logo_url = LOGO_URL,
-            banner_url = BANNER_URL,
-            footer_image_url = FOOTER_IMAGE_URL,
-            styled_code = styled_code,
-            current_year = current_year
+</html>"#
         )
     }
 }
@@ -150,7 +144,7 @@ impl VerificationSendable for EmailHandler {
     ) -> VerificationSendableResult<()> {
         let html_body = self.create_html_body(verification_code.get_code());
 
-        let recipient_mailbox: Mailbox = format!("{} <{}>", recipient_name, recipient_email)
+        let recipient_mailbox: Mailbox = format!("{recipient_name} <{recipient_email}>")
             .parse::<Mailbox>()
             .map_err(|err| VerificationSendableError::ParseRecipient(err.to_string()))?;
 

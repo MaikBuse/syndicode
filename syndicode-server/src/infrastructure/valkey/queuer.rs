@@ -19,8 +19,7 @@ impl ActionQueueable for ValkeyStore {
             .await
             .map_err(|err| {
                 QueueError::EnqueueFailed(format!(
-                    "Redis XADD command failed for stream '{}': {}",
-                    ACTION_STREAM_KEY, err
+                    "Redis XADD command failed for stream '{ACTION_STREAM_KEY}': {err}"
                 ))
             })
     }

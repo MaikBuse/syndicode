@@ -191,8 +191,7 @@ pub fn handle_acquire_listed_business(
     let final_business = state.ref_business(&business_uuid).ok_or_else(|| {
         // This should ideally be unreachable if the saga succeeded
         ActionError::InternalError(format!(
-            "CRITICAL: Business {} disappeared after successful saga execution!",
-            business_uuid
+            "CRITICAL: Business {business_uuid} disappeared after successful saga execution!"
         ))
     })?;
 
@@ -205,8 +204,7 @@ pub fn handle_acquire_listed_business(
         owning_corporation_uuid: final_business.owning_corporation_uuid.ok_or_else(|| {
             // This should also be unreachable
             ActionError::InternalError(format!(
-                "CRITICAL: Owner UUID missing for business {} after successful saga execution!",
-                business_uuid
+                "CRITICAL: Owner UUID missing for business {business_uuid} after successful saga execution!"
             ))
         })?,
         name: final_business.name.clone(),

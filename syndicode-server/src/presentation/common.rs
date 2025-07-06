@@ -10,7 +10,7 @@ pub(crate) fn parse_uuid(uuid_str: &str) -> Result<Uuid, Box<Status>> {
         Ok(uuid) => Ok(uuid),
         Err(err) => Err(Box::new(Status::new(
             Code::InvalidArgument,
-            format!("Failed to parse uuid from string: {}", err),
+            format!("Failed to parse uuid from string: {err}"),
         ))),
     }
 }
@@ -22,8 +22,7 @@ pub fn parse_maybe_uuid(
     if let Some(uuid_string) = maybe_uuid {
         let Ok(uuid) = Uuid::from_str(uuid_string.as_str()) else {
             return Err(Box::new(Status::invalid_argument(format!(
-                "Failed to parse {} as uuid",
-                context
+                "Failed to parse {context} as uuid"
             ))));
         };
 

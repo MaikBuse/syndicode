@@ -226,13 +226,12 @@ impl ServerConfig {
 
         let mut config = if path.exists() {
             let content = std::fs::read_to_string(path)
-                .with_context(|| format!("Failed to read config file at {}", CONFIG_FILE_PATH))?;
+                .with_context(|| format!("Failed to read config file at {CONFIG_FILE_PATH}"))?;
             toml::from_str::<ServerConfig>(&content)
-                .with_context(|| format!("Failed to parse TOML from {}", CONFIG_FILE_PATH))?
+                .with_context(|| format!("Failed to parse TOML from {CONFIG_FILE_PATH}"))?
         } else {
             println!(
-                "Config file not found at {}, creating with default values.",
-                CONFIG_FILE_PATH
+                "Config file not found at {CONFIG_FILE_PATH}, creating with default values."
             );
             let default_config = ServerConfig::default();
             save_config(&default_config)?;
@@ -403,8 +402,8 @@ pub fn save_config(config: &ServerConfig) -> anyhow::Result<()> {
     let toml_string =
         toml::to_string_pretty(config).context("Failed to serialize config to TOML")?;
     std::fs::write(CONFIG_FILE_PATH, toml_string)
-        .with_context(|| format!("Failed to write config file to {}", CONFIG_FILE_PATH))?;
-    println!("Configuration saved to {}", CONFIG_FILE_PATH);
+        .with_context(|| format!("Failed to write config file to {CONFIG_FILE_PATH}"))?;
+    println!("Configuration saved to {CONFIG_FILE_PATH}");
     Ok(())
 }
 

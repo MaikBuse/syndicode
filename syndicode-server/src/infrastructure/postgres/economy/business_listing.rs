@@ -148,7 +148,7 @@ impl PgBusinessListingRepository {
 
         let sort_direction = req.sort_direction.unwrap_or_default().to_string();
 
-        qb.push(format!(" ORDER BY {} {}", sort_column, sort_direction)); // Safe because sort_column comes from match
+        qb.push(format!(" ORDER BY {sort_column} {sort_direction}")); // Safe because sort_column comes from match
 
         // --- Add Pagination ---
         let limit = req.limit.unwrap_or(10).min(100);

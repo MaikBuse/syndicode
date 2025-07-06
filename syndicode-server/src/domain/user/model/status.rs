@@ -23,7 +23,7 @@ impl From<String> for UserStatus {
             "Pending" => Self::Pending,
             "Active" => Self::Active,
             "Suspended" => Self::Suspended,
-            _ => panic!("Failed to match '{}' to UserStatus", value),
+            _ => panic!("Failed to match '{value}' to UserStatus"),
         }
     }
 }

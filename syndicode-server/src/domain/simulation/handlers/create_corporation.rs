@@ -28,7 +28,7 @@ pub fn handle_create_corporation(
             .map(char::from)
             .collect();
 
-        corporation_name = CorporationName::unchecked(format!("{}-{}", corporation_name, suffix));
+        corporation_name = CorporationName::unchecked(format!("{corporation_name}-{suffix}"));
     }
 
     let corporation_name_string = corporation_name.to_string();

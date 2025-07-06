@@ -21,7 +21,7 @@ impl ValkeyStore {
         let result: StreamReadReply = conn
             .xread_options(&[ACTION_STREAM_KEY], &[">"], &opts)
             .await
-            .map_err(|err| PullError::ConnectionError(format!("XREADGROUP failed: {}", err)))?;
+            .map_err(|err| PullError::ConnectionError(format!("XREADGROUP failed: {err}")))?;
 
         let mut pulled_actions = Vec::new();
 
@@ -145,7 +145,7 @@ impl ActionPullable for ValkeyStore {
         let ack_count: i64 = conn
             .xack(ACTION_STREAM_KEY, ACTION_CONSUMER_GROUP, &ids) // Pass slice of &str
             .await
-            .map_err(|err| PullError::ConnectionError(format!("XACK failed: {}", err)))?;
+            .map_err(|err| PullError::ConnectionError(format!("XACK failed: {err}")))?;
 
         tracing::debug!(
             acked_count = ack_count,

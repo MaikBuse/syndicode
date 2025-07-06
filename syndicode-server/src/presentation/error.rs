@@ -111,12 +111,12 @@ impl Display for PresentationError {
             Self::Cancelled => write!(f, "The operation was cancelled"),
             Self::Unknown => write!(f, "Unknown error"),
             Self::InvalidArgument(msg) => {
-                write!(f, "Client specified an invalid argument: {}", msg)
+                write!(f, "Client specified an invalid argument: {msg}")
             }
             Self::DeadlineExceeded => write!(f, "Deadline expired before operation could complete"),
             Self::NotFound => write!(f, "Some requested entity was not found"),
             Self::AlreadyExists { description, .. } => {
-                write!(f, "{}", description)
+                write!(f, "{description}")
             }
             Self::PermissionDenied => {
                 write!(
@@ -124,12 +124,11 @@ impl Display for PresentationError {
                     "The caller does not have permission to execute the specified operation"
                 )
             }
-            Self::ResourceExhausted(msg) => write!(f, "Some resource has been exhausted: {}", msg),
+            Self::ResourceExhausted(msg) => write!(f, "Some resource has been exhausted: {msg}"),
             Self::FailedPrecondition(msg) => {
                 write!(
                     f,
-                    "The system is not in a state required for the operation's execution: {}",
-                    msg
+                    "The system is not in a state required for the operation's execution: {msg}"
                 )
             }
             Self::Aborted => write!(f, "The operation was aborted"),

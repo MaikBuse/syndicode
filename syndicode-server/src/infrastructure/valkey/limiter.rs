@@ -14,7 +14,7 @@ impl RateLimitEnforcer for ValkeyStore {
 
         let mut conn = self.conn.clone();
 
-        let key = format!("syndicode:rate_limit:{}:{}", category, ip_address);
+        let key = format!("syndicode:rate_limit:{category}:{ip_address}");
         let now_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("SystemTime before UNIX EPOCH")

@@ -16,7 +16,7 @@ pub const GAME_TICK_NOTIFICATION_CHANNEL: &str = "syndicode:game_tick";
 #[tonic::async_trait]
 impl OutcomeStoreWriter for ValkeyStore {
     async fn store_outcome(&self, request_uuid: Uuid, payload: &[u8]) -> OutcomeResult<()> {
-        let key = format!("{PAYLOAD_KEY}:{}", request_uuid);
+        let key = format!("{PAYLOAD_KEY}:{request_uuid}");
 
         let mut conn = self.conn.clone();
 
@@ -33,7 +33,7 @@ impl OutcomeStoreWriter for ValkeyStore {
 #[tonic::async_trait]
 impl OutcomeStoreReader for ValkeyStore {
     async fn retrieve_outcome(&self, request_uuid: Uuid) -> OutcomeResult<Option<Vec<u8>>> {
-        let key = format!("{PAYLOAD_KEY}:{}", request_uuid);
+        let key = format!("{PAYLOAD_KEY}:{request_uuid}");
 
         let mut conn = self.conn.clone();
 
@@ -46,7 +46,7 @@ impl OutcomeStoreReader for ValkeyStore {
     }
 
     async fn delete_outcome(&self, request_uuid: Uuid) -> OutcomeResult<()> {
-        let key = format!("{PAYLOAD_KEY}:{}", request_uuid);
+        let key = format!("{PAYLOAD_KEY}:{request_uuid}");
 
         let mut conn = self.conn.clone();
 
@@ -84,5 +84,5 @@ impl OutcomeNotifier for ValkeyStore {
 }
 
 pub fn create_notification_channel(user_uuid: Uuid) -> String {
-    format!("{CLIENT_KEY}:{}", user_uuid)
+    format!("{CLIENT_KEY}:{user_uuid}")
 }
