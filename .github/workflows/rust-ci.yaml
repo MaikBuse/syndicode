@@ -122,7 +122,7 @@ jobs:
           SQLX_OFFLINE: true
 
       - name: Start server in background
-        run: ./target/release/syndicode-server --restore ${{ env.SERVER_DB_DUMP_URL }} &> server.log &
+        run: ./target/release/syndicode-server --restore $SERVER_DB_DUMP_URL &> server.log &
         env:
           # Cargo
           RUST_LOG: "syndicode_client=debug,syndicode_server=info,info"
@@ -130,6 +130,7 @@ jobs:
 
           # Server Configuration
           SERVER_DISABLE_RATE_LIMITING: true
+          SERVER_DB_DUMP_URL: ${{ vars.SERVER_DB_DUMP_URL }}
 
           SERVER_SMTP_SERVER: ${{ secrets.SERVER_SMTP_SERVER }}
           SERVER_SMTP_USERNAME: ${{ secrets.SERVER_SMTP_USERNAME }}
