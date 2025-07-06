@@ -7,3 +7,8 @@ help:
 [group('npm')]
 run:
   npm run dev --prefix syndicode-web
+
+# Run linting and other checks
+[group('npm')]
+check:
+  npm run pre-deploy --prefix syndicode-web
