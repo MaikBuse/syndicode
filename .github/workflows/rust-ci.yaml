@@ -132,6 +132,9 @@ jobs:
           SERVER_DISABLE_RATE_LIMITING: true
           SERVER_DB_DUMP_URL: ${{ vars.SERVER_DB_DUMP_URL }}
 
+          # Intentiaoally leave the password empty
+          SERVER_VALKEY_PASSWORD: ""
+
           SERVER_SMTP_SERVER: ${{ secrets.SERVER_SMTP_SERVER }}
           SERVER_SMTP_USERNAME: ${{ secrets.SERVER_SMTP_USERNAME }}
           SERVER_SMTP_PASSWORD: ${{ secrets.SERVER_SMTP_PASSWORD }}
