@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.11.0](https://github.com/MaikBuse/syndicode/compare/v0.10.0...v0.11.0) (2025-07-06)
+
+
+### Features
+
+* add stricter parameters for clippy ([e9d602c](https://github.com/MaikBuse/syndicode/commit/e9d602cafad96349ef76c0532240f2a64e661303))
+* change licensing to CC BY-NC 4.0 ([f91068b](https://github.com/MaikBuse/syndicode/commit/f91068b0655fd82adaac1aedf55d86e909629ccc))
+* **client:** add clippy commands ([8e0b0e0](https://github.com/MaikBuse/syndicode/commit/8e0b0e0183825e15e13f93f41e9e1d451a2cf0ef))
+* **client:** always place config file in workspace root ([9761050](https://github.com/MaikBuse/syndicode/commit/9761050ce46193de8b23c79bdeed06eee5e90154))
+* color owned buildings on the map ([25fa01a](https://github.com/MaikBuse/syndicode/commit/25fa01a8f3cd9a6a2935860325ab98e83558f098))
+* forward ip address from client to server ([286761c](https://github.com/MaikBuse/syndicode/commit/286761c5ca9b17983da242d82c307cbd90b60300))
+* include more features in clippy fix ([f81b0dc](https://github.com/MaikBuse/syndicode/commit/f81b0dc7cf28dcdc995e06bd7f33354329b3d79c))
+* **proto:** move proto files to the project root in order to make it available for all modules ([225b803](https://github.com/MaikBuse/syndicode/commit/225b803264a41ba1754fc371ecea3a50837ef47f))
+* **server:** add fast path for health-checks in middleware ([2e22a32](https://github.com/MaikBuse/syndicode/commit/2e22a3250aaef9d80807daf77f755647675700fb))
+* **server:** add more informative error messages on login ([8d07d99](https://github.com/MaikBuse/syndicode/commit/8d07d9922cf8224391f28d28623d30103d0817f2))
+* **server:** add more initialization features ([23b2e9d](https://github.com/MaikBuse/syndicode/commit/23b2e9da6fb45ee2bfcf262bc7ea70496ca4a621))
+* **server:** change the logo to an svg ([d98d40e](https://github.com/MaikBuse/syndicode/commit/d98d40e7f8630ac42e68a60498a26c5f5f13b3c6))
+* **server:** get requesting ip address from alternative header when called by proxy ([3e35411](https://github.com/MaikBuse/syndicode/commit/3e35411f3d26325a6861cd35b790b7f251572ce2))
+* **server:** introducing business ownership ([e999f62](https://github.com/MaikBuse/syndicode/commit/e999f62ff3b21429b7cde907e3bdf44d09968604))
+* **server:** optimized processing by reducing round trips to the database ([2fe629b](https://github.com/MaikBuse/syndicode/commit/2fe629b4da67d9bf9df7a6b6bbbb0461dff8652d))
+* **server:** parse buildings from parquet file during bootstrap ([53c13c5](https://github.com/MaikBuse/syndicode/commit/53c13c59714383929ef27bf128e6c58711a1f4f7))
+* **server:** query building ownerships ([89a8807](https://github.com/MaikBuse/syndicode/commit/89a8807e19e41a625d252a8fe7d9842d82c4551f))
+* **server:** reduce default business count ([96fb4fb](https://github.com/MaikBuse/syndicode/commit/96fb4fb09d394b783862d1df4f528252d7be6e48))
+* **server:** return rate limit error as game update in stream ([ed578fb](https://github.com/MaikBuse/syndicode/commit/ed578fbcfe39c130e742ee3117c069d8bf764279))
+* **server:** separate building parquet by wards ([e1dc21e](https://github.com/MaikBuse/syndicode/commit/e1dc21e2f87e4b27bd473f718770807bf2a378b7))
+* **server:** use apache arrow for columnar import of parquet ([aa55de4](https://github.com/MaikBuse/syndicode/commit/aa55de43ceab87b4dac1d68d18987a9fde52e633))
+* **web:** add login, register and verify flow ([5bdbf2a](https://github.com/MaikBuse/syndicode/commit/5bdbf2a1dd9e1e499d8a5e124f9f253ed3efce80))
+* **web:** add stricter checks ([a432872](https://github.com/MaikBuse/syndicode/commit/a4328721c86e796fcaf6b521b06bca752f03b6a3))
+* **web:** implement authentication flows ([fd1a956](https://github.com/MaikBuse/syndicode/commit/fd1a956201d99f0c378426605dd1053289420ad1))
+* **web:** introducing syndicode-web ([e581e28](https://github.com/MaikBuse/syndicode/commit/e581e28255114002e59e17e61df48b87743b6d97))
+* **web:** style with cyberpunk theme ([26f18ac](https://github.com/MaikBuse/syndicode/commit/26f18ac2aa45b009d2d20f214be47c59568e1c5d))
+
+
+### Bug Fixes
+
+* **client:** init crypto provider only once during runs and tests ([6c7a6ac](https://github.com/MaikBuse/syndicode/commit/6c7a6acf7628dc6edade82484fde8d3c12be2441))
+* **client:** remove config unit tests ([9507f71](https://github.com/MaikBuse/syndicode/commit/9507f71bb8b848cd65bb00579580ce066aec7e5a))
+* **project:** configuration with env vars ([4300195](https://github.com/MaikBuse/syndicode/commit/4300195e1c78b39c698b4368c4d6252fb07611d8))
+* **server:** adjust data type to parquet schema ([2fd1daa](https://github.com/MaikBuse/syndicode/commit/2fd1daa76784fada440fece80ae760ba29d75f9c))
+* **server:** remove catch-up-logic for when tick processing fails ([f13af88](https://github.com/MaikBuse/syndicode/commit/f13af88ceeabde0daccf7962ee792c8ca1288f5f))
+* **server:** use postgis geometry types ([0aaa928](https://github.com/MaikBuse/syndicode/commit/0aaa928bd02cdf01ab980cb2a86ee9658f428d38))
+
 ## [0.10.0](https://github.com/MaikBuse/syndicode/compare/v0.9.9...v0.10.0) (2025-06-15)
 
 
