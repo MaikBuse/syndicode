@@ -53,13 +53,12 @@ pub fn load_config() -> Result<ClientConfig> {
 
     let mut config = if path.exists() {
         let content = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read config file at {}", path_str))?;
+            .with_context(|| format!("Failed to read config file at {path_str}"))?;
         toml::from_str::<ClientConfig>(&content)
-            .with_context(|| format!("Failed to parse TOML from {}", path_str))?
+            .with_context(|| format!("Failed to parse TOML from {path_str}"))?
     } else {
         println!(
-            "Config file not found at {}, creating with default values.",
-            path_str
+            "Config file not found at {path_str}, creating with default values."
         );
         let default_config = ClientConfig::default();
         save_config(&default_config)?;
@@ -92,7 +91,7 @@ pub fn save_config(config: &ClientConfig) -> Result<()> {
     let toml_string =
         toml::to_string_pretty(config).context("Failed to serialize config to TOML")?;
     fs::write(path, toml_string)
-        .with_context(|| format!("Failed to write config file to {}", path_str))?;
-    println!("Configuration saved to {}", path_str);
+        .with_context(|| format!("Failed to write config file to {path_str}"))?;
+    println!("Configuration saved to {path_str}");
     Ok(())
 }

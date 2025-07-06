@@ -67,7 +67,7 @@ impl GrpcHandler {
         token: String,
     ) -> anyhow::Result<()> {
         let key: MetadataKey<Ascii> = "authorization".parse()?;
-        let value: MetadataValue<Ascii> = format!("Bearer {}", token).parse()?;
+        let value: MetadataValue<Ascii> = format!("Bearer {token}").parse()?;
 
         metadata.insert(key, value);
 
@@ -85,7 +85,7 @@ impl GrpcHandler {
             Ok(response) => Ok(DomainResponse::builder()
                 .response_type(ResponseType::Success)
                 .code("OK".to_string())
-                .message(format!("{:#?}", response))
+                .message(format!("{response:#?}"))
                 .timestamp(OffsetDateTime::now_utc())
                 .build()),
             Err(status) => Ok(DomainResponse::builder()

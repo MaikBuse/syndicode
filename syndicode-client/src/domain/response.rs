@@ -21,7 +21,7 @@ where
         DomainResponse::builder()
             .response_type(value.is_ok().into())
             .code(code)
-            .message(format!("{:#?}", value))
+            .message(format!("{value:#?}"))
             .timestamp(OffsetDateTime::now_utc())
             .build()
     }

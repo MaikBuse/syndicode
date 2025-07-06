@@ -181,7 +181,7 @@ impl ResponseListWidget {
                 .count(),
             false => self.responses.len(),
         };
-        let title_text = format!("Responses ({})", response_count);
+        let title_text = format!("Responses ({response_count})");
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Double)

@@ -27,7 +27,7 @@ pub fn initialize_logging() -> anyhow::Result<()> {
     let log_path = exe_dir.join(LOG_FILE.clone());
 
     let log_file = std::fs::File::create(&log_path)
-        .with_context(|| format!("Failed to create log file at: {:?}", log_path))?;
+        .with_context(|| format!("Failed to create log file at: {log_path:?}"))?;
 
     let file_subscriber = tracing_subscriber::fmt::layer()
         .with_file(true) // Log the file name where the event occurred
