@@ -22,23 +22,27 @@ pub struct PostgresDatabase {
 
 impl PostgresDatabase {
     pub async fn new(config: Arc<ServerConfig>) -> anyhow::Result<Self> {
-        tracing::info!("Initializing postgres database connection");
+        tracing::info!("Initializing postgres database connection...");
 
-        let conn_string = format!(
-            "postgres://{}:{}@{}:{}/{}",
-            urlencoding::encode(config.postgres.user.as_str()),
-            urlencoding::encode(config.postgres.password.as_str()),
-            config.postgres.host,
-            config.postgres.port,
-            config.postgres.database
-        );
+        let db_url = build_postgres_db_url(config.clone());
 
         let pool = PoolOptions::new()
             .max_connections(config.postgres.max_connections)
-            .connect(&conn_string)
+            .connect(&db_url)
             .await
             .map_err(|err| anyhow::format_err!(err))?;
 
         Ok(Self { pool })
     }
+}
+
+pub(super) fn build_postgres_db_url(config: Arc<ServerConfig>) -> String {
+    format!(
+        "postgres://{}:{}@{}:{}/{}",
+        urlencoding::encode(config.postgres.user.as_str()),
+        urlencoding::encode(config.postgres.password.as_str()),
+        config.postgres.host,
+        config.postgres.port,
+        config.postgres.database
+    )
 }

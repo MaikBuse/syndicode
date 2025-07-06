@@ -1,4 +1,5 @@
 pub mod crypto;
+pub mod downloader;
 pub mod game_tick;
 pub mod init;
 pub mod leader;
@@ -8,5 +9,6 @@ pub mod outcome;
 pub mod processor;
 pub mod puller;
 pub mod queuer;
+pub mod restorer;
 pub mod uow;
 pub mod verification;

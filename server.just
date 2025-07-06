@@ -12,6 +12,11 @@ build:
 run:
   cargo run -p syndicode-server
 
+# Run the server crate and restore the database
+[group('cargo')]
+restore:
+  cargo run -p syndicode-server -- --restore $SERVER_DB_DUMP_URL
+
 # Run clippy
 [group('cargo')]
 clippy:

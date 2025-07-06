@@ -1,4 +1,5 @@
 mod application;
+mod cli;
 mod config;
 mod domain;
 mod infrastructure;

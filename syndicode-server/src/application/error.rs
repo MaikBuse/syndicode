@@ -1,6 +1,6 @@
 use super::ports::{
-    limiter::LimitationError, puller::PullError, queuer::QueueError,
-    verification::VerificationSendableError,
+    downloader::DownloadError, limiter::LimitationError, puller::PullError, queuer::QueueError,
+    restorer::RestoreError, verification::VerificationSendableError,
 };
 use crate::domain::repository::RepositoryError;
 
@@ -70,6 +70,12 @@ pub enum ApplicationError {
 
     #[error(transparent)]
     Limitation(#[from] LimitationError),
+
+    #[error(transparent)]
+    Restore(#[from] RestoreError),
+
+    #[error(transparent)]
+    Download(#[from] DownloadError),
 
     #[error(transparent)]
     Sqlx(#[from] sqlx::Error),

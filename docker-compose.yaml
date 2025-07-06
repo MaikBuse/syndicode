@@ -6,11 +6,11 @@ services:
     image: postgis/postgis:17-3.5
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${SERVER_POSTGRES_PORT}:5432"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${SERVER_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SERVER_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SERVER_POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -23,10 +23,10 @@ services:
     ports:
       - "6379:6379"
     environment:
-      VALKEY_PASSWORD: ${VALKEY_PASSWORD}
+      VALKEY_PASSWORD: ${SERVER_VALKEY_PASSWORD}
     volumes:
       - valkey_data:/data
-    command: ["valkey-server", "--requirepass", "${VALKEY_PASSWORD}"]
+    command: ["valkey-server", "--requirepass", "${SERVER_VALKEY_PASSWORD}"]
 
 volumes:
   postgres_data:

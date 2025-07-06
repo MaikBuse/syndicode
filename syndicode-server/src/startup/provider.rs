@@ -8,7 +8,6 @@ use crate::{
             login::LoginUseCase, register_user::RegisterUserUseCase,
             resend_verification::ResendVerificationUseCase, verify_user::VerifyUserUseCase,
         },
-        bootstrap::BootstrapOrchestrator,
         economy::{
             acquire_listed_business::AcquireListedBusinessUseCase,
             bootstrap::BootstrapEconomyUseCase, get_corporation::GetCorporationUseCase,
@@ -20,8 +19,10 @@ use crate::{
             query_business_listings::QueryBusinessListingsUseCase,
         },
         game::get_game_tick::GetGameTickUseCase,
+        init::InitializationOrchestrator,
         ports::{
             crypto::{JwtHandler, PasswordHandler},
+            downloader::BackupDownloader,
             game_tick::GameTickRepository,
             init::InitializationRepository,
             leader::LeaderElector,
@@ -30,6 +31,7 @@ use crate::{
             outcome::OutcomeStoreReader,
             processor::GameTickProcessable,
             queuer::ActionQueueable,
+            restorer::DatabaseRestorer,
             uow::UnitOfWork,
             verification::VerificationSendable,
         },
@@ -53,6 +55,7 @@ use crate::{
     infrastructure::{
         crypto::CryptoService,
         email::EmailHandler,
+        http::HttpBackupDownloader,
         postgres::{
             economy::{
                 building::PgBuildingService, building_ownership::PgBuildingOwnershipService,
@@ -68,6 +71,7 @@ use crate::{
             user::{PgUserRepository, PgUserService},
             PostgresDatabase,
         },
+        restorer::PgRestoreExecutor,
         valkey::ValkeyStore,
     },
     presentation::{
@@ -114,10 +118,31 @@ pub type DefaultProvider = AppProvider<
     PgBusinessListingService,
     PostgresMigrator,
     PgBuildingService,
+    HttpBackupDownloader,
+    PgRestoreExecutor,
 >;
 
-pub struct AppProvider<INI, G, P, J, Q, R, L, UOW, USR, UNT, CRP, RSR, GTR, VS, BL, M, BUI>
-where
+pub struct AppProvider<
+    INI,
+    G,
+    P,
+    J,
+    Q,
+    R,
+    L,
+    UOW,
+    USR,
+    UNT,
+    CRP,
+    RSR,
+    GTR,
+    VS,
+    BL,
+    M,
+    BUI,
+    DOW,
+    RES,
+> where
     INI: InitializationRepository + 'static,
     G: GameTickProcessable + 'static,
     P: PasswordHandler + 'static,
@@ -135,11 +160,13 @@ where
     BL: BusinessListingRepository + 'static,
     M: MigrationRunner + 'static,
     BUI: BuildingRepository + 'static,
+    DOW: BackupDownloader + 'static,
+    RES: DatabaseRestorer + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub leader_elector: Arc<L>,
     pub crypto: Arc<CryptoService>,
-    pub bootstrap_orchestrator: Arc<BootstrapOrchestrator<UOW, INI, P, M>>,
+    pub initialization_orchestrator: Arc<InitializationOrchestrator<UOW, INI, RES, DOW, P, M>>,
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
     pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
@@ -153,6 +180,8 @@ impl DefaultProvider {
         valkey: Arc<ValkeyStore>,
         user_channels: UserChannels,
     ) -> anyhow::Result<DefaultProvider> {
+        tracing::info!("Setting up the provider...");
+
         // Crypto service
         let crypto = Arc::new(CryptoService::new(config.clone())?);
 
@@ -161,6 +190,12 @@ impl DefaultProvider {
 
         // Email Handler
         let sendable = Arc::new(EmailHandler::new(config.clone())?);
+
+        // HTTP Downloader
+        let http_downloader = Arc::new(HttpBackupDownloader::new());
+
+        // Restorer
+        let pg_restorer = Arc::new(PgRestoreExecutor {});
 
         // Database Services
         let init_service = Arc::new(PgInitializationService::new(pg_db.clone()));
@@ -314,11 +349,13 @@ impl DefaultProvider {
 
         // Bootstrap
         let migrator = Arc::new(PostgresMigrator::new(pg_db.clone()));
-        let bootstrap_orchestrator = Arc::new(
-            BootstrapOrchestrator::builder()
+        let initialization_orchestrator = Arc::new(
+            InitializationOrchestrator::builder()
                 .config(config.clone())
                 .migrator(migrator)
                 .init_repo(init_service.clone())
+                .restorer(pg_restorer)
+                .downloader(http_downloader)
                 .bootstrap_admin_uc(bootstrap_admin_uc)
                 .bootstrap_economy_uc(bootstrap_economy_uc)
                 .build(),
@@ -385,7 +422,7 @@ impl DefaultProvider {
         Ok(AppProvider {
             leader_elector: valkey.clone(),
             crypto,
-            bootstrap_orchestrator,
+            initialization_orchestrator,
             game_presenter,
             admin_presenter,
             auth_presenter,
