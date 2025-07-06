@@ -109,36 +109,17 @@ jobs:
       - name: Start server in background
         run: ./target/release/syndicode-server &> server.log &
         env:
-          # Application Configuration
-          DISABLE_RATE_LIMITING: true
-          JWT_SECRET: "some-super-secret-string-for-ci"
-          ADMIN_EMAIL: "contact@maikbuse.com"
-          ADMIN_PASSWORD: "my-secret-password"
-          IP_ADDRESS_HEADER: "CF-Connecting-IP"
-          GAME_TICK_INTERVAL: 1000
-          LEADER_LOCK_REFRESH: 10000
-          LEADER_LOCK_TTL: 30000
-          NON_LEADER_RETRY: 5000
-
-          # Database Connection
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: secretpassword
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: syndicode
-
-          # Valkey Connection
-          VALKEY_HOST: localhost
-
-          # Debugging
+          # Cargo
           RUST_LOG: "syndicode_client=debug,syndicode_server=info,info"
           RUST_BACKTRACE: 1
 
-          # SMTP Secrets (these will be empty on PRs from forks)
-          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          # Server Configuration
+          SERVER_DISABLE_RATE_LIMITING: true
+
+          SERVER_SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SERVER_SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SERVER_SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SERVER_SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
 
       - name: Install gRPC Health Probe
         run: |
@@ -149,7 +130,7 @@ jobs:
       - name: Wait for server health (gRPC)
         run: |
           echo "Waiting for gRPC server to start..."
-          for i in {1..30}; do
+          for i in {1..600}; do
             if grpc_health_probe -addr=localhost:50051; then
               echo "gRPC Server is healthy!"
               exit 0
@@ -164,9 +145,8 @@ jobs:
       - name: Run Client Integration Tests
         run: cargo test -p syndicode-client -- --test-threads=1
         env:
-          SYNDICODE_SERVER_ADDRESS: http://[::1]:50051
-          SYNDICODE_USER_NAME: admin
-          SYNDICODE_USER_PASSWORD: my-secret-password
+          CLIENT_IS_LOCAL_TEST: true
+          CLIENT_SERVER_ADDRESS: http://[::1]:50051
 
       - name: Stop server
         if: always()

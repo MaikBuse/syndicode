@@ -35,10 +35,10 @@ pub struct AuthConfig {
 impl Default for AuthConfig {
     fn default() -> Self {
         Self {
-            jwt_secret: "some-super-secret-string".to_string(),
+            jwt_secret: "super-secret-jwt".to_string(),
             admin_email: "contact@maikbuse.com".to_string(),
             admin_username: "admin".to_string(),
-            admin_password: "my-secret-password".to_string(),
+            admin_password: "super-secret-password".to_string(),
             admin_corporation_name: "Shinkai Heavyworks".to_string(),
         }
     }
@@ -237,158 +237,158 @@ impl ServerConfig {
         };
 
         // GeneralConfig
-        if let Ok(val) = read_env_var("INSTANCE_ID") {
+        if let Ok(val) = read_env_var("SERVER_INSTANCE_ID") {
             config.general.instance_id = val;
         }
 
         // AuthConfig
-        if let Ok(val) = read_env_var("JWT_SECRET") {
+        if let Ok(val) = read_env_var("SERVER_JWT_SECRET") {
             config.auth.jwt_secret = val;
         }
-        if let Ok(val) = read_env_var("ADMIN_EMAIL") {
+        if let Ok(val) = read_env_var("SERVER_ADMIN_EMAIL") {
             config.auth.admin_email = val;
         }
-        if let Ok(val) = read_env_var("ADMIN_USERNAME") {
+        if let Ok(val) = read_env_var("SERVER_ADMIN_USERNAME") {
             config.auth.admin_email = val;
         }
-        if let Ok(val) = read_env_var("ADMIN_PASSWORD") {
+        if let Ok(val) = read_env_var("SERVER_ADMIN_PASSWORD") {
             config.auth.admin_password = val;
         }
-        if let Ok(val) = read_env_var("ADMIN_CORPORATION_NAME") {
+        if let Ok(val) = read_env_var("SERVER_ADMIN_CORPORATION_NAME") {
             config.auth.admin_corporation_name = val;
         }
 
         // BootstrapConfig
-        if let Ok(val) = int_from_env("BUSINESS_COUNT_X") {
+        if let Ok(val) = int_from_env("SERVER_BUSINESS_COUNT_X") {
             config.bootstrap.business_count_x = val;
         }
-        if let Ok(val) = int_from_env("BUSINESS_COUNT_Y") {
+        if let Ok(val) = int_from_env("SERVER_BUSINESS_COUNT_Y") {
             config.bootstrap.business_count_y = val;
         }
-        if let Ok(val) = read_env_var("BOUNDARY_MIN_LON") {
+        if let Ok(val) = read_env_var("SERVER_BOUNDARY_MIN_LON") {
             if let Ok(parsed) = val.parse() {
                 config.bootstrap.boundary_min_lon = parsed;
             }
         }
-        if let Ok(val) = read_env_var("BOUNDARY_MAX_LON") {
+        if let Ok(val) = read_env_var("SERVER_BOUNDARY_MAX_LON") {
             if let Ok(parsed) = val.parse() {
                 config.bootstrap.boundary_max_lon = parsed;
             }
         }
-        if let Ok(val) = read_env_var("BOUNDARY_MIN_LAT") {
+        if let Ok(val) = read_env_var("SERVER_BOUNDARY_MIN_LAT") {
             if let Ok(parsed) = val.parse() {
                 config.bootstrap.boundary_min_lat = parsed;
             }
         }
-        if let Ok(val) = read_env_var("BOUNDARY_MAX_LAT") {
+        if let Ok(val) = read_env_var("SERVER_BOUNDARY_MAX_LAT") {
             if let Ok(parsed) = val.parse() {
                 config.bootstrap.boundary_max_lat = parsed;
             }
         }
-        if let Ok(val) = read_env_var("SPREAD_SIGMA_METERS") {
+        if let Ok(val) = read_env_var("SERVER_SPREAD_SIGMA_METERS") {
             if let Ok(parsed) = val.parse() {
                 config.bootstrap.spread_sigma_meters = parsed;
             }
         }
-        if let Ok(val) = read_env_var("MAX_RADIUS_METERS") {
+        if let Ok(val) = read_env_var("SERVER_MAX_RADIUS_METERS") {
             if let Ok(parsed) = val.parse() {
                 config.bootstrap.max_radius_meters = parsed;
             }
         }
 
         // RateLimiterConfig
-        if let Ok(val) = read_env_var("DISABLE_RATE_LIMITTING") {
+        if let Ok(val) = read_env_var("SERVERF_DISABLE_RATE_LIMITTING") {
             if let Ok(parsed) = val.parse() {
                 config.rate_limiter.disable_rate_limitting = parsed;
             }
         }
-        if let Ok(val) = read_env_var("IP_ADDRESS_HEADER") {
+        if let Ok(val) = read_env_var("SERVER_IP_ADDRESS_HEADER") {
             config.rate_limiter.ip_address_header = val;
         }
-        if let Ok(val) = read_env_var("PROXY_API_KEY") {
+        if let Ok(val) = read_env_var("SERVER_PROXY_API_KEY") {
             config.rate_limiter.proxy_api_key = val;
         }
-        if let Ok(val) = int_from_env("MIDDLEWARE_MAX_REQ") {
+        if let Ok(val) = int_from_env("SERVER_MIDDLEWARE_MAX_REQ") {
             config.rate_limiter.middleware_max_req = val;
         }
-        if let Ok(val) = int_from_env("MIDDLEWARE_WINDOW_SECS") {
+        if let Ok(val) = int_from_env("SERVER_MIDDLEWARE_WINDOW_SECS") {
             config.rate_limiter.middleware_window_secs = val;
         }
-        if let Ok(val) = int_from_env("GAME_STREAM_MAX_REQ") {
+        if let Ok(val) = int_from_env("SERVER_GAME_STREAM_MAX_REQ") {
             config.rate_limiter.game_stream_max_req = val;
         }
-        if let Ok(val) = int_from_env("GAME_STREAM_WINDOW_SECS") {
+        if let Ok(val) = int_from_env("SERVER_GAME_STREAM_WINDOW_SECS") {
             config.rate_limiter.game_stream_window_secs = val;
         }
-        if let Ok(val) = int_from_env("AUTH_MAX_REQ") {
+        if let Ok(val) = int_from_env("SERVER_AUTH_MAX_REQ") {
             config.rate_limiter.auth_max_req = val;
         }
-        if let Ok(val) = int_from_env("AUTH_WINDOW_SECS") {
+        if let Ok(val) = int_from_env("SERVER_AUTH_WINDOW_SECS") {
             config.rate_limiter.auth_window_secs = val;
         }
-        if let Ok(val) = int_from_env("ADMIN_MAX_REQ") {
+        if let Ok(val) = int_from_env("SERVER_ADMIN_MAX_REQ") {
             config.rate_limiter.admin_max_req = val;
         }
-        if let Ok(val) = int_from_env("ADMIN_WINDOW_SECS") {
+        if let Ok(val) = int_from_env("SERVER_ADMIN_WINDOW_SECS") {
             config.rate_limiter.admin_window_secs = val;
         }
 
         // ProcessorConfig
-        if let Ok(val) = int_from_env("GAME_TICK_INTERVAL") {
+        if let Ok(val) = int_from_env("SERVER_GAME_TICK_INTERVAL") {
             config.processor.game_tick_interval = val;
         }
-        if let Ok(val) = int_from_env("LEADER_LOCK_TTL") {
+        if let Ok(val) = int_from_env("SERVER_LEADER_LOCK_TTL") {
             config.processor.leader_lock_ttl = val;
         }
-        if let Ok(val) = int_from_env("LEADER_LOCK_REFRESH_INTERVAL") {
+        if let Ok(val) = int_from_env("SERVER_LEADER_LOCK_REFRESH_INTERVAL") {
             config.processor.leader_lock_refresh_interval = Duration::from_millis(val);
         }
-        if let Ok(val) = int_from_env("NON_LEADER_ACQUISITION_RETRY_INTERNAL") {
+        if let Ok(val) = int_from_env("SERVER_NON_LEADER_ACQUISITION_RETRY_INTERNAL") {
             config.processor.non_leader_acquisition_retry_internal = Duration::from_millis(val);
         }
 
         // PostgresConfig
-        if let Ok(val) = int_from_env("POSTGRES_MAX_CONNECTIONS") {
+        if let Ok(val) = int_from_env("SERVER_POSTGRES_MAX_CONNECTIONS") {
             config.postgres.max_connections = val;
         }
-        if let Ok(val) = read_env_var("POSTGRES_USER") {
+        if let Ok(val) = read_env_var("SERVER_POSTGRES_USER") {
             config.postgres.user = val;
         }
-        if let Ok(val) = read_env_var("POSTGRES_PASSWORD") {
+        if let Ok(val) = read_env_var("SERVER_POSTGRES_PASSWORD") {
             config.postgres.password = val;
         }
-        if let Ok(val) = read_env_var("POSTGRES_HOST") {
+        if let Ok(val) = read_env_var("SERVER_POSTGRES_HOST") {
             config.postgres.host = val;
         }
-        if let Ok(val) = int_from_env("POSTGRES_PORT") {
+        if let Ok(val) = int_from_env("SERVER_POSTGRES_PORT") {
             config.postgres.port = val;
         }
-        if let Ok(val) = read_env_var("POSTGRES_DATABASE") {
+        if let Ok(val) = read_env_var("SERVER_POSTGRES_DATABASE") {
             config.postgres.database = val;
         }
 
         // ValkeyConfig
-        if let Ok(val) = read_env_var("VALKEY_HOST") {
+        if let Ok(val) = read_env_var("SERVER_VALKEY_HOST") {
             config.valkey.host = val;
         }
-        if let Ok(val) = read_env_var("VALKEY_PASSWORD") {
+        if let Ok(val) = read_env_var("SERVER_VALKEY_PASSWORD") {
             config.valkey.password = val;
         }
-        if let Ok(val) = int_from_env("VALKEY_BATCH_PULL_SIZE") {
+        if let Ok(val) = int_from_env("SERVER_VALKEY_BATCH_PULL_SIZE") {
             config.valkey.batch_pull_size = val;
         }
 
         // EmailConfig
-        if let Ok(val) = read_env_var("SENDER_EMAIL") {
+        if let Ok(val) = read_env_var("SERVER_SENDER_EMAIL") {
             config.email.sender_email = val;
         }
-        if let Ok(val) = read_env_var("SMTP_USERNAME") {
+        if let Ok(val) = read_env_var("SERVER_SMTP_USERNAME") {
             config.email.smtp_username = val;
         }
-        if let Ok(val) = read_env_var("SMTP_PASSWORD") {
+        if let Ok(val) = read_env_var("SERVER_SMTP_PASSWORD") {
             config.email.smtp_password = val;
         }
-        if let Ok(val) = read_env_var("SMTP_SERVER") {
+        if let Ok(val) = read_env_var("SERVER_SMTP_SERVER") {
             config.email.smtp_server = val;
         }
 

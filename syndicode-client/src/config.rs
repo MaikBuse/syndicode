@@ -21,8 +21,8 @@ impl Default for GrpcSettings {
     fn default() -> Self {
         GrpcSettings {
             server_address: "https://api.syndicode.dev".to_string(),
-            user_name: "".to_string(),
-            user_password: "".to_string(),
+            user_name: "admin".to_string(),
+            user_password: "super-secret-password".to_string(),
         }
     }
 }
@@ -64,18 +64,18 @@ pub fn load_config() -> Result<ClientConfig> {
     };
 
     // Override with env vars if present
-    if let Ok(is_local_test_string) = env::var("SYNDICODE_IS_LOCAL_TEST") {
+    if let Ok(is_local_test_string) = env::var("CLIENT_IS_LOCAL_TEST") {
         if let Ok(is_local_test) = is_local_test_string.parse::<bool>() {
             config.general.is_local_test = is_local_test;
         }
     }
-    if let Ok(addr) = env::var("SYNDICODE_SERVER_ADDRESS") {
+    if let Ok(addr) = env::var("CLIENT_SERVER_ADDRESS") {
         config.grpc.server_address = addr;
     }
-    if let Ok(user) = env::var("SYNDICODE_USER_NAME") {
+    if let Ok(user) = env::var("CLIENT_USER_NAME") {
         config.grpc.user_name = user;
     }
-    if let Ok(pass) = env::var("SYNDICODE_USER_PASSWORD") {
+    if let Ok(pass) = env::var("CLIENT_USER_PASSWORD") {
         config.grpc.user_password = pass;
     }
 

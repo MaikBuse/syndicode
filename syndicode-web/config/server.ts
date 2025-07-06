@@ -1,11 +1,11 @@
 import * as grpc from '@grpc/grpc-js';
 
-if (!process.env.PROXY_API_KEY) {
-  throw new Error("FATAL: PROXY_API_KEY environment variable is not set.");
+if (!process.env.WEB_PROXY_API_KEY) {
+  throw new Error("FATAL: WEB_PROXY_API_KEY environment variable is not set.");
 }
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("FATAL: JWT_SECRET environment variable is not set.");
+if (!process.env.WEB_JWT_SECRET) {
+  throw new Error("FATAL: WEB_JWT_SECRET environment variable is not set.");
 }
 
 // --- Determine gRPC Credentials Based on Environment ---
@@ -24,13 +24,13 @@ if (process.env.NODE_ENV === 'production') {
 
 export const serverConfig = {
   // Your gRPC service address
-  grpcUrl: process.env.GRPC_SERVER_URL || 'localhost:50051',
+  grpcUrl: process.env.WEB_GRPC_SERVER_URL || 'api.syndicode.dev',
 
   // The API key from the environment
-  proxyApiKey: process.env.PROXY_API_KEY,
+  proxyApiKey: process.env.WEB_PROXY_API_KEY || 'super-secret-api-key',
 
   // The dynamically chosen gRPC credentials object
   grpcCredentials: grpcCredentials,
 
-  jwt_secret: process.env.JWT_SECRET
+  jwt_secret: process.env.WEB_JWT_SECRET || 'super-secret-jwt'
 };
