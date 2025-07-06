@@ -6,6 +6,7 @@ use crate::domain::{
     },
     unit::model::Unit,
 };
+use bon::bon;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
@@ -34,7 +35,9 @@ pub struct GameState {
     pub unit_uuids_by_corporation_uuid: HashMap<Uuid, Vec<Uuid>>,
 }
 
+#[bon]
 impl GameState {
+    #[builder]
     pub fn build(
         last_processed_tick: i64,
         units_vec: Vec<Unit>,

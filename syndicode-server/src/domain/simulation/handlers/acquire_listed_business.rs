@@ -262,16 +262,16 @@ mod tests {
             asking_price: 7500,
         };
 
-        let state = GameState::build(
-            0,
-            vec![],
-            vec![buyer_corp.clone(), seller_corp.clone()],
-            vec![],
-            vec![business.clone()],
-            vec![listing],
-            vec![],
-            vec![],
-        );
+        let state = GameState::build()
+            .last_processed_tick(0)
+            .units_vec(vec![])
+            .corporations_vec(vec![buyer_corp.clone(), seller_corp.clone()])
+            .markets_vec(vec![])
+            .businesses_vec(vec![business.clone()])
+            .business_listings_vec(vec![listing])
+            .business_offers_vec(vec![])
+            .building_ownerships_vec(vec![])
+            .call();
 
         (
             state,

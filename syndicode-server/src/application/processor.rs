@@ -131,16 +131,16 @@ where
             .execute(current_game_tick)
             .await?;
 
-        let game_state = GameState::build(
-            current_game_tick,
-            units_vec,
-            corporations_vec,
-            markets_vec,
-            businesses_vec,
-            business_listings_vec,
-            business_offers_vec,
-            building_ownerships_vec,
-        );
+        let game_state = GameState::build()
+            .last_processed_tick(current_game_tick)
+            .units_vec(units_vec)
+            .corporations_vec(corporations_vec)
+            .markets_vec(markets_vec)
+            .businesses_vec(businesses_vec)
+            .business_listings_vec(business_listings_vec)
+            .business_offers_vec(business_offers_vec)
+            .building_ownerships_vec(building_ownerships_vec)
+            .call();
 
         tracing::info!(
             tick = current_game_tick,
