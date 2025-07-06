@@ -22,7 +22,7 @@ pub struct PostgresDatabase {
 
 impl PostgresDatabase {
     pub async fn new(config: Arc<ServerConfig>) -> anyhow::Result<Self> {
-        tracing::info!("Initializing postgres database connection");
+        tracing::info!("Initializing postgres database connection...");
 
         let db_url = build_postgres_db_url(config.clone());
 

@@ -49,6 +49,8 @@ where
     /// to `handle_leader_state` or `handle_non_leader_state` based on whether this
     /// instance is currently the leader.
     pub async fn run(self) {
+        tracing::info!("Startin leader loop election...");
+
         let mut is_leader = false;
         let mut next_tick_time: Option<Instant> = None;
 

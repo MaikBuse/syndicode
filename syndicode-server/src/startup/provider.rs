@@ -180,6 +180,8 @@ impl DefaultProvider {
         valkey: Arc<ValkeyStore>,
         user_channels: UserChannels,
     ) -> anyhow::Result<DefaultProvider> {
+        tracing::info!("Setting up the provider...");
+
         // Crypto service
         let crypto = Arc::new(CryptoService::new(config.clone())?);
 
@@ -193,7 +195,7 @@ impl DefaultProvider {
         let http_downloader = Arc::new(HttpBackupDownloader::new());
 
         // Restorer
-        let pg_restorer = Arc::new(PgRestoreExecutor);
+        let pg_restorer = Arc::new(PgRestoreExecutor {});
 
         // Database Services
         let init_service = Arc::new(PgInitializationService::new(pg_db.clone()));
@@ -347,7 +349,7 @@ impl DefaultProvider {
 
         // Bootstrap
         let migrator = Arc::new(PostgresMigrator::new(pg_db.clone()));
-        let bootstrap_orchestrator = Arc::new(
+        let initialization_orchestrator = Arc::new(
             InitializationOrchestrator::builder()
                 .config(config.clone())
                 .migrator(migrator)
@@ -420,7 +422,7 @@ impl DefaultProvider {
         Ok(AppProvider {
             leader_elector: valkey.clone(),
             crypto,
-            initialization_orchestrator: bootstrap_orchestrator,
+            initialization_orchestrator,
             game_presenter,
             admin_presenter,
             auth_presenter,
