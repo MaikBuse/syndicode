@@ -60,8 +60,8 @@ pub struct BootstrapConfig {
 impl Default for BootstrapConfig {
     fn default() -> Self {
         Self {
-            business_count_x: 100,
-            business_count_y: 100,
+            business_count_x: 10,
+            business_count_y: 10,
             boundary_min_lon: 139.6,
             boundary_max_lon: 139.9,
             boundary_min_lat: 35.5,
