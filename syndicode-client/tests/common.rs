@@ -134,12 +134,10 @@ where
                     );
                 }
                 Some(Err(status)) => panic!(
-                    "Stream returned an error while waiting for {}: {:?}",
-                    description, status
+                    "Stream returned an error while waiting for {description}: {status:?}"
                 ),
                 None => panic!(
-                    "Stream closed unexpectedly while waiting for {}",
-                    description
+                    "Stream closed unexpectedly while waiting for {description}"
                 ),
             }
         }
@@ -148,8 +146,7 @@ where
     match timeout(wait_duration, operation).await {
         Ok(result) => result,
         Err(_) => panic!(
-            "Timed out after {:?} waiting for {}",
-            wait_duration, description
+            "Timed out after {wait_duration:?} waiting for {description}"
         ),
     }
 }

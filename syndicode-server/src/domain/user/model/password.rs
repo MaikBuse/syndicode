@@ -56,8 +56,7 @@ mod tests {
         match result.err().unwrap() {
             ApplicationError::PasswordTooShort(_) => (),
             other_err => panic!(
-                "Expected ApplicationError::PasswordTooShort, got {:?}",
-                other_err
+                "Expected ApplicationError::PasswordTooShort, got {other_err:?}"
             ),
         }
     }
@@ -74,8 +73,7 @@ mod tests {
         match result.err().unwrap() {
             ApplicationError::PasswordTooLong(_) => (),
             other_err => panic!(
-                "Expected ApplicationError::PasswordTooLong, got {:?}",
-                other_err
+                "Expected ApplicationError::PasswordTooLong, got {other_err:?}"
             ),
         }
     }
