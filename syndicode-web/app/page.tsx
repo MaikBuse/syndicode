@@ -102,7 +102,7 @@ function App() {
     // Cleanup function: clear the timer if the component unmounts or viewState changes again
     return () => clearTimeout(debounceTimer);
 
-  }, [currentViewState, isAuthenticated, corporation]);
+  }, [currentViewState, isAuthenticated, corporation, ownedBuildingGmlId.size]);
 
   const layers = useMemo(() => [
     new MVTLayer({
@@ -114,8 +114,8 @@ function App() {
       extruded: true,
       pickable: true,
       autoHighlight: true,
-      getElevation: (d: any) => d.properties.cal_height_m,
-      getFillColor: (d: any) => {
+      getElevation: (d: { properties: { cal_height_m: number } }) => d.properties.cal_height_m,
+      getFillColor: (d: { properties: { gml_id: string } }) => {
         // Check if the building's ID is in our Set of owned IDs
         const isOwned = ownedBuildingGmlId.has(d.properties.gml_id);
         return isOwned ? [255, 0, 128, 255] : [150, 150, 150, 255]; // Owned: Pink, Not Owned: Grey

@@ -48,7 +48,7 @@ export async function loginAction(values: z.infer<typeof loginSchema>): Promise<
   try {
     const user = await authService.login(validatedFields.data, ipAddress);
     return { success: true, isInactive: false, user: user, message: "Login successful!" };
-  } catch (error: any) {
+  } catch (error) {
     if (isGrpcError(error)) {
       if (error.code === status.FAILED_PRECONDITION) {
         return { success: false, isInactive: true, user: null, message: "Login failed. Please verify your account." };
@@ -71,8 +71,11 @@ export async function registerAction(values: z.infer<typeof registerSchema>): Pr
   try {
     await authService.register(validatedFields.data, ipAddress);
     return { success: true, message: "Registration successful! Please check your email for a verification code." };
-  } catch (error: any) {
-    return { success: false, message: error.message };
+  } catch (error) {
+    const message = (typeof error === 'object' && error && 'message' in error)
+      ? String((error as { message: unknown }).message)
+      : 'Registration failed.';
+    return { success: false, message };
   }
 }
 
@@ -87,7 +90,7 @@ export async function verifyUserAction(values: z.infer<typeof verifySchema>): Pr
   try {
     await authService.verifyUser(validatedFields.data, ipAddress);
     return { success: true, message: "Verification successful! You can now log in." };
-  } catch (error) {
+  } catch (_) {
     return { success: false, message: "Verification failed. Please check the code and try again." };
   }
 }
@@ -102,7 +105,7 @@ export async function resendCodeAction(userName: string): Promise<ActionResponse
   try {
     await authService.resendVerificationEmail(userName, ipAddress);
     return { success: true, message: "A new verification code has been sent." };
-  } catch (error) {
+  } catch (_) {
     return { success: false, message: "Failed to resend code." };
   }
 }

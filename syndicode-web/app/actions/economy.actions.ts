@@ -34,10 +34,11 @@ export async function getCurrentCorporationAction(): Promise<ActionResponse<Corp
     const corporation = await economyService.getCurrentCorporation(ipAddress, jwt);
 
     return { success: true, data: corporation };
-  } catch (error: any) {
-
-    console.error("getCurrentCorporationAction failed:", error);
-    return { success: false, message: error.message };
+  } catch (error) {
+    const message = (typeof error === 'object' && error && 'message' in error)
+      ? String((error as { message: unknown }).message)
+      : 'Registration failed.';
+    return { success: false, message: message };
   }
 }
 

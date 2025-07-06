@@ -116,7 +116,7 @@ export function VerifyForm() {
         </form>
       </Form>
       <div className="mt-4 text-center text-sm">
-        Didn't receive a code?{' '}
+        Didn&apos;t receive a code?{' '}
         <Button
           variant="link"
           className="p-0 h-auto"
