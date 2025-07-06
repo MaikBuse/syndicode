@@ -41,4 +41,4 @@ clippy:
 # Apply the clippy suggested fixes
 [group('cargo')]
 clippy-fix:
-  cargo clippy --fix
+  cargo clippy --all-targets --all-features --fix -- -D warnings
