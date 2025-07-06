@@ -9,7 +9,7 @@ let clientInstance: AuthServiceClient | null = null;
 export const getAuthServiceClient = (): AuthServiceClient => {
   if (!clientInstance) {
     clientInstance = new AuthServiceClient(
-      serverConfig.grpcUrl,
+      serverConfig.grpcServerUrl,
       serverConfig.grpcCredentials,
       {
         interceptors: [contextMetadataInterceptor]

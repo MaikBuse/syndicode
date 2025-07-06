@@ -9,7 +9,7 @@ let clientInstance: EconomyServiceClient | null = null;
 export const getEconomyServiceClient = (): EconomyServiceClient => {
   if (!clientInstance) {
     clientInstance = new EconomyServiceClient(
-      serverConfig.grpcUrl,
+      serverConfig.grpcServerUrl,
       serverConfig.grpcCredentials,
       {
         interceptors: [contextMetadataInterceptor]

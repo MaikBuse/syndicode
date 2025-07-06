@@ -195,9 +195,9 @@ pub struct EmailConfig {
 
 impl Default for EmailConfig {
     fn default() -> Self {
-        let smtp_server = read_env_var("SMTP_SERVER").unwrap();
-        let smtp_username = read_env_var("SMTP_USERNAME").unwrap();
-        let smtp_password = read_env_var("SMTP_PASSWORD").unwrap();
+        let smtp_server = read_env_var("SERVER_SMTP_SERVER").unwrap();
+        let smtp_username = read_env_var("SERVER_SMTP_USERNAME").unwrap();
+        let smtp_password = read_env_var("SERVER_SMTP_PASSWORD").unwrap();
 
         Self {
             sender_email: "noreply@syndicode.dev".to_string(),

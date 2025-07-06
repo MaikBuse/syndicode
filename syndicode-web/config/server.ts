@@ -24,7 +24,7 @@ if (process.env.NODE_ENV === 'production') {
 
 export const serverConfig = {
   // Your gRPC service address
-  grpcUrl: process.env.WEB_GRPC_SERVER_URL || 'api.syndicode.dev',
+  grpcServerUrl: process.env.WEB_GRPC_SERVER_URL || 'api.syndicode.dev',
 
   // The API key from the environment
   proxyApiKey: process.env.WEB_PROXY_API_KEY || 'super-secret-api-key',
