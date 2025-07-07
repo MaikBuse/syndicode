@@ -1,6 +1,6 @@
-import { EconomyServiceClient } from './generated/interface/v1/economy_grpc_pb';
 import { contextMetadataInterceptor } from '@/infrastructure/grpc/interceptor';
 import { serverConfig } from '@/config/server';
+import { EconomyServiceClient } from './generated/interface/v1/economy_grpc_pb';
 
 // Create a singleton instance of the client
 // We use a lazy-initialized singleton to avoid creating the client on module load

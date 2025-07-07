@@ -2,9 +2,10 @@ import type { AuthRepository } from '@/domain/auth/auth-repository';
 import type { User, UserCredentials, UserRegistration, VerificationInfo } from '@/domain/auth/auth.types';
 import * as grpc from '@grpc/grpc-js';
 
-import { getAuthServiceClient, LoginRequest, RegisterRequest, VerifyUserRequest, ResendVerificationEmailRequest, GetCurrentUserRequest } from '@/lib/grpc/auth-client';
 import { CallContext } from './types';
 import { InvalidCredentialsError, UnauthenticatedError, UniqueConstraint, UnknownAuthError, UserInactiveError, VerificationCodeFalse } from '@/domain/auth/auth.error';
+import { getAuthServiceClient } from '@/lib/grpc/auth-client';
+import { GetCurrentUserRequest, LoginRequest, RegisterRequest, ResendVerificationEmailRequest, VerifyUserRequest } from '@/lib/grpc/generated/interface/v1/auth_pb';
 
 export class GrpcAuthRepository implements AuthRepository {
   private client = getAuthServiceClient();

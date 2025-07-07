@@ -90,7 +90,7 @@ export async function verifyUserAction(values: z.infer<typeof verifySchema>): Pr
   try {
     await authService.verifyUser(validatedFields.data, ipAddress);
     return { success: true, message: "Verification successful! You can now log in." };
-  } catch (_) {
+  } catch {
     return { success: false, message: "Verification failed. Please check the code and try again." };
   }
 }
@@ -105,7 +105,7 @@ export async function resendCodeAction(userName: string): Promise<ActionResponse
   try {
     await authService.resendVerificationEmail(userName, ipAddress);
     return { success: true, message: "A new verification code has been sent." };
-  } catch (_) {
+  } catch {
     return { success: false, message: "Failed to resend code." };
   }
 }
