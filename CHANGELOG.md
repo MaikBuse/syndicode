@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.12.0](https://github.com/MaikBuse/syndicode/compare/v0.11.0...v0.12.0) (2025-07-08)
+
+
+### Features
+
+* add logs ([61caf3a](https://github.com/MaikBuse/syndicode/commit/61caf3ac5aaf1438ffdee657fbd9406e17efcd58))
+* introducing database restore mechanism ([7a72d53](https://github.com/MaikBuse/syndicode/commit/7a72d53fe0d4e03f66bd80d22791ecbfe6554d48))
+
+
+### Bug Fixes
+
+* **ci:** database env vars ([9544ad8](https://github.com/MaikBuse/syndicode/commit/9544ad8e875058de96f6b4f498c3cb91f0690252))
+* **ci:** env names ([1e81365](https://github.com/MaikBuse/syndicode/commit/1e8136551bd1a8589963d96f5b8b7ed87a157197))
+* **ci:** env var reading ([75848fe](https://github.com/MaikBuse/syndicode/commit/75848fe3c968df2ab843edbd5fee1acc356e655a))
+* **ci:** explicitely set postgres version ([ec92902](https://github.com/MaikBuse/syndicode/commit/ec92902ea1fe42705027d585a798ff4975c9b72b))
+* **ci:** improve logging ([76d3aec](https://github.com/MaikBuse/syndicode/commit/76d3aec0667caeb6645d3063507cdbf287d24acb))
+* **ci:** server address on the client to localhost ([18865fb](https://github.com/MaikBuse/syndicode/commit/18865fbade381fd43a5cebeffab815d5be385608))
+* **ci:** set valkey password env ([5072c3c](https://github.com/MaikBuse/syndicode/commit/5072c3ca8f805dc0c641d8f21d6daaa050e09c25))
+* **server:** spelling ([7f61975](https://github.com/MaikBuse/syndicode/commit/7f61975baa60e5e673c361b17e66c871baa3754f))
+* **server:** stackoverflow crash ([60952b2](https://github.com/MaikBuse/syndicode/commit/60952b2cfbe2b6029b01550c16ff8e7dc9caa0fd))
+* **server:** use tracing instead of print ([5e1038e](https://github.com/MaikBuse/syndicode/commit/5e1038e0c74f42dd0eaa933a7c1aa6ede017a952))
+* **web:** prevent failthrough ([ecd9070](https://github.com/MaikBuse/syndicode/commit/ecd9070d9d2292e85ff57daf95a03d09a8579081))
+
 ## [0.11.0](https://github.com/MaikBuse/syndicode/compare/v0.10.0...v0.11.0) (2025-07-06)
 
 
