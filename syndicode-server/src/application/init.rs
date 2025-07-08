@@ -56,7 +56,7 @@ where
                 let stream = self.downloader.download(url).await?;
 
                 tracing::info!("Restoring database...");
-                self.restorer.restore(self.config.clone(), stream).await?;
+                self.restorer.restore(stream).await?;
             }
             None => {
                 tracing::info!("Bootstrapping database...");

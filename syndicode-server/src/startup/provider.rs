@@ -195,7 +195,7 @@ impl DefaultProvider {
         let http_downloader = Arc::new(HttpBackupDownloader::new());
 
         // Restorer
-        let pg_restorer = Arc::new(PgRestoreExecutor {});
+        let pg_restorer = Arc::new(PgRestoreExecutor::new(config.clone()));
 
         // Database Services
         let init_service = Arc::new(PgInitializationService::new(pg_db.clone()));

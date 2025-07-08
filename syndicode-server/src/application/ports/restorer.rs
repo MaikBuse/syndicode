@@ -1,9 +1,5 @@
-use std::sync::Arc;
-
 use tokio::io::AsyncRead;
 use tonic::async_trait;
-
-use crate::config::ServerConfig;
 
 #[derive(thiserror::Error, Debug)]
 pub enum RestoreError {
@@ -22,9 +18,5 @@ pub type RestoreResult<T> = Result<T, RestoreError>;
 /// Readable stream of data to perform a database restore.
 #[async_trait]
 pub trait DatabaseRestorer: Send + Sync {
-    async fn restore(
-        &self,
-        config: Arc<ServerConfig>,
-        data_stream: Box<dyn AsyncRead + Unpin + Send>,
-    ) -> RestoreResult<()>;
+    async fn restore(&self, data_stream: Box<dyn AsyncRead + Unpin + Send>) -> RestoreResult<()>;
 }
