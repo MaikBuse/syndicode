@@ -74,7 +74,7 @@ impl Default for BootstrapConfig {
 
 #[derive(Builder, Serialize, Deserialize, Debug, Clone)]
 pub struct RateLimiterConfig {
-    pub disable_rate_limitting: bool,
+    pub disable_rate_limiting: bool,
     pub ip_address_header: String,
     pub proxy_api_key: String,
     pub middleware_max_req: usize,
@@ -90,7 +90,7 @@ pub struct RateLimiterConfig {
 impl Default for RateLimiterConfig {
     fn default() -> Self {
         Self {
-            disable_rate_limitting: false,
+            disable_rate_limiting: false,
             ip_address_header: "CF-Connecting-IP".to_string(),
             proxy_api_key: "super-secret-api-key".to_string(),
             middleware_max_req: 150,
@@ -299,9 +299,9 @@ impl ServerConfig {
         }
 
         // RateLimiterConfig
-        if let Ok(val) = read_env_var("SERVERF_DISABLE_RATE_LIMITTING") {
+        if let Ok(val) = read_env_var("SERVER_DISABLE_RATE_LIMITING") {
             if let Ok(parsed) = val.parse() {
-                config.rate_limiter.disable_rate_limitting = parsed;
+                config.rate_limiter.disable_rate_limiting = parsed;
             }
         }
         if let Ok(val) = read_env_var("SERVER_IP_ADDRESS_HEADER") {

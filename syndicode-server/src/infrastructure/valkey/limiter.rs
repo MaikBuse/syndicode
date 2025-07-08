@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[tonic::async_trait]
 impl RateLimitEnforcer for ValkeyStore {
     async fn check(&self, category: LimiterCategory, ip_address: &str) -> LimitationResult<()> {
-        if self.config.rate_limiter.disable_rate_limitting {
+        if self.config.rate_limiter.disable_rate_limiting {
             return Ok(());
         }
 
