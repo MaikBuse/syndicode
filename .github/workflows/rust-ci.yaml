@@ -173,7 +173,7 @@ jobs:
         run: cargo test -p syndicode-client -- --test-threads=1
         env:
           CLIENT_IS_LOCAL_TEST: true
-          CLIENT_SERVER_ADDRESS: http://[::1]:50051
+          CLIENT_SERVER_ADDRESS: http://localhost:50051
 
       - name: Stop server
         if: always()
