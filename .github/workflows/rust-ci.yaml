@@ -90,6 +90,9 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install PostgreSQL Client v17
         run: |
+          # Remove any existing PostgreSQL installations to avoid conflicts
+          sudo apt-get remove -y postgresql-client-* || true
+          
           # Add the PostgreSQL GPG key and repository
           sudo apt-get update
           sudo apt-get install -y curl ca-certificates gnupg
@@ -99,10 +102,16 @@ jobs:
           # Update and install the client
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
-        
+          
+          # Force the system to use PostgreSQL 17 binaries
+          sudo update-alternatives --install /usr/bin/pg_restore pg_restore /usr/lib/postgresql/17/bin/pg_restore 100
+          sudo update-alternatives --install /usr/bin/psql psql /usr/lib/postgresql/17/bin/psql 100
+          sudo update-alternatives --install /usr/bin/pg_dump pg_dump /usr/lib/postgresql/17/bin/pg_dump 100
+          
           # Verify the installation
           which pg_restore
           pg_restore --version
+          echo "PostgreSQL 17 client tools installed successfully"
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
