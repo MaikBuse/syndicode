@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/MaikBuse/syndicode/compare/v0.12.0...v0.12.1) (2025-07-09)
+
+
+### Bug Fixes
+
+* **ci:** set working directory to config permissions ([a55310b](https://github.com/MaikBuse/syndicode/commit/a55310b7cb8a0edae9810fdcaa13abf35d93c7e2))
+
 ## [0.12.0](https://github.com/MaikBuse/syndicode/compare/v0.11.0...v0.12.0) (2025-07-08)
 
 
