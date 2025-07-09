@@ -39,11 +39,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user
 RUN adduser --disabled-password --gecos "" appuser
 
+# Create a directory for the application
+RUN mkdir /app && chown appuser:appuser /app
+
+# Set the working directory. Any subsequent RUN, CMD, or ENTRYPOINT
+# commands will be executed in this directory.
+WORKDIR /app
+
 # Copy the built binary
 COPY --from=builder /workspace/target/release/syndicode-server /usr/local/bin/server
 
+# Ensure the binary itself is owned correctly
 RUN chown appuser:appuser /usr/local/bin/server
 
+# Switch to the non-root user. This user now operates inside /app
 USER appuser
+
 EXPOSE 50051
 CMD ["server"]
