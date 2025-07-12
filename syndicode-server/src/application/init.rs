@@ -29,6 +29,7 @@ where
     downloader: Arc<DOW>,
     bootstrap_admin_uc: Arc<BootstrapAdminUseCase<UOW, P, INI>>,
     bootstrap_economy_uc: Arc<BootstrapEconomyUseCase<UOW, INI>>,
+    restore_url: Option<String>,
 }
 
 impl<UOW, INI, RES, DOW, P, M> InitializationOrchestrator<UOW, INI, RES, DOW, P, M>
@@ -40,7 +41,7 @@ where
     P: PasswordHandler,
     M: MigrationRunner,
 {
-    pub async fn run(&self, maybe_restore_url: Option<String>) -> ApplicationResult<()> {
+    pub async fn run(&self) -> ApplicationResult<()> {
         self.migrator.run_migration().await?;
 
         let is_initialized = self.init_repo.is_flag_set(FlagKey::Database).await?;
@@ -50,7 +51,7 @@ where
             return Ok(());
         }
 
-        match maybe_restore_url {
+        match self.restore_url.clone() {
             Some(url) => {
                 tracing::info!("Downloading database dump...");
                 let stream = self.downloader.download(url).await?;

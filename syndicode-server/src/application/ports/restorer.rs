@@ -1,3 +1,6 @@
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 use tokio::io::AsyncRead;
 use tonic::async_trait;
 
@@ -16,6 +19,7 @@ pub enum RestoreError {
 pub type RestoreResult<T> = Result<T, RestoreError>;
 
 /// Readable stream of data to perform a database restore.
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait DatabaseRestorer: Send + Sync {
     async fn restore(&self, data_stream: Box<dyn AsyncRead + Unpin + Send>) -> RestoreResult<()>;

@@ -15,7 +15,7 @@ use provider::AppProvider;
 use std::{sync::Arc, time::Duration};
 
 pub async fn start_server() -> anyhow::Result<()> {
-    let cli = Cli::parse();
+    let cli = Arc::new(Cli::parse());
 
     let config = Arc::new(ServerConfig::new()?);
 
@@ -27,18 +27,13 @@ pub async fn start_server() -> anyhow::Result<()> {
 
     let valkey_store = Arc::new(ValkeyStore::new(config.clone()).await?);
 
-    let provider = AppProvider::build_services(
-        config.clone(),
-        pg_db.clone(),
-        valkey_store.clone(),
-        user_channels.clone(),
-    )
-    .await?;
-
-    // Initializer
-    provider
-        .initialization_orchestrator
-        .run(cli.restore)
+    let provider = AppProvider::build_services()
+        .config(config.clone())
+        .cli(cli)
+        .pg_db(pg_db.clone())
+        .valkey(valkey_store.clone())
+        .user_channels(user_channels.clone())
+        .call()
         .await?;
 
     // Spawn leader loop
@@ -53,6 +48,7 @@ pub async fn start_server() -> anyhow::Result<()> {
         .game_tick_interval(Duration::from_millis(
             config.processor.game_tick_interval as u64,
         ))
+        .initialization_orchestrator(provider.initialization_orchestrator.clone())
         .build();
 
     tokio::spawn(leader_loop_manager.run());

@@ -1,3 +1,6 @@
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 use tokio::io::AsyncRead;
 use tonic::async_trait;
 
@@ -13,6 +16,7 @@ pub enum DownloadError {
 pub type DownloadResult<T> = Result<T, DownloadError>;
 
 /// Returns a readable stream of the backup data.
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait BackupDownloader: Send + Sync {
     async fn download(&self, source: String) -> DownloadResult<Box<dyn AsyncRead + Unpin + Send>>;

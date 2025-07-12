@@ -1,3 +1,6 @@
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 use std::fmt::Display;
 
 use crate::domain::repository::RepositoryResult;
@@ -18,6 +21,7 @@ impl Display for FlagKey {
     }
 }
 
+#[cfg_attr(test, automock)]
 #[tonic::async_trait]
 pub trait InitializationRepository: Send + Sync {
     async fn is_flag_set(&self, flag: FlagKey) -> RepositoryResult<bool>;

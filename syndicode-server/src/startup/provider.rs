@@ -41,6 +41,7 @@ use crate::{
             spawn_unit::SpawnUnitUseCase,
         },
     },
+    cli::Cli,
     config::ServerConfig,
     domain::{
         economy::{
@@ -81,6 +82,7 @@ use crate::{
         game::{user_channel_guard::UserChannels, GamePresenter},
     },
 };
+use bon::bon;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -173,9 +175,12 @@ pub struct AppProvider<
     pub economy_presenter: EconomyPresenter<R, BUI, CRP>,
 }
 
+#[bon]
 impl DefaultProvider {
+    #[builder]
     pub async fn build_services(
         config: Arc<ServerConfig>,
+        cli: Arc<Cli>,
         pg_db: Arc<PostgresDatabase>,
         valkey: Arc<ValkeyStore>,
         user_channels: UserChannels,
@@ -358,6 +363,7 @@ impl DefaultProvider {
                 .downloader(http_downloader)
                 .bootstrap_admin_uc(bootstrap_admin_uc)
                 .bootstrap_economy_uc(bootstrap_economy_uc)
+                .maybe_restore_url(cli.restore.clone())
                 .build(),
         );
 
