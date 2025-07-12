@@ -160,7 +160,7 @@ where
 
         match init_result {
             Ok(_) => {
-                tracing::info!("Initialization is complete. Proceeding with leader duties.");
+                tracing::debug!("Initialization is complete. Proceeding with leader duties.");
                 Ok(())
             }
             Err(_) => {
