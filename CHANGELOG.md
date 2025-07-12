@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.2](https://github.com/MaikBuse/syndicode/compare/v0.12.1...v0.12.2) (2025-07-12)
+
+
+### Bug Fixes
+
+* only run migration on elected leader to prevent multiple migration attempts ([ae7fb7a](https://github.com/MaikBuse/syndicode/commit/ae7fb7ac2cd92e29b63e3d4098a1984ed6b2e2f7))
+* set env vars for unit test ([3c66a7d](https://github.com/MaikBuse/syndicode/commit/3c66a7df8a482867adf8b3c01d5f0c4cdf54b823))
+
 ## [0.12.1](https://github.com/MaikBuse/syndicode/compare/v0.12.0...v0.12.1) (2025-07-09)
 
 
