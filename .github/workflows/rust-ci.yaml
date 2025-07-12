@@ -52,6 +52,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-debug-
       - name: Run Server Unit Tests
+        env:
+          SERVER_SMTP_SERVER: ""
+          SERVER_SMTP_USERNAME: ""
+          SERVER_SMTP_PASSWORD: ""
         run: cargo test -p syndicode-server
 
   integration-tests:
