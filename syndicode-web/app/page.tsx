@@ -32,7 +32,7 @@ const TOKYO_INITIAL_VIEW_STATE: ViewState = {
   padding: { top: 0, bottom: 0, left: 0, right: 0 },
 };
 
-const TILE_URL = 'https://syndicode-web-map-assets.s3.eu-central-1.amazonaws.com/tokyo-tiles/{z}/{x}/{y}.pbf';
+const TILE_URL = 'https://assets.syndicode.dev/tokyo-buildings/{z}/{x}/{y}.pbf';
 
 // Define a zoom level threshold to start querying for owned buildings.
 // This prevents fetching thousands of buildings when zoomed out.
