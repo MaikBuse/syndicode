@@ -204,8 +204,8 @@ function App() {
       new MVTLayer({
         id: 'buildings',
         data: TILE_URL,
-        minZoom: 10,
-        maxZoom: 16,
+        minZoom: 12,
+        maxZoom: 18,
         extruded: true,
         pickable: true,
         autoHighlight: true,
