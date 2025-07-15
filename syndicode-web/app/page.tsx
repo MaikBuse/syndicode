@@ -19,14 +19,14 @@ function DeckGLOverlay(props: DeckProps) {
 }
 
 const TOKYO_BOUNDS: [[number, number], [number, number]] = [
-  [139.3, 35.4], // Southwest coordinates
-  [140.1, 35.9]  // Northeast coordinates
+  [139.545306, 35.508716], // Southwest coordinates
+  [139.935272, 35.832124]  // Northeast coordinates
 ];
 
 const TOKYO_INITIAL_VIEW_STATE: ViewState = {
-  longitude: 139.6917,
-  latitude: 35.6895,
-  zoom: 12,
+  longitude: 139.740289,
+  latitude: 35.670420,
+  zoom: 15,
   pitch: 50,
   bearing: 0,
   padding: { top: 0, bottom: 0, left: 0, right: 0 },
@@ -109,7 +109,7 @@ function App() {
       id: 'buildings',
       data: TILE_URL,
       minZoom: 12,
-      maxZoom: 16,
+      maxZoom: 18,
       onTileError: () => { }, // Suppress edge tile errors
       extruded: true,
       pickable: true,
@@ -141,12 +141,15 @@ function App() {
         ref={mapRef}
         initialViewState={TOKYO_INITIAL_VIEW_STATE}
         // Update our tracked view state when the user moves the map
-        onMove={evt => setCurrentViewState(evt.viewState)}
+        onMove={evt => {
+          console.log('Current zoom level:', evt.viewState.zoom);
+          setCurrentViewState(evt.viewState);
+        }}
         mapStyle={mapStyle}
         style={{ width: '100%', height: '100%' }}
         maxBounds={TOKYO_BOUNDS}
-        minZoom={9}
-        maxZoom={19}
+        minZoom={12}
+        maxZoom={18}
       >
         <DeckGLOverlay
           layers={layers}
