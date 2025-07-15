@@ -113,13 +113,17 @@ export class GrpcAuthRepository implements AuthRepository {
         if (error) {
           switch (error.code) {
             case grpc.status.FAILED_PRECONDITION:
-              throw new UserInactiveError();
+              reject(new UserInactiveError());
+              return;
 
             case grpc.status.INVALID_ARGUMENT:
-              throw new InvalidCredentialsError();
+              reject(new InvalidCredentialsError());
+              return;
 
             default:
-              throw new UnknownAuthError();
+              console.error('Unexpected gRPC error code:', error.code, 'Message:', error.message);
+              reject(new UnknownAuthError(`Unexpected error code: ${error.code}, Message: ${error.message}`));
+              return;
           }
         }
 

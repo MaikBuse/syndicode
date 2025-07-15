@@ -9,10 +9,10 @@ import { useAnimationTime } from '@/hooks/use-animation-time';
 import { useTokyoBoundary } from '@/hooks/use-tokyo-boundary';
 import { useOwnedBuildings } from '@/hooks/use-owned-buildings';
 import { useMapLayers } from '@/hooks/use-map-layers';
-import { 
-  TOKYO_BOUNDS, 
-  TOKYO_INITIAL_VIEW_STATE, 
-  MAP_STYLE 
+import {
+  TOKYO_BOUNDS,
+  TOKYO_INITIAL_VIEW_STATE,
+  MAP_STYLE
 } from '@/lib/map/constants';
 
 function App() {
@@ -28,12 +28,11 @@ function App() {
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <AuthOverlay />
-      
+
       <Map
         ref={mapRef}
         initialViewState={TOKYO_INITIAL_VIEW_STATE}
         onMove={evt => {
-          console.log('Current zoom level:', evt.viewState.zoom);
           setCurrentViewState(evt.viewState);
         }}
         mapStyle={MAP_STYLE}
