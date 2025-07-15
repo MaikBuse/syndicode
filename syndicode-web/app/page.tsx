@@ -7,11 +7,26 @@ import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { DeckProps } from '@deck.gl/core';
 import { MVTLayer } from '@deck.gl/geo-layers';
 import { GeoJsonLayer } from '@deck.gl/layers';
+import type { FeatureCollection, Polygon } from 'geojson';
 import { AuthButton } from '@/components/auth/auth-button';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { toast } from 'sonner';
 import { useUserDataStore } from '@/stores/use_user_data_store';
 import { queryBuildingsAction } from './actions/economy.actions';
+
+// Type for Tokyo boundary properties based on generate_tokyo_boundary.py output
+interface TokyoBoundaryProperties {
+  buildings_analyzed: number;
+  total_corner_points: number;
+  points_used_for_hull: number;
+  alpha_value: number;
+  sampling_cell_size: number;
+  smoothing_tolerance: number;
+  buffer_distance: number;
+}
+
+// Type for the complete Tokyo boundary GeoJSON
+type TokyoBoundaryGeoJSON = FeatureCollection<Polygon, TokyoBoundaryProperties>;
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -36,10 +51,10 @@ const TOKYO_INITIAL_VIEW_STATE: ViewState = {
 const TILE_URL = 'https://assets.syndicode.dev/tokyo-buildings/{z}/{x}/{y}.pbf';
 
 // Import the generated Tokyo boundary
-const TOKYO_BOUNDARY = async () => {
+const TOKYO_BOUNDARY = async (): Promise<TokyoBoundaryGeoJSON | null> => {
   try {
     const response = await fetch('/data/tokyo-boundary.geojson');
-    return await response.json();
+    return await response.json() as TokyoBoundaryGeoJSON;
   } catch (error) {
     console.error('Failed to load Tokyo boundary:', error);
     return null;
@@ -66,7 +81,7 @@ function App() {
   const [time, setTime] = useState(0);
 
   // State for Tokyo boundary
-  const [tokyoBoundary, setTokyoBoundary] = useState<any>(null);
+  const [tokyoBoundary, setTokyoBoundary] = useState<TokyoBoundaryGeoJSON | null>(null);
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const corporation = useUserDataStore((state) => state.data?.corporation);
