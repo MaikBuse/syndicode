@@ -10,3 +10,6 @@ syndicode-client.log
 
 # server
 /server_config.toml
+
+# dotenv
+CLAUDE.md

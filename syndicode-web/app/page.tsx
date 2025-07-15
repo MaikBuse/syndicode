@@ -6,6 +6,7 @@ import type { ViewState } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { DeckProps } from '@deck.gl/core';
 import { MVTLayer } from '@deck.gl/geo-layers';
+import { GeoJsonLayer } from '@deck.gl/layers';
 import { AuthButton } from '@/components/auth/auth-button';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { toast } from 'sonner';
@@ -32,7 +33,18 @@ const TOKYO_INITIAL_VIEW_STATE: ViewState = {
   padding: { top: 0, bottom: 0, left: 0, right: 0 },
 };
 
-const TILE_URL = 'https://assets.syndicode.dev/tokyo-tiles/{z}/{x}/{y}.pbf';
+const TILE_URL = 'https://assets.syndicode.dev/tokyo-buildings/{z}/{x}/{y}.pbf';
+
+// Import the generated Tokyo boundary
+const TOKYO_BOUNDARY = async () => {
+  try {
+    const response = await fetch('/data/tokyo-boundary.geojson');
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to load Tokyo boundary:', error);
+    return null;
+  }
+};
 
 // Define a zoom level threshold to start querying for owned buildings.
 // This prevents fetching thousands of buildings when zoomed out.
@@ -50,8 +62,37 @@ function App() {
   // State to track which building IDs are owned by the user's corporation
   const [ownedBuildingGmlId, setOwnedBuildingGmlId] = useState<Set<string>>(new Set());
 
+  // Animation state for cyberpunk boundary effect
+  const [time, setTime] = useState(0);
+
+  // State for Tokyo boundary
+  const [tokyoBoundary, setTokyoBoundary] = useState<any>(null);
+
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const corporation = useUserDataStore((state) => state.data?.corporation);
+
+  // Load Tokyo boundary on component mount
+  useEffect(() => {
+    const loadTokyoBoundary = async () => {
+      try {
+        const boundary = await TOKYO_BOUNDARY();
+        setTokyoBoundary(boundary);
+      } catch (error) {
+        console.error('Failed to load Tokyo boundary:', error);
+      }
+    };
+    loadTokyoBoundary();
+  }, []);
+
+  // Animation loop for cyberpunk effects
+  useEffect(() => {
+    const animate = () => {
+      setTime(prev => prev + 0.01);
+      requestAnimationFrame(animate);
+    };
+    const animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, []);
 
   // Effect to fetch owned buildings when the map view changes
   useEffect(() => {
@@ -104,31 +145,88 @@ function App() {
 
   }, [currentViewState, isAuthenticated, corporation, ownedBuildingGmlId.size]);
 
-  const layers = useMemo(() => [
-    new MVTLayer({
-      id: 'buildings',
-      data: TILE_URL,
-      minZoom: 12,
-      maxZoom: 16,
-      onTileError: () => { }, // Suppress edge tile errors
-      extruded: true,
-      pickable: true,
-      autoHighlight: true,
-      getElevation: (d: { properties: { cal_height_m: number } }) => d.properties.cal_height_m,
-      getFillColor: (d: { properties: { gml_id: string } }) => {
-        // Check if the building's ID is in our Set of owned IDs
-        const isOwned = ownedBuildingGmlId.has(d.properties.gml_id);
-        return isOwned ? [255, 0, 128, 255] : [150, 150, 150, 255]; // Owned: Pink, Not Owned: Grey
-      },
-      // This is crucial. It tells Deck.gl to re-evaluate getFillColor
-      // whenever the `ownedBuildingIds` state changes.
-      updateTriggers: {
-        getFillColor: [ownedBuildingGmlId]
-      },
-      getLineColor: [60, 60, 60],
-      lineWidthMinPixels: 1,
-    })
-  ], [ownedBuildingGmlId]); // Re-create layers only when ownedBuildingIds changes
+  const layers = useMemo(() => {
+    const layersList = [];
+
+    // Add Tokyo boundary layers if data is loaded
+    if (tokyoBoundary) {
+      // Main Tokyo boundary layer
+      layersList.push(
+        new GeoJsonLayer({
+          id: 'tokyo-boundary',
+          data: tokyoBoundary,
+          pickable: true,
+          stroked: true,
+          filled: false,
+          lineWidthMinPixels: 3,
+          lineWidthMaxPixels: 8,
+          getLineColor: () => {
+            const pulse = Math.sin(time * 3) * 0.3 + 0.7;
+            return [0, 255, 255, Math.floor(255 * pulse)]; // Cyan with alpha pulse
+          },
+          getLineWidth: () => {
+            return 4 + Math.sin(time * 2) * 2; // Animated width
+          },
+          updateTriggers: {
+            getLineColor: [time],
+            getLineWidth: [time]
+          }
+        })
+      );
+
+      // Secondary glow layer for Tokyo boundary
+      layersList.push(
+        new GeoJsonLayer({
+          id: 'tokyo-boundary-glow',
+          data: tokyoBoundary,
+          pickable: false,
+          stroked: true,
+          filled: false,
+          lineWidthMinPixels: 6,
+          lineWidthMaxPixels: 12,
+          getLineColor: () => {
+            const pulse = Math.sin(time * 2.5 + Math.PI) * 0.2 + 0.3;
+            return [255, 0, 255, Math.floor(255 * pulse * 0.4)]; // Magenta glow
+          },
+          getLineWidth: () => {
+            return 8 + Math.sin(time * 1.5) * 3;
+          },
+          updateTriggers: {
+            getLineColor: [time],
+            getLineWidth: [time]
+          }
+        })
+      );
+    }
+
+    // Buildings layer
+    layersList.push(
+      new MVTLayer({
+        id: 'buildings',
+        data: TILE_URL,
+        minZoom: 10,
+        maxZoom: 16,
+        extruded: true,
+        pickable: true,
+        autoHighlight: true,
+        getElevation: (d: { properties: { cal_height_m: number } }) => d.properties.cal_height_m,
+        getFillColor: (d: { properties: { gml_id: string } }) => {
+          // Check if the building's ID is in our Set of owned IDs
+          const isOwned = ownedBuildingGmlId.has(d.properties.gml_id);
+          return isOwned ? [255, 0, 128, 255] : [150, 150, 150, 255]; // Owned: Pink, Not Owned: Grey
+        },
+        // This is crucial. It tells Deck.gl to re-evaluate getFillColor
+        // whenever the `ownedBuildingIds` state changes.
+        updateTriggers: {
+          getFillColor: [ownedBuildingGmlId]
+        },
+        getLineColor: [60, 60, 60],
+        lineWidthMinPixels: 1,
+      })
+    );
+
+    return layersList;
+  }, [ownedBuildingGmlId, time, tokyoBoundary]); // Re-create layers when owned buildings, animation time, or Tokyo boundary change
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
