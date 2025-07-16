@@ -38,6 +38,7 @@ pub struct BusinessDetails {
     pub market_uuid: Uuid,
     pub operational_expenses: i64,
     pub headquarter_building_uuid: Uuid,
+    pub headquarter_building_gml_id: String,
 }
 
 #[async_trait]

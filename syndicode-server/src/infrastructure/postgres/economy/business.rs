@@ -144,11 +144,13 @@ impl PgBusinessRepository {
                 b.market_uuid,
                 b.operational_expenses,
                 b.headquarter_building_uuid,
+                bui.gml_id AS headquarter_building_gml_id,
                 m.volume AS market_volume
             FROM businesses b
             JOIN markets m ON b.market_uuid = m.uuid AND m.game_tick = "#,
         );
         qb.push_bind(game_tick);
+        qb.push(" JOIN buildings bui ON b.headquarter_building_uuid = bui.uuid");
         qb.push(" WHERE b.game_tick = ");
         qb.push_bind(game_tick);
 

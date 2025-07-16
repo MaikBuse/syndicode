@@ -264,6 +264,7 @@ where
                     market_uuid: b.market_uuid.to_string(),
                     operational_expenses: b.operational_expenses,
                     headquarter_building_uuid: b.headquarter_building_uuid.to_string(),
+                    headquarter_building_gml_id: b.headquarter_building_gml_id.to_string(),
                 };
 
                 businesses.push(business);

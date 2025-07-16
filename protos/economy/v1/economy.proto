@@ -130,6 +130,7 @@ message BusinessDetails {
   string market_uuid = 4;
   int64 operational_expenses = 5;
   string headquarter_building_uuid = 6;
+  string headquarter_building_gml_id = 7;
 }
 
 // Response containing the list of matching business details.
