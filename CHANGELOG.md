@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.13.0](https://github.com/MaikBuse/syndicode/compare/v0.12.2...v0.13.0) (2025-07-16)
+
+
+### Features
+
+* add just commands to build and upload pbf files ([4d794bf](https://github.com/MaikBuse/syndicode/commit/4d794bf116503ee2f92d7fcaa2d39cbc53487ab3))
+* introducing headquarter buildings ([1fe2e6d](https://github.com/MaikBuse/syndicode/commit/1fe2e6de8cced1fd131d2a1a9f22ad38fd2f6bb5))
+* **server:** add building volume to database ([f91c29b](https://github.com/MaikBuse/syndicode/commit/f91c29bf4346b0cc2a074c4b5a08c2103c3610ba))
+* **server:** add gml id to query businesses request ([5d17018](https://github.com/MaikBuse/syndicode/commit/5d17018c7107807e1fe44224d824a4ef4e562099))
+* **server:** add owning business to query building request ([95c810b](https://github.com/MaikBuse/syndicode/commit/95c810bf069321bf4e22bebd6c8b10cd1ef8dc17))
+* **server:** introducing request to query businesses ([e2dbc85](https://github.com/MaikBuse/syndicode/commit/e2dbc856d6d3ac22bcb30773bfe4361b105de87f))
+* update TILE_URL to cdn url ([0d36c40](https://github.com/MaikBuse/syndicode/commit/0d36c407325b322ab9405e95cebbe086a12b5a55))
+* **web:** add boundary around the game area ([18de2c0](https://github.com/MaikBuse/syndicode/commit/18de2c00d01f066436cd65525478e6fad4ed2439))
+* **web:** add visual boundary around tokyo ([cdbecc3](https://github.com/MaikBuse/syndicode/commit/cdbecc311e96e9e2b148d5bff75af56f8efc41a8))
+* **web:** adjust zooms and starting camera position ([23f7960](https://github.com/MaikBuse/syndicode/commit/23f7960d230ee0b0035dadce7157d2d8e4f39753))
+* **web:** highlight owned businesses on map ([f13d4e5](https://github.com/MaikBuse/syndicode/commit/f13d4e5f523e4eb31d57f2352f5df835f4110406))
+
+
+### Bug Fixes
+
+* make logging less verbose ([18f117f](https://github.com/MaikBuse/syndicode/commit/18f117f2802f12c4ab63f2c8c52d7cf6149da2b1))
+* **server:** calculation of building volume ([24a5d98](https://github.com/MaikBuse/syndicode/commit/24a5d98a86793f2058d1087b7ae3d9a3787bcc79))
+* **server:** command to insert buildings into db ([a10d29d](https://github.com/MaikBuse/syndicode/commit/a10d29d8f7745f1dbc841a96a2a2cd049e5e3ec7))
+* **server:** error handling on login ([f0d02ba](https://github.com/MaikBuse/syndicode/commit/f0d02ba5cb9ae0cf0036a3f986166bd55725f799))
+* **server:** parameters to query businesses ([cab7d82](https://github.com/MaikBuse/syndicode/commit/cab7d820a14968be90d74265f4132be435734bb8))
+* **syndicode:** set cdn as tile url ([c23e075](https://github.com/MaikBuse/syndicode/commit/c23e0757ab127af7cdabe12ee2569fddfe609e85))
+* **web:** allign zoom levels ([88abc86](https://github.com/MaikBuse/syndicode/commit/88abc8663477dc41279fb20bb56f6ab384ad92a7))
+* **web:** regenerate proto files ([f1aacb6](https://github.com/MaikBuse/syndicode/commit/f1aacb6b155b69f9b7788a1fe68d0d9446f296b8))
+* **web:** remove unused viewstate ([6271a66](https://github.com/MaikBuse/syndicode/commit/6271a661460a91290b6cf624324d07328776ff2b))
+* **web:** type errors ([b842926](https://github.com/MaikBuse/syndicode/commit/b84292692e217f54f2f1f728567ac2e883c2cb2f))
+
 ## [0.12.2](https://github.com/MaikBuse/syndicode/compare/v0.12.1...v0.12.2) (2025-07-12)
 
 
