@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     owning_corporation_uuid UUID,
     name TEXT NOT NULL,
     operational_expenses BIGINT NOT NULL CHECK (operational_expenses >= 0),
-    headquarter_building_uuid NOT NULL,
+    headquarter_building_uuid UUID NOT NULL,
 
     PRIMARY KEY (game_tick, uuid)
 );
@@ -50,8 +50,6 @@ CREATE INDEX IF NOT EXISTS idx_businesses_uuid_game_tick ON businesses (uuid, ga
 CREATE INDEX IF NOT EXISTS idx_businesses_market_uuid_game_tick ON businesses (market_uuid, game_tick);
 -- Index for finding all businesses owned by a specific corporation at a specific tick
 CREATE INDEX IF NOT EXISTS idx_businesses_owner_uuid_game_tick ON businesses (owning_corporation_uuid, game_tick);
--- Create a GiST spatial index on the center point for fast location-based queries.
-CREATE INDEX IF NOT EXISTS idx_businesses_center_geom ON businesses USING GIST (center);
 
 -- Business Listing Table
 CREATE TABLE IF NOT EXISTS business_listings (

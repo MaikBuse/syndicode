@@ -7,7 +7,7 @@ import { DeckGLOverlay } from '@/components/map/deck-gl-overlay';
 import { AuthOverlay } from '@/components/map/auth-overlay';
 import { useAnimationTime } from '@/hooks/use-animation-time';
 import { useTokyoBoundary } from '@/hooks/use-tokyo-boundary';
-import { useOwnedBuildings } from '@/hooks/use-owned-buildings';
+import { useOwnedBusinesses } from '@/hooks/use-owned-businesses';
 import { useMapLayers } from '@/hooks/use-map-layers';
 import {
   TOKYO_BOUNDS,
@@ -22,8 +22,8 @@ function App() {
 
   const time = useAnimationTime();
   const tokyoBoundary = useTokyoBoundary();
-  const ownedBuildingGmlId = useOwnedBuildings(currentViewState, mapRef);
-  const layers = useMapLayers(ownedBuildingGmlId, time, tokyoBoundary);
+  const ownedBusinessGmlIds = useOwnedBusinesses();
+  const layers = useMapLayers(ownedBusinessGmlIds, time, tokyoBoundary);
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>

@@ -1,9 +1,25 @@
 import type { EconomyRepository } from '@/domain/economy/economy-repository';
-import type { Corporation, QueryBuildingsFilters, QueryBuildingsResult } from '@/domain/economy/economy.types';
+import type { 
+  Corporation, 
+  QueryBuildingsFilters, 
+  QueryBuildingsResult,
+  QueryBusinessesFilters,
+  QueryBusinessesResult,
+  BusinessSortBy,
+  SortDirection
+} from '@/domain/economy/economy.types';
 import { getEconomyServiceClient } from '@/lib/grpc/economy-client';
 import * as grpc from '@grpc/grpc-js';
-import { GetCorporationRequest, QueryBuildingsRequest, QueryBuildingsResponse } from '@/lib/grpc/generated/economy/v1/economy_pb';
-import { BuildingDetails } from '@/lib/grpc/generated/economy/v1/economy_pb';
+import { 
+  GetCorporationRequest, 
+  QueryBuildingsRequest, 
+  QueryBuildingsResponse,
+  QueryBusinessesRequest,
+  QueryBusinessesResponse,
+  BusinessSortBy as ProtoBusinessSortBy,
+} from '@/lib/grpc/generated/economy/v1/economy_pb';
+import { BuildingDetails, BusinessDetails } from '@/lib/grpc/generated/economy/v1/economy_pb';
+import { SortDirection as ProtoSortDirection } from '@/lib/grpc/generated/interface/v1/shared_pb';
 import { CallContext } from './types';
 import { UnknownAuthError } from '@/domain/auth/auth.error';
 import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
@@ -111,5 +127,101 @@ export class GrpcEconomyRepository implements EconomyRepository {
       })),
       totalCount: response.getTotalCount(),
     };
+  }
+
+  async queryBusinesses(filters: QueryBusinessesFilters, ipAddress: string, jwt: string): Promise<QueryBusinessesResult> {
+    const grpcRequest = new QueryBusinessesRequest();
+
+    if (filters.owningCorporationUuid) {
+      const uuidValue = new google_protobuf_wrappers_pb.StringValue();
+      uuidValue.setValue(filters.owningCorporationUuid);
+      grpcRequest.setOwningCorporationUuid(uuidValue);
+    }
+    if (filters.marketUuid) {
+      const marketUuidValue = new google_protobuf_wrappers_pb.StringValue();
+      marketUuidValue.setValue(filters.marketUuid);
+      grpcRequest.setMarketUuid(marketUuidValue);
+    }
+    if (filters.minOperationalExpenses != null) {
+      const minOpExpValue = new google_protobuf_wrappers_pb.Int64Value();
+      minOpExpValue.setValue(filters.minOperationalExpenses);
+      grpcRequest.setMinOperationalExpenses(minOpExpValue);
+    }
+    if (filters.maxOperationalExpenses != null) {
+      const maxOpExpValue = new google_protobuf_wrappers_pb.Int64Value();
+      maxOpExpValue.setValue(filters.maxOperationalExpenses);
+      grpcRequest.setMaxOperationalExpenses(maxOpExpValue);
+    }
+    if (filters.sortBy != null) {
+      grpcRequest.setSortBy(this.mapBusinessSortBy(filters.sortBy));
+    }
+    if (filters.sortDirection != null) {
+      grpcRequest.setSortDirection(this.mapSortDirection(filters.sortDirection));
+    }
+    if (filters.limit != null) {
+      const limitValue = new google_protobuf_wrappers_pb.Int64Value();
+      limitValue.setValue(filters.limit);
+      grpcRequest.setLimit(limitValue);
+    }
+    if (filters.offset != null) {
+      const offsetValue = new google_protobuf_wrappers_pb.Int64Value();
+      offsetValue.setValue(filters.offset);
+      grpcRequest.setOffset(offsetValue);
+    }
+
+    const metadata = new grpc.Metadata();
+    const customContext: CallContext = { ipAddress, jwt };
+    const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+      customContext: customContext,
+    };
+
+    const response: QueryBusinessesResponse = await new Promise((resolve, reject) => {
+      this.client.queryBusinesses(grpcRequest, metadata, callOptions, (error, response) => {
+        if (error) {
+          reject(error);
+        } else if (response) {
+          resolve(response);
+        } else {
+          reject(new Error("No response or error received from gRPC call."));
+        }
+      });
+    });
+
+    return {
+      businesses: response.getBusinessesList().map((b: BusinessDetails) => ({
+        businessUuid: b.getBusinessUuid(),
+        businessName: b.getBusinessName(),
+        owningCorporationUuid: b.getOwningCorporationUuid()?.getValue() || null,
+        marketUuid: b.getMarketUuid(),
+        operationalExpenses: b.getOperationalExpenses(),
+        headquarterBuildingUuid: b.getHeadquarterBuildingUuid(),
+        headquarterBuildingGmlId: b.getHeadquarterBuildingGmlId(),
+      })),
+      totalCount: response.getTotalCount(),
+    };
+  }
+
+  private mapBusinessSortBy(sortBy: BusinessSortBy): ProtoBusinessSortBy {
+    switch (sortBy) {
+      case BusinessSortBy.BUSINESS_NAME:
+        return ProtoBusinessSortBy.BUSINESS_NAME;
+      case BusinessSortBy.BUSINESS_OPERATION_EXPENSES:
+        return ProtoBusinessSortBy.BUSINESS_OPERATION_EXPENSES;
+      case BusinessSortBy.BUSINESS_MARKET_VOLUME:
+        return ProtoBusinessSortBy.BUSINESS_MARKET_VOLUME;
+      default:
+        return ProtoBusinessSortBy.BUSINESS_SORT_BY_UNSPECIFIED;
+    }
+  }
+
+  private mapSortDirection(sortDirection: SortDirection): ProtoSortDirection {
+    switch (sortDirection) {
+      case SortDirection.ASCENDING:
+        return ProtoSortDirection.ASCENDING;
+      case SortDirection.DESCENDING:
+        return ProtoSortDirection.DESCENDING;
+      default:
+        return ProtoSortDirection.UNSPECIFIED;
+    }
   }
 }

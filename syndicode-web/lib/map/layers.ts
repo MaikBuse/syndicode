@@ -55,7 +55,7 @@ export const createTokyoBoundaryGlowLayer = (
   });
 };
 
-export const createBuildingsLayer = (ownedBuildingGmlId: Set<string>) => {
+export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, time?: number) => {
   return new MVTLayer({
     id: 'buildings',
     data: TILE_URL,
@@ -66,13 +66,35 @@ export const createBuildingsLayer = (ownedBuildingGmlId: Set<string>) => {
     autoHighlight: true,
     getElevation: (d: { properties: BuildingProperties }) => d.properties.cal_height_m,
     getFillColor: (d: { properties: BuildingProperties }) => {
-      const isOwned = ownedBuildingGmlId.has(d.properties.gml_id);
-      return isOwned ? [255, 0, 128, 255] : [150, 150, 150, 255]; // Owned: Pink, Not Owned: Grey
+      const isBusinessHeadquarter = ownedBusinessGmlIds.has(d.properties.gml_id);
+      if (isBusinessHeadquarter && time !== undefined) {
+        // Animated neon gold with pulsing effect
+        const pulse = Math.sin(time * 4) * 0.2 + 0.8;
+        return [255, Math.floor(215 * pulse), 0, 255];
+      }
+      return isBusinessHeadquarter ? [255, 215, 0, 255] : [150, 150, 150, 255]; // Owned Business: Neon Gold, Not Owned: Grey
     },
     updateTriggers: {
-      getFillColor: [ownedBuildingGmlId]
+      getFillColor: [ownedBusinessGmlIds, time]
     },
-    getLineColor: [60, 60, 60],
+    getLineColor: (d: { properties: BuildingProperties }) => {
+      const isBusinessHeadquarter = ownedBusinessGmlIds.has(d.properties.gml_id);
+      if (isBusinessHeadquarter && time !== undefined) {
+        // Animated gold outline with pulsing effect
+        const pulse = Math.sin(time * 3) * 0.3 + 0.7;
+        return [255, Math.floor(223 * pulse), 0, 255];
+      }
+      return isBusinessHeadquarter ? [255, 223, 0] : [60, 60, 60]; // Gold outline for business headquarters
+    },
     lineWidthMinPixels: 1,
+    lineWidthMaxPixels: 3,
+    getLineWidth: (d: { properties: BuildingProperties }) => {
+      const isBusinessHeadquarter = ownedBusinessGmlIds.has(d.properties.gml_id);
+      return isBusinessHeadquarter ? 2 : 1; // Thicker outline for business headquarters
+    },
+    updateTriggers: {
+      getLineColor: [ownedBusinessGmlIds, time],
+      getFillColor: [ownedBusinessGmlIds, time]
+    },
   });
 };

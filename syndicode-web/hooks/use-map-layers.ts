@@ -7,7 +7,7 @@ import {
 } from '@/lib/map/layers';
 
 export const useMapLayers = (
-  ownedBuildingGmlId: Set<string>,
+  ownedBusinessGmlIds: Set<string>,
   time: number,
   tokyoBoundary: TokyoBoundaryGeoJSON | null
 ) => {
@@ -19,8 +19,8 @@ export const useMapLayers = (
       layersList.push(createTokyoBoundaryGlowLayer(tokyoBoundary, time));
     }
 
-    layersList.push(createBuildingsLayer(ownedBuildingGmlId));
+    layersList.push(createBuildingsLayer(ownedBusinessGmlIds, time));
 
     return layersList;
-  }, [ownedBuildingGmlId, time, tokyoBoundary]);
+  }, [ownedBusinessGmlIds, time, tokyoBoundary]);
 };

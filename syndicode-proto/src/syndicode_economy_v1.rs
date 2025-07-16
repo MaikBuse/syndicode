@@ -123,6 +123,8 @@ pub struct BusinessDetails {
     pub operational_expenses: i64,
     #[prost(string, tag = "6")]
     pub headquarter_building_uuid: ::prost::alloc::string::String,
+    #[prost(string, tag = "7")]
+    pub headquarter_building_gml_id: ::prost::alloc::string::String,
 }
 /// Response containing the list of matching business details.
 #[derive(Clone, PartialEq, ::prost::Message)]
