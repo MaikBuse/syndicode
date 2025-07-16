@@ -2279,7 +2279,8 @@ proto.syndicode_economy_v1.BusinessDetails.toObject = function(includeInstance, 
     owningCorporationUuid: (f = msg.getOwningCorporationUuid()) && google_protobuf_wrappers_pb.StringValue.toObject(includeInstance, f),
     marketUuid: jspb.Message.getFieldWithDefault(msg, 4, ""),
     operationalExpenses: jspb.Message.getFieldWithDefault(msg, 5, 0),
-    headquarterBuildingUuid: jspb.Message.getFieldWithDefault(msg, 6, "")
+    headquarterBuildingUuid: jspb.Message.getFieldWithDefault(msg, 6, ""),
+    headquarterBuildingGmlId: jspb.Message.getFieldWithDefault(msg, 7, "")
   };
 
   if (includeInstance) {
@@ -2340,6 +2341,10 @@ proto.syndicode_economy_v1.BusinessDetails.deserializeBinaryFromReader = functio
     case 6:
       var value = /** @type {string} */ (reader.readString());
       msg.setHeadquarterBuildingUuid(value);
+      break;
+    case 7:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setHeadquarterBuildingGmlId(value);
       break;
     default:
       reader.skipField();
@@ -2410,6 +2415,13 @@ proto.syndicode_economy_v1.BusinessDetails.serializeBinaryToWriter = function(me
   if (f.length > 0) {
     writer.writeString(
       6,
+      f
+    );
+  }
+  f = message.getHeadquarterBuildingGmlId();
+  if (f.length > 0) {
+    writer.writeString(
+      7,
       f
     );
   }
@@ -2540,6 +2552,24 @@ proto.syndicode_economy_v1.BusinessDetails.prototype.getHeadquarterBuildingUuid 
  */
 proto.syndicode_economy_v1.BusinessDetails.prototype.setHeadquarterBuildingUuid = function(value) {
   return jspb.Message.setProto3StringField(this, 6, value);
+};
+
+
+/**
+ * optional string headquarter_building_gml_id = 7;
+ * @return {string}
+ */
+proto.syndicode_economy_v1.BusinessDetails.prototype.getHeadquarterBuildingGmlId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 7, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.syndicode_economy_v1.BusinessDetails} returns this
+ */
+proto.syndicode_economy_v1.BusinessDetails.prototype.setHeadquarterBuildingGmlId = function(value) {
+  return jspb.Message.setProto3StringField(this, 7, value);
 };
 
 
