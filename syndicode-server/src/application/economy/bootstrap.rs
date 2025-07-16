@@ -356,7 +356,11 @@ pub fn load_buildings_from_parquet() -> anyhow::Result<Vec<Building>> {
                             }
                         };
 
-                        let volume = footprint.unsigned_area() * cal_height_m_arr.value(i);
+                        // Convert area from degrees² to m² (approximate conversion for Tokyo area)
+                        // 1 degree ≈ 111,000 meters, so 1 degree² ≈ 111,000² m²
+                        let area_degrees_sq = footprint.unsigned_area();
+                        let area_m2 = area_degrees_sq * 111_000.0 * 111_000.0;
+                        let volume = area_m2 * cal_height_m_arr.value(i);
 
                         Building {
                             uuid: Uuid::now_v7(),
