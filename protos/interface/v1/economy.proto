@@ -11,4 +11,7 @@ service EconomyService {
 
   // Queries buildings with optional filters and pagination.
   rpc QueryBuildings(syndicode_economy_v1.QueryBuildingsRequest) returns (syndicode_economy_v1.QueryBuildingsResponse);
+
+  // Queries businesses with optional filters and pagination.
+  rpc QueryBusinesses(syndicode_economy_v1.QueryBusinessesRequest) returns (syndicode_economy_v1.QueryBusinessesResponse);
 }

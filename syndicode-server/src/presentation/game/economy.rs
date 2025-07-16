@@ -4,12 +4,14 @@ use crate::{
             acquire_listed_business::AcquireListedBusinessUseCase,
             get_corporation::GetCorporationUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
+            query_businesses::QueryBusinessesUseCase,
         },
         game::get_game_tick::GetGameTickUseCase,
         ports::{game_tick::GameTickRepository, queuer::ActionQueueable},
     },
     domain::{
         economy::{
+            business::repository::{BusinessRepository, DomainBusinessSortBy},
             business_listing::repository::{
                 BusinessListingRepository, DomainBusinessListingSortBy,
             },
@@ -23,8 +25,9 @@ use bon::builder;
 use std::sync::Arc;
 use syndicode_proto::{
     syndicode_economy_v1::{
-        BusinessListingDetails, BusinessListingSortBy, Corporation, GetCorporationResponse,
-        QueryBusinessListingsRequest, QueryBusinessListingsResponse,
+        BusinessDetails, BusinessListingDetails, BusinessListingSortBy, BusinessSortBy,
+        Corporation, GetCorporationResponse, QueryBusinessListingsRequest,
+        QueryBusinessListingsResponse, QueryBusinessesRequest, QueryBusinessesResponse,
     },
     syndicode_interface_v1::{game_update::Update, ActionInitResponse, GameUpdate, SortDirection},
 };
@@ -189,6 +192,90 @@ where
                         total_count: count as i64,
                     },
                 )),
+            })
+        }
+        Err(err) => {
+            let game_tick = get_game_tick_uc.execute().await.unwrap_or_default();
+
+            Ok(PresentationError::from(err).into_game_update(game_tick, request_uuid.to_string()))
+        }
+    }
+}
+
+#[builder]
+pub async fn query_businesses<GTR, B>(
+    get_game_tick_uc: Arc<GetGameTickUseCase<GTR>>,
+    query_businesses_uc: Arc<QueryBusinessesUseCase<B>>,
+    req: QueryBusinessesRequest,
+    request_uuid: Uuid,
+) -> Result<GameUpdate, Status>
+where
+    GTR: GameTickRepository,
+    B: BusinessRepository,
+{
+    let owning_corporation_uuid =
+        parse_maybe_uuid(req.owning_corporation_uuid, "owning corporation uuid")
+            .map_err(|status| *status)?;
+
+    let market_uuid = parse_maybe_uuid(req.market_uuid, "market uuid").map_err(|status| *status)?;
+
+    let sort_by = BusinessSortBy::try_from(req.sort_by)
+        .map_err(|err| Status::invalid_argument(format!("Failed to parse sort by: {err}")))?;
+
+    let maybe_sort_by = match sort_by {
+        BusinessSortBy::Unspecified => None,
+        BusinessSortBy::BusinessName => Some(DomainBusinessSortBy::Name),
+        BusinessSortBy::BusinessOperationExpenses => Some(DomainBusinessSortBy::OperationExpenses),
+        BusinessSortBy::BusinessMarketVolume => Some(DomainBusinessSortBy::MarketVolume),
+    };
+
+    let sort_direction = SortDirection::try_from(req.sort_direction).map_err(|err| {
+        Status::invalid_argument(format!("Failed to parse sort direction: {err}"))
+    })?;
+
+    let maybe_domain_sort_direction = match sort_direction {
+        SortDirection::Unspecified => None,
+        SortDirection::Ascending => Some(DomainSortDirection::Ascending),
+        SortDirection::Descending => Some(DomainSortDirection::Descending),
+    };
+
+    match query_businesses_uc
+        .execute()
+        .maybe_owning_corporation_uuid(owning_corporation_uuid)
+        .maybe_market_uuid(market_uuid)
+        .maybe_min_operational_expenses(req.min_operational_expenses)
+        .maybe_max_operational_expenses(req.max_operational_expenses)
+        .maybe_sort_by(maybe_sort_by)
+        .maybe_sort_direction(maybe_domain_sort_direction)
+        .maybe_limit(req.limit)
+        .maybe_offset(req.offset)
+        .call()
+        .await
+    {
+        Ok((game_tick, business_details)) => {
+            let count = business_details.len();
+            let mut businesses = Vec::with_capacity(count);
+
+            for b in business_details {
+                let business = BusinessDetails {
+                    business_uuid: b.business_uuid.to_string(),
+                    business_name: b.business_name.to_string(),
+                    owning_corporation_uuid: b.owning_corporation_uuid.map(|s| s.to_string()),
+                    market_uuid: b.market_uuid.to_string(),
+                    operational_expenses: b.operational_expenses,
+                    headquarter_building_uuid: b.headquarter_building_uuid.to_string(),
+                };
+
+                businesses.push(business);
+            }
+
+            Ok(GameUpdate {
+                game_tick,
+                update: Some(Update::QueryBusinesses(QueryBusinessesResponse {
+                    request_uuid: request_uuid.to_string(),
+                    businesses,
+                    total_count: count as i64,
+                })),
             })
         }
         Err(err) => {

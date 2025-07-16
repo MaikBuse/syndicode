@@ -32,6 +32,9 @@ message PlayerAction {
 
     // Request to query business listings.
     syndicode_economy_v1.QueryBusinessListingsRequest query_business_listings = 6;
+
+    // Request to query businesses.
+    syndicode_economy_v1.QueryBusinessesRequest query_businesses = 7;
   }
 }
 
@@ -65,7 +68,10 @@ message GameUpdate {
     syndicode_economy_v1.AcquireListedBusinessResponse acquire_listed_business = 9;
 
     // Response containing queried business listings.
-    syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 10; 
+    syndicode_economy_v1.QueryBusinessListingsResponse query_business_listings = 10;
+
+    // Response containing queried businesses.
+    syndicode_economy_v1.QueryBusinessesResponse query_businesses = 13; 
 
     // Response containing the newly created corporation.
     syndicode_economy_v1.CreateCorporationResponse create_corporation = 11;

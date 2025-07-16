@@ -48,6 +48,28 @@ function deserialize_syndicode_economy_v1_QueryBuildingsResponse(buffer_arg) {
   return economy_v1_economy_pb.QueryBuildingsResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_syndicode_economy_v1_QueryBusinessesRequest(arg) {
+  if (!(arg instanceof economy_v1_economy_pb.QueryBusinessesRequest)) {
+    throw new Error('Expected argument of type syndicode_economy_v1.QueryBusinessesRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_economy_v1_QueryBusinessesRequest(buffer_arg) {
+  return economy_v1_economy_pb.QueryBusinessesRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_syndicode_economy_v1_QueryBusinessesResponse(arg) {
+  if (!(arg instanceof economy_v1_economy_pb.QueryBusinessesResponse)) {
+    throw new Error('Expected argument of type syndicode_economy_v1.QueryBusinessesResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_economy_v1_QueryBusinessesResponse(buffer_arg) {
+  return economy_v1_economy_pb.QueryBusinessesResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 
 // EconomyService provides methods for querying economy-related data.
 var EconomyServiceService = exports.EconomyServiceService = {
@@ -74,6 +96,18 @@ queryBuildings: {
     requestDeserialize: deserialize_syndicode_economy_v1_QueryBuildingsRequest,
     responseSerialize: serialize_syndicode_economy_v1_QueryBuildingsResponse,
     responseDeserialize: deserialize_syndicode_economy_v1_QueryBuildingsResponse,
+  },
+  // Queries businesses with optional filters and pagination.
+queryBusinesses: {
+    path: '/syndicode_interface_v1.EconomyService/QueryBusinesses',
+    requestStream: false,
+    responseStream: false,
+    requestType: economy_v1_economy_pb.QueryBusinessesRequest,
+    responseType: economy_v1_economy_pb.QueryBusinessesResponse,
+    requestSerialize: serialize_syndicode_economy_v1_QueryBusinessesRequest,
+    requestDeserialize: deserialize_syndicode_economy_v1_QueryBusinessesRequest,
+    responseSerialize: serialize_syndicode_economy_v1_QueryBusinessesResponse,
+    responseDeserialize: deserialize_syndicode_economy_v1_QueryBusinessesResponse,
   },
 };
 

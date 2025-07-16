@@ -150,7 +150,7 @@ if (goog.DEBUG && !COMPILED) {
  * @private {!Array<!Array<number>>}
  * @const
  */
-proto.syndicode_interface_v1.PlayerAction.oneofGroups_ = [[2,3,4,5,6]];
+proto.syndicode_interface_v1.PlayerAction.oneofGroups_ = [[2,3,4,5,6,7]];
 
 /**
  * @enum {number}
@@ -161,7 +161,8 @@ proto.syndicode_interface_v1.PlayerAction.ActionCase = {
   SPAWN_UNIT: 3,
   LIST_UNIT: 4,
   ACQUIRE_LISTED_BUSINESS: 5,
-  QUERY_BUSINESS_LISTINGS: 6
+  QUERY_BUSINESS_LISTINGS: 6,
+  QUERY_BUSINESSES: 7
 };
 
 /**
@@ -207,7 +208,8 @@ proto.syndicode_interface_v1.PlayerAction.toObject = function(includeInstance, m
     spawnUnit: (f = msg.getSpawnUnit()) && warfare_v1_warfare_pb.SpawnUnitRequest.toObject(includeInstance, f),
     listUnit: (f = msg.getListUnit()) && warfare_v1_warfare_pb.ListUnitsRequest.toObject(includeInstance, f),
     acquireListedBusiness: (f = msg.getAcquireListedBusiness()) && economy_v1_economy_pb.AcquireListedBusinessRequest.toObject(includeInstance, f),
-    queryBusinessListings: (f = msg.getQueryBusinessListings()) && economy_v1_economy_pb.QueryBusinessListingsRequest.toObject(includeInstance, f)
+    queryBusinessListings: (f = msg.getQueryBusinessListings()) && economy_v1_economy_pb.QueryBusinessListingsRequest.toObject(includeInstance, f),
+    queryBusinesses: (f = msg.getQueryBusinesses()) && economy_v1_economy_pb.QueryBusinessesRequest.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -272,6 +274,11 @@ proto.syndicode_interface_v1.PlayerAction.deserializeBinaryFromReader = function
       var value = new economy_v1_economy_pb.QueryBusinessListingsRequest;
       reader.readMessage(value,economy_v1_economy_pb.QueryBusinessListingsRequest.deserializeBinaryFromReader);
       msg.setQueryBusinessListings(value);
+      break;
+    case 7:
+      var value = new economy_v1_economy_pb.QueryBusinessesRequest;
+      reader.readMessage(value,economy_v1_economy_pb.QueryBusinessesRequest.deserializeBinaryFromReader);
+      msg.setQueryBusinesses(value);
       break;
     default:
       reader.skipField();
@@ -347,6 +354,14 @@ proto.syndicode_interface_v1.PlayerAction.serializeBinaryToWriter = function(mes
       6,
       f,
       economy_v1_economy_pb.QueryBusinessListingsRequest.serializeBinaryToWriter
+    );
+  }
+  f = message.getQueryBusinesses();
+  if (f != null) {
+    writer.writeMessage(
+      7,
+      f,
+      economy_v1_economy_pb.QueryBusinessesRequest.serializeBinaryToWriter
     );
   }
 };
@@ -555,6 +570,43 @@ proto.syndicode_interface_v1.PlayerAction.prototype.hasQueryBusinessListings = f
 };
 
 
+/**
+ * optional syndicode_economy_v1.QueryBusinessesRequest query_businesses = 7;
+ * @return {?proto.syndicode_economy_v1.QueryBusinessesRequest}
+ */
+proto.syndicode_interface_v1.PlayerAction.prototype.getQueryBusinesses = function() {
+  return /** @type{?proto.syndicode_economy_v1.QueryBusinessesRequest} */ (
+    jspb.Message.getWrapperField(this, economy_v1_economy_pb.QueryBusinessesRequest, 7));
+};
+
+
+/**
+ * @param {?proto.syndicode_economy_v1.QueryBusinessesRequest|undefined} value
+ * @return {!proto.syndicode_interface_v1.PlayerAction} returns this
+*/
+proto.syndicode_interface_v1.PlayerAction.prototype.setQueryBusinesses = function(value) {
+  return jspb.Message.setOneofWrapperField(this, 7, proto.syndicode_interface_v1.PlayerAction.oneofGroups_[0], value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.syndicode_interface_v1.PlayerAction} returns this
+ */
+proto.syndicode_interface_v1.PlayerAction.prototype.clearQueryBusinesses = function() {
+  return this.setQueryBusinesses(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.syndicode_interface_v1.PlayerAction.prototype.hasQueryBusinesses = function() {
+  return jspb.Message.getField(this, 7) != null;
+};
+
+
 
 /**
  * Oneof group definitions for this message. Each group defines the field
@@ -564,7 +616,7 @@ proto.syndicode_interface_v1.PlayerAction.prototype.hasQueryBusinessListings = f
  * @private {!Array<!Array<number>>}
  * @const
  */
-proto.syndicode_interface_v1.GameUpdate.oneofGroups_ = [[2,3,4,5,6,7,8,9,10,11,12]];
+proto.syndicode_interface_v1.GameUpdate.oneofGroups_ = [[2,3,4,5,6,7,8,9,10,13,11,12]];
 
 /**
  * @enum {number}
@@ -580,6 +632,7 @@ proto.syndicode_interface_v1.GameUpdate.UpdateCase = {
   SPAWN_UNIT: 8,
   ACQUIRE_LISTED_BUSINESS: 9,
   QUERY_BUSINESS_LISTINGS: 10,
+  QUERY_BUSINESSES: 13,
   CREATE_CORPORATION: 11,
   DELETE_CORPORATION: 12
 };
@@ -632,6 +685,7 @@ proto.syndicode_interface_v1.GameUpdate.toObject = function(includeInstance, msg
     spawnUnit: (f = msg.getSpawnUnit()) && warfare_v1_warfare_pb.SpawnUnitResponse.toObject(includeInstance, f),
     acquireListedBusiness: (f = msg.getAcquireListedBusiness()) && economy_v1_economy_pb.AcquireListedBusinessResponse.toObject(includeInstance, f),
     queryBusinessListings: (f = msg.getQueryBusinessListings()) && economy_v1_economy_pb.QueryBusinessListingsResponse.toObject(includeInstance, f),
+    queryBusinesses: (f = msg.getQueryBusinesses()) && economy_v1_economy_pb.QueryBusinessesResponse.toObject(includeInstance, f),
     createCorporation: (f = msg.getCreateCorporation()) && economy_v1_economy_pb.CreateCorporationResponse.toObject(includeInstance, f),
     deleteCorporation: (f = msg.getDeleteCorporation()) && economy_v1_economy_pb.DeleteCorporationResponse.toObject(includeInstance, f)
   };
@@ -718,6 +772,11 @@ proto.syndicode_interface_v1.GameUpdate.deserializeBinaryFromReader = function(m
       var value = new economy_v1_economy_pb.QueryBusinessListingsResponse;
       reader.readMessage(value,economy_v1_economy_pb.QueryBusinessListingsResponse.deserializeBinaryFromReader);
       msg.setQueryBusinessListings(value);
+      break;
+    case 13:
+      var value = new economy_v1_economy_pb.QueryBusinessesResponse;
+      reader.readMessage(value,economy_v1_economy_pb.QueryBusinessesResponse.deserializeBinaryFromReader);
+      msg.setQueryBusinesses(value);
       break;
     case 11:
       var value = new economy_v1_economy_pb.CreateCorporationResponse;
@@ -835,6 +894,14 @@ proto.syndicode_interface_v1.GameUpdate.serializeBinaryToWriter = function(messa
       10,
       f,
       economy_v1_economy_pb.QueryBusinessListingsResponse.serializeBinaryToWriter
+    );
+  }
+  f = message.getQueryBusinesses();
+  if (f != null) {
+    writer.writeMessage(
+      13,
+      f,
+      economy_v1_economy_pb.QueryBusinessesResponse.serializeBinaryToWriter
     );
   }
   f = message.getCreateCorporation();
@@ -1204,6 +1271,43 @@ proto.syndicode_interface_v1.GameUpdate.prototype.clearQueryBusinessListings = f
  */
 proto.syndicode_interface_v1.GameUpdate.prototype.hasQueryBusinessListings = function() {
   return jspb.Message.getField(this, 10) != null;
+};
+
+
+/**
+ * optional syndicode_economy_v1.QueryBusinessesResponse query_businesses = 13;
+ * @return {?proto.syndicode_economy_v1.QueryBusinessesResponse}
+ */
+proto.syndicode_interface_v1.GameUpdate.prototype.getQueryBusinesses = function() {
+  return /** @type{?proto.syndicode_economy_v1.QueryBusinessesResponse} */ (
+    jspb.Message.getWrapperField(this, economy_v1_economy_pb.QueryBusinessesResponse, 13));
+};
+
+
+/**
+ * @param {?proto.syndicode_economy_v1.QueryBusinessesResponse|undefined} value
+ * @return {!proto.syndicode_interface_v1.GameUpdate} returns this
+*/
+proto.syndicode_interface_v1.GameUpdate.prototype.setQueryBusinesses = function(value) {
+  return jspb.Message.setOneofWrapperField(this, 13, proto.syndicode_interface_v1.GameUpdate.oneofGroups_[0], value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.syndicode_interface_v1.GameUpdate} returns this
+ */
+proto.syndicode_interface_v1.GameUpdate.prototype.clearQueryBusinesses = function() {
+  return this.setQueryBusinesses(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.syndicode_interface_v1.GameUpdate.prototype.hasQueryBusinesses = function() {
+  return jspb.Message.getField(this, 13) != null;
 };
 
 

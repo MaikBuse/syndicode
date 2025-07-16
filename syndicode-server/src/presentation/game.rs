@@ -12,6 +12,7 @@ use crate::{
             acquire_listed_business::AcquireListedBusinessUseCase,
             get_corporation::GetCorporationUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
+            query_businesses::QueryBusinessesUseCase,
         },
         game::get_game_tick::GetGameTickUseCase,
         ports::{
@@ -26,6 +27,7 @@ use crate::{
     },
     domain::{
         economy::{
+            business::repository::BusinessRepository,
             business_listing::repository::BusinessListingRepository,
             corporation::repository::CorporationRepository,
         },
@@ -35,7 +37,9 @@ use crate::{
     infrastructure::valkey::outcome::create_notification_channel,
 };
 use bon::{builder, Builder};
-use economy::{acquire_listed_business, get_corporation, query_business_listings};
+use economy::{
+    acquire_listed_business, get_corporation, query_business_listings, query_businesses,
+};
 use std::{pin::Pin, str::FromStr, sync::Arc};
 use syndicode_proto::{
     syndicode_economy_v1::{
@@ -59,7 +63,7 @@ use warfare::{list_units, spawn_unit};
 const MPSC_CHANNEL_BUFFER_SIZE: usize = 128;
 
 #[derive(Builder)]
-pub struct GamePresenter<R, Q, UNT, CRP, OSR, GTR, BL>
+pub struct GamePresenter<R, Q, UNT, CRP, OSR, GTR, BL, B>
 where
     R: RateLimitEnforcer,
     Q: ActionQueueable,
@@ -68,6 +72,7 @@ where
     OSR: OutcomeStoreReader,
     GTR: GameTickRepository,
     BL: BusinessListingRepository,
+    B: BusinessRepository,
 {
     pub valkey_client: redis::Client,
     pub limit: Arc<R>,
@@ -79,10 +84,11 @@ where
     pub spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
     pub acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
     pub query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
+    pub query_businesses_uc: Arc<QueryBusinessesUseCase<B>>,
 }
 
 #[tonic::async_trait]
-impl<R, Q, UNT, CRP, OSR, GTR, BL> GameService for GamePresenter<R, Q, UNT, CRP, OSR, GTR, BL>
+impl<R, Q, UNT, CRP, OSR, GTR, BL, B> GameService for GamePresenter<R, Q, UNT, CRP, OSR, GTR, BL, B>
 where
     R: RateLimitEnforcer + 'static,
     Q: ActionQueueable + 'static,
@@ -91,6 +97,7 @@ where
     OSR: OutcomeStoreReader + 'static,
     GTR: GameTickRepository + 'static,
     BL: BusinessListingRepository + 'static,
+    B: BusinessRepository + 'static,
 {
     type PlayStreamStream = Pin<Box<dyn Stream<Item = Result<GameUpdate, Status>> + Send>>;
 
@@ -125,6 +132,7 @@ where
         let list_units_by_corporation_uc = Arc::clone(&self.list_units_by_corporation_uc);
         let acquire_listed_business_uc = Arc::clone(&self.acquire_listed_business_uc);
         let query_business_listings_uc = Arc::clone(&self.query_business_listings_uc);
+        let query_businesses_uc = Arc::clone(&self.query_businesses_uc);
         let spawn_unit_uc = Arc::clone(&self.spawn_unit_uc);
 
         let limit = Arc::clone(&self.limit);
@@ -175,6 +183,7 @@ where
                                 .spawn_unit_uc(spawn_unit_uc.clone())
                                 .acquire_listed_business_uc(acquire_listed_business_uc.clone())
                                 .query_business_listings_uc(query_business_listings_uc.clone())
+                                .query_businesses_uc(query_businesses_uc.clone())
                                 .request_uuid(player_action.request_uuid)
                                 .call()
                                 .await;
@@ -307,7 +316,7 @@ where
 }
 
 #[builder]
-async fn process_stream_action<Q, UNT, CRP, GTR, BL>(
+async fn process_stream_action<Q, UNT, CRP, GTR, BL, B>(
     action: Action,
     tx: &UserTx,
     request_uuid: String,
@@ -318,6 +327,7 @@ async fn process_stream_action<Q, UNT, CRP, GTR, BL>(
     spawn_unit_uc: Arc<SpawnUnitUseCase<Q, GTR>>,
     acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
     query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
+    query_businesses_uc: Arc<QueryBusinessesUseCase<B>>,
 ) -> Result<(), SendError<Result<GameUpdate, Status>>>
 where
     Q: ActionQueueable,
@@ -325,6 +335,7 @@ where
     CRP: CorporationRepository,
     GTR: GameTickRepository,
     BL: BusinessListingRepository,
+    B: BusinessRepository,
 {
     let Ok(request_uuid) = Uuid::from_str(&request_uuid) else {
         let game_tick = get_game_tick_uc.execute().await.unwrap_or_default();
@@ -379,6 +390,15 @@ where
                 .req(req)
                 .request_uuid(request_uuid)
                 .query_business_listings_uc(query_business_listings_uc)
+                .call()
+                .await
+        }
+        Action::QueryBusinesses(req) => {
+            query_businesses()
+                .get_game_tick_uc(get_game_tick_uc)
+                .req(req)
+                .request_uuid(request_uuid)
+                .query_businesses_uc(query_businesses_uc)
                 .call()
                 .await
         }

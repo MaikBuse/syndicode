@@ -3,19 +3,29 @@ use std::sync::Arc;
 use bon::Builder;
 use syndicode_proto::{
     syndicode_economy_v1::{
-        BuildingDetails, GetCorporationRequest, QueryBuildingsRequest, QueryBuildingsResponse,
+        BuildingDetails, BusinessDetails, BusinessSortBy, GetCorporationRequest,
+        QueryBuildingsRequest, QueryBuildingsResponse, QueryBusinessesRequest,
+        QueryBusinessesResponse,
     },
-    syndicode_interface_v1::economy_service_server::EconomyService,
+    syndicode_interface_v1::{economy_service_server::EconomyService, SortDirection},
 };
 use tonic::Response;
 
 use crate::{
     application::{
-        economy::{get_corporation::GetCorporationUseCase, query_buildings::QueryBuildingsUseCase},
+        economy::{
+            get_corporation::GetCorporationUseCase, query_buildings::QueryBuildingsUseCase,
+            query_businesses::QueryBusinessesUseCase,
+        },
         ports::limiter::{LimiterCategory, RateLimitEnforcer},
     },
-    domain::economy::{
-        building::repository::BuildingRepository, corporation::repository::CorporationRepository,
+    domain::{
+        economy::{
+            building::repository::BuildingRepository,
+            business::repository::{BusinessRepository, DomainBusinessSortBy},
+            corporation::repository::CorporationRepository,
+        },
+        repository::DomainSortDirection,
     },
 };
 
@@ -25,23 +35,26 @@ use super::{
 };
 
 #[derive(Builder)]
-pub struct EconomyPresenter<R, BUI, CRP>
+pub struct EconomyPresenter<R, BUI, CRP, B>
 where
     R: RateLimitEnforcer,
     BUI: BuildingRepository,
     CRP: CorporationRepository,
+    B: BusinessRepository,
 {
     pub limit: Arc<R>,
     pub query_buildings_uc: Arc<QueryBuildingsUseCase<BUI>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
+    pub query_businesses_uc: Arc<QueryBusinessesUseCase<B>>,
 }
 
 #[tonic::async_trait]
-impl<R, BUI, CRP> EconomyService for EconomyPresenter<R, BUI, CRP>
+impl<R, BUI, CRP, B> EconomyService for EconomyPresenter<R, BUI, CRP, B>
 where
     R: RateLimitEnforcer + 'static,
     BUI: BuildingRepository + 'static,
     CRP: CorporationRepository + 'static,
+    B: BusinessRepository + 'static,
 {
     async fn query_buildings(
         &self,
@@ -122,5 +135,85 @@ where
         };
 
         Ok(Response::new(corporation))
+    }
+
+    async fn query_businesses(
+        &self,
+        request: tonic::Request<QueryBusinessesRequest>,
+    ) -> Result<tonic::Response<QueryBusinessesResponse>, tonic::Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            LimiterCategory::Game,
+        )
+        .await
+        .map_err(|status| *status)?;
+
+        let request = request.into_inner();
+
+        let owning_corporation_uuid =
+            parse_maybe_uuid(request.owning_corporation_uuid, "owning corporation uuid")
+                .map_err(|status| *status)?;
+
+        let market_uuid =
+            parse_maybe_uuid(request.market_uuid, "market uuid").map_err(|status| *status)?;
+
+        let sort_by = BusinessSortBy::try_from(request.sort_by).map_err(|err| {
+            tonic::Status::invalid_argument(format!("Failed to parse sort by: {err}"))
+        })?;
+
+        let maybe_sort_by = match sort_by {
+            BusinessSortBy::Unspecified => None,
+            BusinessSortBy::BusinessName => Some(DomainBusinessSortBy::Name),
+            BusinessSortBy::BusinessOperationExpenses => {
+                Some(DomainBusinessSortBy::OperationExpenses)
+            }
+            BusinessSortBy::BusinessMarketVolume => Some(DomainBusinessSortBy::MarketVolume),
+        };
+
+        let sort_direction = SortDirection::try_from(request.sort_direction).map_err(|err| {
+            tonic::Status::invalid_argument(format!("Failed to parse sort direction: {err}"))
+        })?;
+
+        let maybe_domain_sort_direction = match sort_direction {
+            SortDirection::Unspecified => None,
+            SortDirection::Ascending => Some(DomainSortDirection::Ascending),
+            SortDirection::Descending => Some(DomainSortDirection::Descending),
+        };
+
+        let (_, domain_businesses) = self
+            .query_businesses_uc
+            .execute()
+            .maybe_owning_corporation_uuid(owning_corporation_uuid)
+            .maybe_market_uuid(market_uuid)
+            .maybe_min_operational_expenses(request.min_operational_expenses)
+            .maybe_max_operational_expenses(request.max_operational_expenses)
+            .maybe_sort_by(maybe_sort_by)
+            .maybe_sort_direction(maybe_domain_sort_direction)
+            .maybe_limit(request.limit)
+            .maybe_offset(request.offset)
+            .call()
+            .await
+            .map_err(PresentationError::from)?;
+
+        let total_count = domain_businesses.len();
+        let mut businesses = Vec::with_capacity(total_count);
+
+        for b in domain_businesses {
+            businesses.push(BusinessDetails {
+                business_uuid: b.business_uuid.to_string(),
+                business_name: b.business_name,
+                owning_corporation_uuid: b.owning_corporation_uuid.map(|uuid| uuid.to_string()),
+                market_uuid: b.market_uuid.to_string(),
+                operational_expenses: b.operational_expenses,
+                headquarter_building_uuid: b.headquarter_building_uuid.to_string(),
+            });
+        }
+
+        Ok(Response::new(QueryBusinessesResponse {
+            request_uuid: "".to_string(), // Not used in standalone service
+            businesses,
+            total_count: total_count as i64,
+        }))
     }
 }

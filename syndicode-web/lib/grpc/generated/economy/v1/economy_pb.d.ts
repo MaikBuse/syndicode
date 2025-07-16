@@ -180,6 +180,131 @@ export namespace QueryBusinessListingsRequest {
     }
 }
 
+export class QueryBusinessesRequest extends jspb.Message { 
+
+    hasOwningCorporationUuid(): boolean;
+    clearOwningCorporationUuid(): void;
+    getOwningCorporationUuid(): google_protobuf_wrappers_pb.StringValue | undefined;
+    setOwningCorporationUuid(value?: google_protobuf_wrappers_pb.StringValue): QueryBusinessesRequest;
+
+    hasMarketUuid(): boolean;
+    clearMarketUuid(): void;
+    getMarketUuid(): google_protobuf_wrappers_pb.StringValue | undefined;
+    setMarketUuid(value?: google_protobuf_wrappers_pb.StringValue): QueryBusinessesRequest;
+
+    hasMinOperationalExpenses(): boolean;
+    clearMinOperationalExpenses(): void;
+    getMinOperationalExpenses(): google_protobuf_wrappers_pb.Int64Value | undefined;
+    setMinOperationalExpenses(value?: google_protobuf_wrappers_pb.Int64Value): QueryBusinessesRequest;
+
+    hasMaxOperationalExpenses(): boolean;
+    clearMaxOperationalExpenses(): void;
+    getMaxOperationalExpenses(): google_protobuf_wrappers_pb.Int64Value | undefined;
+    setMaxOperationalExpenses(value?: google_protobuf_wrappers_pb.Int64Value): QueryBusinessesRequest;
+    getSortBy(): BusinessSortBy;
+    setSortBy(value: BusinessSortBy): QueryBusinessesRequest;
+    getSortDirection(): interface_v1_shared_pb.SortDirection;
+    setSortDirection(value: interface_v1_shared_pb.SortDirection): QueryBusinessesRequest;
+
+    hasLimit(): boolean;
+    clearLimit(): void;
+    getLimit(): google_protobuf_wrappers_pb.Int64Value | undefined;
+    setLimit(value?: google_protobuf_wrappers_pb.Int64Value): QueryBusinessesRequest;
+
+    hasOffset(): boolean;
+    clearOffset(): void;
+    getOffset(): google_protobuf_wrappers_pb.Int64Value | undefined;
+    setOffset(value?: google_protobuf_wrappers_pb.Int64Value): QueryBusinessesRequest;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): QueryBusinessesRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: QueryBusinessesRequest): QueryBusinessesRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: QueryBusinessesRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): QueryBusinessesRequest;
+    static deserializeBinaryFromReader(message: QueryBusinessesRequest, reader: jspb.BinaryReader): QueryBusinessesRequest;
+}
+
+export namespace QueryBusinessesRequest {
+    export type AsObject = {
+        owningCorporationUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
+        marketUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
+        minOperationalExpenses?: google_protobuf_wrappers_pb.Int64Value.AsObject,
+        maxOperationalExpenses?: google_protobuf_wrappers_pb.Int64Value.AsObject,
+        sortBy: BusinessSortBy,
+        sortDirection: interface_v1_shared_pb.SortDirection,
+        limit?: google_protobuf_wrappers_pb.Int64Value.AsObject,
+        offset?: google_protobuf_wrappers_pb.Int64Value.AsObject,
+    }
+}
+
+export class BusinessDetails extends jspb.Message { 
+    getBusinessUuid(): string;
+    setBusinessUuid(value: string): BusinessDetails;
+    getBusinessName(): string;
+    setBusinessName(value: string): BusinessDetails;
+
+    hasOwningCorporationUuid(): boolean;
+    clearOwningCorporationUuid(): void;
+    getOwningCorporationUuid(): google_protobuf_wrappers_pb.StringValue | undefined;
+    setOwningCorporationUuid(value?: google_protobuf_wrappers_pb.StringValue): BusinessDetails;
+    getMarketUuid(): string;
+    setMarketUuid(value: string): BusinessDetails;
+    getOperationalExpenses(): number;
+    setOperationalExpenses(value: number): BusinessDetails;
+    getHeadquarterBuildingUuid(): string;
+    setHeadquarterBuildingUuid(value: string): BusinessDetails;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): BusinessDetails.AsObject;
+    static toObject(includeInstance: boolean, msg: BusinessDetails): BusinessDetails.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: BusinessDetails, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): BusinessDetails;
+    static deserializeBinaryFromReader(message: BusinessDetails, reader: jspb.BinaryReader): BusinessDetails;
+}
+
+export namespace BusinessDetails {
+    export type AsObject = {
+        businessUuid: string,
+        businessName: string,
+        owningCorporationUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
+        marketUuid: string,
+        operationalExpenses: number,
+        headquarterBuildingUuid: string,
+    }
+}
+
+export class QueryBusinessesResponse extends jspb.Message { 
+    getRequestUuid(): string;
+    setRequestUuid(value: string): QueryBusinessesResponse;
+    clearBusinessesList(): void;
+    getBusinessesList(): Array<BusinessDetails>;
+    setBusinessesList(value: Array<BusinessDetails>): QueryBusinessesResponse;
+    addBusinesses(value?: BusinessDetails, index?: number): BusinessDetails;
+    getTotalCount(): number;
+    setTotalCount(value: number): QueryBusinessesResponse;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): QueryBusinessesResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: QueryBusinessesResponse): QueryBusinessesResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: QueryBusinessesResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): QueryBusinessesResponse;
+    static deserializeBinaryFromReader(message: QueryBusinessesResponse, reader: jspb.BinaryReader): QueryBusinessesResponse;
+}
+
+export namespace QueryBusinessesResponse {
+    export type AsObject = {
+        requestUuid: string,
+        businessesList: Array<BusinessDetails.AsObject>,
+        totalCount: number,
+    }
+}
+
 export class BusinessListingDetails extends jspb.Message { 
     getListingUuid(): string;
     setListingUuid(value: string): BusinessListingDetails;
@@ -457,4 +582,11 @@ export enum BusinessListingSortBy {
     NAME = 2,
     OPERATION_EXPENSES = 3,
     MARKET_VOLUME = 4,
+}
+
+export enum BusinessSortBy {
+    BUSINESS_SORT_BY_UNSPECIFIED = 0,
+    BUSINESS_NAME = 1,
+    BUSINESS_OPERATION_EXPENSES = 2,
+    BUSINESS_MARKET_VOLUME = 3,
 }

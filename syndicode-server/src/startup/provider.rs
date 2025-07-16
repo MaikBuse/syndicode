@@ -17,6 +17,7 @@ use crate::{
             list_businesses::ListBusinessesUseCase, list_corporations::ListCorporationsUseCase,
             list_markets::ListMarketsUseCase, query_buildings::QueryBuildingsUseCase,
             query_business_listings::QueryBusinessListingsUseCase,
+            query_businesses::QueryBusinessesUseCase,
         },
         game::get_game_tick::GetGameTickUseCase,
         init::InitializationOrchestrator,
@@ -45,7 +46,7 @@ use crate::{
     config::ServerConfig,
     domain::{
         economy::{
-            building::repository::BuildingRepository,
+            building::repository::BuildingRepository, business::repository::BusinessRepository,
             business_listing::repository::BusinessListingRepository,
             corporation::repository::CorporationRepository,
         },
@@ -122,6 +123,7 @@ pub type DefaultProvider = AppProvider<
     PgBuildingService,
     HttpBackupDownloader,
     PgRestoreExecutor,
+    PgBusinessService,
 >;
 
 pub struct AppProvider<
@@ -144,6 +146,7 @@ pub struct AppProvider<
     BUI,
     DOW,
     RES,
+    B,
 > where
     INI: InitializationRepository + 'static,
     G: GameTickProcessable + 'static,
@@ -164,15 +167,16 @@ pub struct AppProvider<
     BUI: BuildingRepository + 'static,
     DOW: BackupDownloader + 'static,
     RES: DatabaseRestorer + 'static,
+    B: BusinessRepository + 'static,
 {
     pub game_tick_processor: Arc<G>,
     pub leader_elector: Arc<L>,
     pub crypto: Arc<CryptoService>,
     pub initialization_orchestrator: Arc<InitializationOrchestrator<UOW, INI, RES, DOW, P, M>>,
-    pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL>,
+    pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL, B>,
     pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
-    pub economy_presenter: EconomyPresenter<R, BUI, CRP>,
+    pub economy_presenter: EconomyPresenter<R, BUI, CRP, B>,
 }
 
 #[bon]
@@ -351,6 +355,11 @@ impl DefaultProvider {
                 .building_repo(building_service.clone())
                 .build(),
         );
+        let query_businesses_uc = Arc::new(
+            QueryBusinessesUseCase::builder()
+                .business_repo(business_service.clone())
+                .build(),
+        );
 
         // Bootstrap
         let migrator = Arc::new(PostgresMigrator::new(pg_db.clone()));
@@ -401,6 +410,7 @@ impl DefaultProvider {
             .valkey_client(valkey.get_client())
             .acquire_listed_business_uc(acquire_listed_business_uc.clone())
             .query_business_listings_uc(query_business_listings_uc.clone())
+            .query_businesses_uc(query_businesses_uc.clone())
             .build();
 
         let admin_presenter = AdminPresenter::builder()
@@ -422,6 +432,7 @@ impl DefaultProvider {
         let economy_presenter = EconomyPresenter::builder()
             .query_buildings_uc(query_buildings_uc.clone())
             .get_corporation_uc(get_corporation_uc.clone())
+            .query_businesses_uc(query_businesses_uc.clone())
             .limit(valkey.clone())
             .build();
 

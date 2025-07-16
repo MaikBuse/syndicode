@@ -39,6 +39,11 @@ export class PlayerAction extends jspb.Message {
     getQueryBusinessListings(): economy_v1_economy_pb.QueryBusinessListingsRequest | undefined;
     setQueryBusinessListings(value?: economy_v1_economy_pb.QueryBusinessListingsRequest): PlayerAction;
 
+    hasQueryBusinesses(): boolean;
+    clearQueryBusinesses(): void;
+    getQueryBusinesses(): economy_v1_economy_pb.QueryBusinessesRequest | undefined;
+    setQueryBusinesses(value?: economy_v1_economy_pb.QueryBusinessesRequest): PlayerAction;
+
     getActionCase(): PlayerAction.ActionCase;
 
     serializeBinary(): Uint8Array;
@@ -59,6 +64,7 @@ export namespace PlayerAction {
         listUnit?: warfare_v1_warfare_pb.ListUnitsRequest.AsObject,
         acquireListedBusiness?: economy_v1_economy_pb.AcquireListedBusinessRequest.AsObject,
         queryBusinessListings?: economy_v1_economy_pb.QueryBusinessListingsRequest.AsObject,
+        queryBusinesses?: economy_v1_economy_pb.QueryBusinessesRequest.AsObject,
     }
 
     export enum ActionCase {
@@ -68,6 +74,7 @@ export namespace PlayerAction {
         LIST_UNIT = 4,
         ACQUIRE_LISTED_BUSINESS = 5,
         QUERY_BUSINESS_LISTINGS = 6,
+        QUERY_BUSINESSES = 7,
     }
 
 }
@@ -121,6 +128,11 @@ export class GameUpdate extends jspb.Message {
     getQueryBusinessListings(): economy_v1_economy_pb.QueryBusinessListingsResponse | undefined;
     setQueryBusinessListings(value?: economy_v1_economy_pb.QueryBusinessListingsResponse): GameUpdate;
 
+    hasQueryBusinesses(): boolean;
+    clearQueryBusinesses(): void;
+    getQueryBusinesses(): economy_v1_economy_pb.QueryBusinessesResponse | undefined;
+    setQueryBusinesses(value?: economy_v1_economy_pb.QueryBusinessesResponse): GameUpdate;
+
     hasCreateCorporation(): boolean;
     clearCreateCorporation(): void;
     getCreateCorporation(): economy_v1_economy_pb.CreateCorporationResponse | undefined;
@@ -155,6 +167,7 @@ export namespace GameUpdate {
         spawnUnit?: warfare_v1_warfare_pb.SpawnUnitResponse.AsObject,
         acquireListedBusiness?: economy_v1_economy_pb.AcquireListedBusinessResponse.AsObject,
         queryBusinessListings?: economy_v1_economy_pb.QueryBusinessListingsResponse.AsObject,
+        queryBusinesses?: economy_v1_economy_pb.QueryBusinessesResponse.AsObject,
         createCorporation?: economy_v1_economy_pb.CreateCorporationResponse.AsObject,
         deleteCorporation?: economy_v1_economy_pb.DeleteCorporationResponse.AsObject,
     }
@@ -170,6 +183,7 @@ export namespace GameUpdate {
         SPAWN_UNIT = 8,
         ACQUIRE_LISTED_BUSINESS = 9,
         QUERY_BUSINESS_LISTINGS = 10,
+        QUERY_BUSINESSES = 13,
         CREATE_CORPORATION = 11,
         DELETE_CORPORATION = 12,
     }

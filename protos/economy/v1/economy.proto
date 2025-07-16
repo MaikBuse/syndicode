@@ -85,6 +85,59 @@ enum BusinessListingSortBy {
   MARKET_VOLUME = 4;
 }
 
+// Request to query businesses based on criteria
+message QueryBusinessesRequest {
+  // Filter by specific owning corporation UUID
+  google.protobuf.StringValue owning_corporation_uuid = 1;
+
+  // Filter by market uuid
+  google.protobuf.StringValue market_uuid = 2;
+
+  // Filter by minimum operational expenses (inclusive)
+  google.protobuf.Int64Value min_operational_expenses = 3;
+
+  // Filter by maximum operational expenses (inclusive)
+  google.protobuf.Int64Value max_operational_expenses = 4;
+
+  // Field to sort by.
+  BusinessSortBy sort_by = 20;
+
+  // Direction to sort (ASCENDING or DESCENDING)
+  syndicode_interface_v1.SortDirection sort_direction = 21;
+
+  // --- Pagination ---
+  // Maximum number of results to return
+  google.protobuf.Int64Value limit = 30;
+  // Number of results to skip (for pagination)
+  google.protobuf.Int64Value offset = 31;
+}
+
+enum BusinessSortBy {
+  BUSINESS_SORT_BY_UNSPECIFIED = 0;
+  BUSINESS_NAME = 1;
+  BUSINESS_OPERATION_EXPENSES = 2;
+  BUSINESS_MARKET_VOLUME = 3;
+}
+
+// Represents detailed information about a business, including related market data.
+message BusinessDetails {
+  string business_uuid = 1;
+  string business_name = 2;
+  google.protobuf.StringValue owning_corporation_uuid = 3;
+  string market_uuid = 4;
+  int64 operational_expenses = 5;
+  string headquarter_building_uuid = 6;
+}
+
+// Response containing the list of matching business details.
+message QueryBusinessesResponse {
+  // UUID generated on the client to match the response with the initial request.
+  string request_uuid = 1;
+  repeated BusinessDetails businesses = 2;
+  // Total number of businesses matching the criteria
+  int64 total_count = 3;
+}
+
 // Represents detailed information about a business listing, including related business and market data.
 message BusinessListingDetails {
   string listing_uuid = 1;

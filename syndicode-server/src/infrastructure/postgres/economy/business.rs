@@ -4,13 +4,18 @@ use crate::{
     domain::{
         economy::business::{
             model::Business,
-            repository::{BusinessRepository, BusinessTxRepository},
+            repository::{
+                BusinessDetails, BusinessRepository, BusinessTxRepository, DomainBusinessSortBy,
+                QueryBusinessesRequest,
+            },
         },
         repository::RepositoryResult,
     },
-    infrastructure::postgres::{uow::PgTransactionContext, PostgresDatabase, SRID},
+    infrastructure::postgres::{
+        game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase, SRID,
+    },
 };
-use sqlx::Postgres;
+use sqlx::{Execute, Postgres, QueryBuilder};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -124,6 +129,81 @@ impl PgBusinessRepository {
         Ok(businesses)
     }
 
+    pub async fn query_businesses(
+        &self,
+        executor: impl sqlx::Executor<'_, Database = Postgres> + Copy,
+        game_tick: i64,
+        req: &QueryBusinessesRequest,
+    ) -> RepositoryResult<Vec<BusinessDetails>> {
+        let mut qb = QueryBuilder::new(
+            r#"
+            SELECT
+                b.uuid AS business_uuid,
+                b.name AS business_name,
+                b.owning_corporation_uuid,
+                b.market_uuid,
+                b.operational_expenses,
+                b.headquarter_building_uuid,
+                m.volume AS market_volume
+            FROM businesses b
+            JOIN markets m ON b.market_uuid = m.uuid AND m.game_tick = "#,
+        );
+        qb.push_bind(game_tick);
+        qb.push(" WHERE b.game_tick = ");
+        qb.push_bind(game_tick);
+
+        // Build WHERE clause dynamically
+        if let Some(owning_corporation_uuid) = &req.owning_corporation_uuid {
+            qb.push(" AND b.owning_corporation_uuid = ");
+            qb.push_bind(owning_corporation_uuid);
+        }
+
+        if let Some(market_uuid) = &req.market_uuid {
+            qb.push(" AND b.market_uuid = ");
+            qb.push_bind(market_uuid);
+        }
+
+        if let Some(min_op_ex) = req.min_operational_expenses {
+            qb.push(" AND b.operational_expenses >= ");
+            qb.push_bind(min_op_ex);
+        }
+
+        if let Some(max_op_ex) = req.max_operational_expenses {
+            qb.push(" AND b.operational_expenses <= ");
+            qb.push_bind(max_op_ex);
+        }
+
+        // --- Add Sorting ---
+        let sort_column = match req.sort_by.as_ref().unwrap_or_default() {
+            DomainBusinessSortBy::Name => "b.name",
+            DomainBusinessSortBy::OperationExpenses => "b.operational_expenses",
+            DomainBusinessSortBy::MarketVolume => "m.volume",
+        };
+
+        let sort_direction = req.sort_direction.unwrap_or_default().to_string();
+
+        qb.push(format!(" ORDER BY {sort_column} {sort_direction}"));
+
+        // --- Add Pagination ---
+        let limit = req.limit.unwrap_or(10).min(100);
+        qb.push(" LIMIT ");
+        qb.push_bind(limit);
+
+        if let Some(offset_val) = req.offset {
+            if offset_val > 0 {
+                qb.push(" OFFSET ");
+                qb.push_bind(offset_val);
+            }
+        }
+
+        // --- Execute Query ---
+        let query = qb.build_query_as::<BusinessDetails>();
+        tracing::debug!("Executing query: {}", query.sql());
+        let businesses = query.fetch_all(executor).await?;
+
+        Ok(businesses)
+    }
+
     pub async fn delete_businesses_before_tick(
         &self,
         executor: impl sqlx::Executor<'_, Database = Postgres>,
@@ -146,6 +226,7 @@ impl PgBusinessRepository {
 
 pub struct PgBusinessService {
     pg_db: Arc<PostgresDatabase>,
+    game_tick_repo: PgGameTickRepository,
     business_repo: PgBusinessRepository,
 }
 
@@ -153,6 +234,7 @@ impl PgBusinessService {
     pub fn new(pg_db: Arc<PostgresDatabase>) -> Self {
         Self {
             pg_db,
+            game_tick_repo: PgGameTickRepository,
             business_repo: PgBusinessRepository,
         }
     }
@@ -160,6 +242,23 @@ impl PgBusinessService {
 
 #[tonic::async_trait]
 impl BusinessRepository for PgBusinessService {
+    async fn query_businesses(
+        &self,
+        req: &QueryBusinessesRequest,
+    ) -> RepositoryResult<(i64, Vec<BusinessDetails>)> {
+        let game_tick = self
+            .game_tick_repo
+            .get_current_game_tick(&self.pg_db.pool)
+            .await?;
+
+        let result = self
+            .business_repo
+            .query_businesses(&self.pg_db.pool, game_tick, req)
+            .await?;
+
+        Ok((game_tick, result))
+    }
+
     async fn list_businesses_in_tick(&self, game_tick: i64) -> RepositoryResult<Vec<Business>> {
         self.business_repo
             .list_businesses_in_tick(&self.pg_db.pool, game_tick)

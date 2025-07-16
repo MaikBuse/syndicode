@@ -76,6 +76,63 @@ pub struct QueryBusinessListingsRequest {
     #[prost(message, optional, tag = "31")]
     pub offset: ::core::option::Option<i64>,
 }
+/// Request to query businesses based on criteria
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryBusinessesRequest {
+    /// Filter by specific owning corporation UUID
+    #[prost(message, optional, tag = "1")]
+    pub owning_corporation_uuid: ::core::option::Option<::prost::alloc::string::String>,
+    /// Filter by market uuid
+    #[prost(message, optional, tag = "2")]
+    pub market_uuid: ::core::option::Option<::prost::alloc::string::String>,
+    /// Filter by minimum operational expenses (inclusive)
+    #[prost(message, optional, tag = "3")]
+    pub min_operational_expenses: ::core::option::Option<i64>,
+    /// Filter by maximum operational expenses (inclusive)
+    #[prost(message, optional, tag = "4")]
+    pub max_operational_expenses: ::core::option::Option<i64>,
+    /// Field to sort by.
+    #[prost(enumeration = "BusinessSortBy", tag = "20")]
+    pub sort_by: i32,
+    /// Direction to sort (ASCENDING or DESCENDING)
+    #[prost(enumeration = "super::syndicode_interface_v1::SortDirection", tag = "21")]
+    pub sort_direction: i32,
+    /// --- Pagination ---
+    /// Maximum number of results to return
+    #[prost(message, optional, tag = "30")]
+    pub limit: ::core::option::Option<i64>,
+    /// Number of results to skip (for pagination)
+    #[prost(message, optional, tag = "31")]
+    pub offset: ::core::option::Option<i64>,
+}
+/// Represents detailed information about a business, including related market data.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BusinessDetails {
+    #[prost(string, tag = "1")]
+    pub business_uuid: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub business_name: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub owning_corporation_uuid: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, tag = "4")]
+    pub market_uuid: ::prost::alloc::string::String,
+    #[prost(int64, tag = "5")]
+    pub operational_expenses: i64,
+    #[prost(string, tag = "6")]
+    pub headquarter_building_uuid: ::prost::alloc::string::String,
+}
+/// Response containing the list of matching business details.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryBusinessesResponse {
+    /// UUID generated on the client to match the response with the initial request.
+    #[prost(string, tag = "1")]
+    pub request_uuid: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub businesses: ::prost::alloc::vec::Vec<BusinessDetails>,
+    /// Total number of businesses matching the criteria
+    #[prost(int64, tag = "3")]
+    pub total_count: i64,
+}
 /// Represents detailed information about a business listing, including related business and market data.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BusinessListingDetails {
@@ -220,6 +277,38 @@ impl BusinessListingSortBy {
             "NAME" => Some(Self::Name),
             "OPERATION_EXPENSES" => Some(Self::OperationExpenses),
             "MARKET_VOLUME" => Some(Self::MarketVolume),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum BusinessSortBy {
+    Unspecified = 0,
+    BusinessName = 1,
+    BusinessOperationExpenses = 2,
+    BusinessMarketVolume = 3,
+}
+impl BusinessSortBy {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "BUSINESS_SORT_BY_UNSPECIFIED",
+            Self::BusinessName => "BUSINESS_NAME",
+            Self::BusinessOperationExpenses => "BUSINESS_OPERATION_EXPENSES",
+            Self::BusinessMarketVolume => "BUSINESS_MARKET_VOLUME",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "BUSINESS_SORT_BY_UNSPECIFIED" => Some(Self::Unspecified),
+            "BUSINESS_NAME" => Some(Self::BusinessName),
+            "BUSINESS_OPERATION_EXPENSES" => Some(Self::BusinessOperationExpenses),
+            "BUSINESS_MARKET_VOLUME" => Some(Self::BusinessMarketVolume),
             _ => None,
         }
     }
