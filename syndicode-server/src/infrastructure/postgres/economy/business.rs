@@ -12,7 +12,7 @@ use crate::{
         repository::RepositoryResult,
     },
     infrastructure::postgres::{
-        game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase, SRID,
+        game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase,
     },
 };
 use sqlx::{Execute, Postgres, QueryBuilder};
@@ -76,8 +76,7 @@ impl PgBusinessRepository {
                 $4::UUID[],
                 $5::TEXT[],
                 $6::BIGINT[],
-                $7::TEXT[]
-                $8::UUID[],
+                $7::UUID[]
             )
             AS u(
                 uuid,
@@ -96,7 +95,6 @@ impl PgBusinessRepository {
         .bind(&names_vec)
         .bind(&operational_expenses_vec)
         .bind(&headquarter_business_uuids)
-        .bind(SRID)
         .execute(executor)
         .await?;
 
