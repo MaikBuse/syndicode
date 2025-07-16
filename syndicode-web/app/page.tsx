@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Map, MapRef } from 'react-map-gl/maplibre';
-import type { ViewState } from 'react-map-gl/maplibre';
 import { DeckGLOverlay } from '@/components/map/deck-gl-overlay';
 import { AuthOverlay } from '@/components/map/auth-overlay';
 import { useAnimationTime } from '@/hooks/use-animation-time';
@@ -18,7 +17,6 @@ import {
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapRef | null>(null);
-  const [currentViewState, setCurrentViewState] = useState<ViewState>(TOKYO_INITIAL_VIEW_STATE);
 
   const time = useAnimationTime();
   const tokyoBoundary = useTokyoBoundary();
@@ -32,9 +30,6 @@ function App() {
       <Map
         ref={mapRef}
         initialViewState={TOKYO_INITIAL_VIEW_STATE}
-        onMove={evt => {
-          setCurrentViewState(evt.viewState);
-        }}
         mapStyle={MAP_STYLE}
         style={{ width: '100%', height: '100%' }}
         maxBounds={TOKYO_BOUNDS}
