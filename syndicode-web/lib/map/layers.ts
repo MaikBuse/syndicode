@@ -74,9 +74,6 @@ export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, time?: nu
       }
       return isBusinessHeadquarter ? [255, 215, 0, 255] : [150, 150, 150, 255]; // Owned Business: Neon Gold, Not Owned: Grey
     },
-    updateTriggers: {
-      getFillColor: [ownedBusinessGmlIds, time]
-    },
     getLineColor: (d: { properties: BuildingProperties }) => {
       const isBusinessHeadquarter = ownedBusinessGmlIds.has(d.properties.gml_id);
       if (isBusinessHeadquarter && time !== undefined) {
@@ -94,7 +91,8 @@ export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, time?: nu
     },
     updateTriggers: {
       getLineColor: [ownedBusinessGmlIds, time],
-      getFillColor: [ownedBusinessGmlIds, time]
+      getFillColor: [ownedBusinessGmlIds, time],
+      getLineWidth: [ownedBusinessGmlIds]
     },
   });
 };

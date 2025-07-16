@@ -4,10 +4,9 @@ import type {
   QueryBuildingsFilters, 
   QueryBuildingsResult,
   QueryBusinessesFilters,
-  QueryBusinessesResult,
-  BusinessSortBy,
-  SortDirection
+  QueryBusinessesResult
 } from '@/domain/economy/economy.types';
+import { BusinessSortBy, SortDirection } from '@/domain/economy/economy.types';
 import { getEconomyServiceClient } from '@/lib/grpc/economy-client';
 import * as grpc from '@grpc/grpc-js';
 import { 
@@ -220,8 +219,9 @@ export class GrpcEconomyRepository implements EconomyRepository {
         return ProtoSortDirection.ASCENDING;
       case SortDirection.DESCENDING:
         return ProtoSortDirection.DESCENDING;
+      case SortDirection.UNSPECIFIED:
       default:
-        return ProtoSortDirection.UNSPECIFIED;
+        return ProtoSortDirection.SORT_DIRECTION_UNSPECIFIED;
     }
   }
 }
