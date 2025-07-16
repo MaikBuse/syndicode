@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     owning_corporation_uuid UUID,
     name TEXT NOT NULL,
     operational_expenses BIGINT NOT NULL CHECK (operational_expenses >= 0),
-    center GEOMETRY(Point, 4326) NOT NULL,
+    headquarter_building_uuid NOT NULL,
 
     PRIMARY KEY (game_tick, uuid)
 );

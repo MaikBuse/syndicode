@@ -220,7 +220,6 @@ mod tests {
     use crate::domain::economy::business_listing::model::BusinessListing;
     use crate::domain::economy::corporation::model::name::CorporationName;
     use crate::domain::economy::corporation::model::Corporation;
-    use geo::Point;
     use uuid::Uuid;
 
     // Test Helper Functions
@@ -251,7 +250,7 @@ mod tests {
             owning_corporation_uuid: Some(seller_corp_uuid), // Initially owned by seller
             name: "Test Biz".to_string(),
             operational_expenses: 100,
-            center: Point::new(0., 0.),
+            headquarter_building_uuid: Uuid::now_v7(),
         };
         let listing = BusinessListing {
             uuid: listing_uuid,

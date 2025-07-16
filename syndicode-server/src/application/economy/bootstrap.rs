@@ -17,7 +17,11 @@ use crate::{
 };
 use arrow::array::Array;
 use bon::Builder;
-use geo::{polygon, prelude::Centroid, Distance, Haversine, Point};
+use geo::{
+    polygon,
+    prelude::{Area, Centroid},
+    Distance, Haversine, Point,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use rand::Rng;
@@ -352,6 +356,8 @@ pub fn load_buildings_from_parquet() -> anyhow::Result<Vec<Building>> {
                             }
                         };
 
+                        let volume = footprint.unsigned_area() * cal_height_m_arr.value(i);
+
                         Building {
                             uuid: Uuid::now_v7(),
                             gml_id: gml_id_arr.value(i).to_string(),
@@ -367,6 +373,7 @@ pub fn load_buildings_from_parquet() -> anyhow::Result<Vec<Building>> {
                             usage: get_opt_string(usage_arr, i),
                             usage_code: get_opt_string(usage_code_arr, i),
                             prefecture: get_opt_string(prefecture_arr, i),
+                            volume,
                         }
                     })
                     .collect::<Vec<Building>>()
@@ -420,7 +427,6 @@ pub fn generate_central_points(
 
 // A temporary struct to hold the results from the parallel processing
 struct BusinessProposal {
-    center: Point<f64>,
     market_uuid: Uuid,
     claimed_building_uuids: Vec<Uuid>,
 }
@@ -484,7 +490,6 @@ pub fn assign_buildings_to_businesses(
                 None
             } else {
                 Some(BusinessProposal {
-                    center,
                     market_uuid: market.uuid,
                     claimed_building_uuids,
                 })
@@ -530,6 +535,10 @@ pub fn assign_buildings_to_businesses(
     let market_map: std::collections::HashMap<Uuid, MarketName> =
         markets.iter().map(|m| (m.uuid, m.name)).collect();
 
+    // Create a map for quick building volume lookup
+    let building_volume_map: std::collections::HashMap<Uuid, f64> =
+        buildings.iter().map(|b| (b.uuid, b.volume)).collect();
+
     for proposal in proposals {
         let mut successfully_assigned_buildings = Vec::new();
         for building_uuid in proposal.claimed_building_uuids {
@@ -543,9 +552,22 @@ pub fn assign_buildings_to_businesses(
             let market_name = market_map.get(&proposal.market_uuid).unwrap();
             let business_name = generate_business_name(*market_name);
 
+            // Find the building with the highest volume to be the headquarter
+            let headquarter_building_uuid = successfully_assigned_buildings
+                .iter()
+                .max_by(|&&a, &&b| {
+                    let volume_a = building_volume_map.get(&a).unwrap_or(&0.0);
+                    let volume_b = building_volume_map.get(&b).unwrap_or(&0.0);
+                    volume_a
+                        .partial_cmp(volume_b)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .copied()
+                .unwrap();
+
             businesses.push(
                 Business::builder()
-                    .center(proposal.center)
+                    .headquarter_building_uuid(headquarter_building_uuid)
                     .uuid(business_uuid)
                     .name(business_name)
                     .operational_expenses(0)

@@ -39,12 +39,6 @@ impl From<DomainSortDirection> for i16 {
 
 #[derive(Debug, thiserror::Error)]
 pub enum RepositoryError {
-    #[error("Failed to cast Geometry as Point")]
-    PointCasting,
-
-    #[error("Failed to retrieve geometry from center")]
-    GeometryMissing,
-
     #[error("The provided user name has already been taken")]
     UserNameAlreadyTaken,
 
