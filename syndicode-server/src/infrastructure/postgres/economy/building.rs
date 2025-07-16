@@ -77,8 +77,8 @@ impl PgBuildingRepository {
                 u.uuid, u.gml_id, u.name, u.address, u.usage, u.usage_code, u.class, u.class_code,
                 u.city, u.city_code,
                 -- Use ST_GeomFromText to convert WKT strings to geometry
-                ST_SetSRID(ST_GeomFromText(u.center), $15),
-                ST_SetSRID(ST_GeomFromText(u.footprint), $15),
+                ST_SetSRID(ST_GeomFromText(u.center), $16),
+                ST_SetSRID(ST_GeomFromText(u.footprint), $16),
                 u.height, u.volume, u.prefecture
             FROM unnest(
                 $1::UUID[],

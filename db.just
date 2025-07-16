@@ -53,7 +53,7 @@ conn:
 dump:
   PGPASSWORD=$SERVER_POSTGRES_PASSWORD pg_dump \
     --format=custom \
-    --file=syndicode_server_backup.dump \
+    --file=syndicode_server.dump \
     --host=${SERVER_POSTGRES_HOST} \
     --port=${SERVER_POSTGRES_PORT} \
     --username=${SERVER_POSTGRES_USER} \
