@@ -43,6 +43,7 @@ impl PgBuildingRepository {
         let mut city_vec: Vec<Option<String>> = Vec::with_capacity(count);
         let mut city_code_vec: Vec<Option<String>> = Vec::with_capacity(count);
         let mut height_vec = Vec::with_capacity(count);
+        let mut volume_vec = Vec::with_capacity(count);
         let mut prefecture_vec: Vec<Option<String>> = Vec::with_capacity(count);
 
         let mut center_wkt_vec: Vec<String> = Vec::with_capacity(count);
@@ -60,6 +61,7 @@ impl PgBuildingRepository {
             city_vec.push(building.city);
             city_code_vec.push(building.city_code);
             height_vec.push(building.height);
+            volume_vec.push(building.volume);
             prefecture_vec.push(building.prefecture);
 
             center_wkt_vec.push(building.center.to_wkt().to_string());
@@ -69,7 +71,7 @@ impl PgBuildingRepository {
             r#"
             INSERT INTO buildings (
                 uuid, gml_id, name, address, usage, usage_code, class, class_code,
-                city, city_code, center, footprint, height, prefecture
+                city, city_code, center, footprint, height, volume, prefecture
             )
             SELECT
                 u.uuid, u.gml_id, u.name, u.address, u.usage, u.usage_code, u.class, u.class_code,
@@ -77,7 +79,7 @@ impl PgBuildingRepository {
                 -- Use ST_GeomFromText to convert WKT strings to geometry
                 ST_SetSRID(ST_GeomFromText(u.center), $15),
                 ST_SetSRID(ST_GeomFromText(u.footprint), $15),
-                u.height, u.prefecture
+                u.height, u.volume, u.prefecture
             FROM unnest(
                 $1::UUID[],
                 $2::TEXT[],
@@ -92,10 +94,11 @@ impl PgBuildingRepository {
                 $11::TEXT[],
                 $12::TEXT[],
                 $13::DOUBLE PRECISION[],
-                $14::TEXT[]
+                $14::DOUBLE PRECISION[],
+                $15::TEXT[]
             ) AS u(
                 uuid, gml_id, name, address, usage, usage_code, class, class_code,
-                city, city_code, center, footprint, height, prefecture
+                city, city_code, center, footprint, height, volume, prefecture
             )
         "#,
         )
@@ -112,6 +115,7 @@ impl PgBuildingRepository {
         .bind(&center_wkt_vec)
         .bind(&footprint_wkt_vec)
         .bind(&height_vec)
+        .bind(&volume_vec)
         .bind(&prefecture_vec)
         .bind(SRID)
         .execute(executor)
