@@ -15,6 +15,11 @@ export class QueryBuildingsRequest extends jspb.Message {
     getOwningCorporationUuid(): google_protobuf_wrappers_pb.StringValue | undefined;
     setOwningCorporationUuid(value?: google_protobuf_wrappers_pb.StringValue): QueryBuildingsRequest;
 
+    hasOwningBusinessUuid(): boolean;
+    clearOwningBusinessUuid(): void;
+    getOwningBusinessUuid(): google_protobuf_wrappers_pb.StringValue | undefined;
+    setOwningBusinessUuid(value?: google_protobuf_wrappers_pb.StringValue): QueryBuildingsRequest;
+
     hasMinLon(): boolean;
     clearMinLon(): void;
     getMinLon(): google_protobuf_wrappers_pb.DoubleValue | undefined;
@@ -53,6 +58,7 @@ export class QueryBuildingsRequest extends jspb.Message {
 export namespace QueryBuildingsRequest {
     export type AsObject = {
         owningCorporationUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
+        owningBusinessUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
         minLon?: google_protobuf_wrappers_pb.DoubleValue.AsObject,
         maxLon?: google_protobuf_wrappers_pb.DoubleValue.AsObject,
         minLat?: google_protobuf_wrappers_pb.DoubleValue.AsObject,

@@ -434,6 +434,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.toObject = function(o
 proto.syndicode_economy_v1.QueryBuildingsRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
     owningCorporationUuid: (f = msg.getOwningCorporationUuid()) && google_protobuf_wrappers_pb.StringValue.toObject(includeInstance, f),
+    owningBusinessUuid: (f = msg.getOwningBusinessUuid()) && google_protobuf_wrappers_pb.StringValue.toObject(includeInstance, f),
     minLon: (f = msg.getMinLon()) && google_protobuf_wrappers_pb.DoubleValue.toObject(includeInstance, f),
     maxLon: (f = msg.getMaxLon()) && google_protobuf_wrappers_pb.DoubleValue.toObject(includeInstance, f),
     minLat: (f = msg.getMinLat()) && google_protobuf_wrappers_pb.DoubleValue.toObject(includeInstance, f),
@@ -481,26 +482,31 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.deserializeBinaryFromReader = f
       msg.setOwningCorporationUuid(value);
       break;
     case 2:
-      var value = new google_protobuf_wrappers_pb.DoubleValue;
-      reader.readMessage(value,google_protobuf_wrappers_pb.DoubleValue.deserializeBinaryFromReader);
-      msg.setMinLon(value);
+      var value = new google_protobuf_wrappers_pb.StringValue;
+      reader.readMessage(value,google_protobuf_wrappers_pb.StringValue.deserializeBinaryFromReader);
+      msg.setOwningBusinessUuid(value);
       break;
     case 3:
       var value = new google_protobuf_wrappers_pb.DoubleValue;
       reader.readMessage(value,google_protobuf_wrappers_pb.DoubleValue.deserializeBinaryFromReader);
-      msg.setMaxLon(value);
+      msg.setMinLon(value);
       break;
     case 4:
       var value = new google_protobuf_wrappers_pb.DoubleValue;
       reader.readMessage(value,google_protobuf_wrappers_pb.DoubleValue.deserializeBinaryFromReader);
-      msg.setMinLat(value);
+      msg.setMaxLon(value);
       break;
     case 5:
       var value = new google_protobuf_wrappers_pb.DoubleValue;
       reader.readMessage(value,google_protobuf_wrappers_pb.DoubleValue.deserializeBinaryFromReader);
-      msg.setMaxLat(value);
+      msg.setMinLat(value);
       break;
     case 6:
+      var value = new google_protobuf_wrappers_pb.DoubleValue;
+      reader.readMessage(value,google_protobuf_wrappers_pb.DoubleValue.deserializeBinaryFromReader);
+      msg.setMaxLat(value);
+      break;
+    case 7:
       var value = new google_protobuf_wrappers_pb.Int64Value;
       reader.readMessage(value,google_protobuf_wrappers_pb.Int64Value.deserializeBinaryFromReader);
       msg.setLimit(value);
@@ -542,15 +548,15 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.serializeBinaryToWriter = funct
       google_protobuf_wrappers_pb.StringValue.serializeBinaryToWriter
     );
   }
-  f = message.getMinLon();
+  f = message.getOwningBusinessUuid();
   if (f != null) {
     writer.writeMessage(
       2,
       f,
-      google_protobuf_wrappers_pb.DoubleValue.serializeBinaryToWriter
+      google_protobuf_wrappers_pb.StringValue.serializeBinaryToWriter
     );
   }
-  f = message.getMaxLon();
+  f = message.getMinLon();
   if (f != null) {
     writer.writeMessage(
       3,
@@ -558,7 +564,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.serializeBinaryToWriter = funct
       google_protobuf_wrappers_pb.DoubleValue.serializeBinaryToWriter
     );
   }
-  f = message.getMinLat();
+  f = message.getMaxLon();
   if (f != null) {
     writer.writeMessage(
       4,
@@ -566,7 +572,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.serializeBinaryToWriter = funct
       google_protobuf_wrappers_pb.DoubleValue.serializeBinaryToWriter
     );
   }
-  f = message.getMaxLat();
+  f = message.getMinLat();
   if (f != null) {
     writer.writeMessage(
       5,
@@ -574,10 +580,18 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.serializeBinaryToWriter = funct
       google_protobuf_wrappers_pb.DoubleValue.serializeBinaryToWriter
     );
   }
-  f = message.getLimit();
+  f = message.getMaxLat();
   if (f != null) {
     writer.writeMessage(
       6,
+      f,
+      google_protobuf_wrappers_pb.DoubleValue.serializeBinaryToWriter
+    );
+  }
+  f = message.getLimit();
+  if (f != null) {
+    writer.writeMessage(
+      7,
       f,
       google_protobuf_wrappers_pb.Int64Value.serializeBinaryToWriter
     );
@@ -623,12 +637,49 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.hasOwningCorporationU
 
 
 /**
- * optional google.protobuf.DoubleValue min_lon = 2;
+ * optional google.protobuf.StringValue owning_business_uuid = 2;
+ * @return {?proto.google.protobuf.StringValue}
+ */
+proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getOwningBusinessUuid = function() {
+  return /** @type{?proto.google.protobuf.StringValue} */ (
+    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.StringValue, 2));
+};
+
+
+/**
+ * @param {?proto.google.protobuf.StringValue|undefined} value
+ * @return {!proto.syndicode_economy_v1.QueryBuildingsRequest} returns this
+*/
+proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.setOwningBusinessUuid = function(value) {
+  return jspb.Message.setWrapperField(this, 2, value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.syndicode_economy_v1.QueryBuildingsRequest} returns this
+ */
+proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.clearOwningBusinessUuid = function() {
+  return this.setOwningBusinessUuid(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.hasOwningBusinessUuid = function() {
+  return jspb.Message.getField(this, 2) != null;
+};
+
+
+/**
+ * optional google.protobuf.DoubleValue min_lon = 3;
  * @return {?proto.google.protobuf.DoubleValue}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMinLon = function() {
   return /** @type{?proto.google.protobuf.DoubleValue} */ (
-    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 2));
+    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 3));
 };
 
 
@@ -637,7 +688,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMinLon = function(
  * @return {!proto.syndicode_economy_v1.QueryBuildingsRequest} returns this
 */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.setMinLon = function(value) {
-  return jspb.Message.setWrapperField(this, 2, value);
+  return jspb.Message.setWrapperField(this, 3, value);
 };
 
 
@@ -655,17 +706,17 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.clearMinLon = functio
  * @return {boolean}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.hasMinLon = function() {
-  return jspb.Message.getField(this, 2) != null;
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
 /**
- * optional google.protobuf.DoubleValue max_lon = 3;
+ * optional google.protobuf.DoubleValue max_lon = 4;
  * @return {?proto.google.protobuf.DoubleValue}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMaxLon = function() {
   return /** @type{?proto.google.protobuf.DoubleValue} */ (
-    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 3));
+    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 4));
 };
 
 
@@ -674,7 +725,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMaxLon = function(
  * @return {!proto.syndicode_economy_v1.QueryBuildingsRequest} returns this
 */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.setMaxLon = function(value) {
-  return jspb.Message.setWrapperField(this, 3, value);
+  return jspb.Message.setWrapperField(this, 4, value);
 };
 
 
@@ -692,17 +743,17 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.clearMaxLon = functio
  * @return {boolean}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.hasMaxLon = function() {
-  return jspb.Message.getField(this, 3) != null;
+  return jspb.Message.getField(this, 4) != null;
 };
 
 
 /**
- * optional google.protobuf.DoubleValue min_lat = 4;
+ * optional google.protobuf.DoubleValue min_lat = 5;
  * @return {?proto.google.protobuf.DoubleValue}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMinLat = function() {
   return /** @type{?proto.google.protobuf.DoubleValue} */ (
-    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 4));
+    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 5));
 };
 
 
@@ -711,7 +762,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMinLat = function(
  * @return {!proto.syndicode_economy_v1.QueryBuildingsRequest} returns this
 */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.setMinLat = function(value) {
-  return jspb.Message.setWrapperField(this, 4, value);
+  return jspb.Message.setWrapperField(this, 5, value);
 };
 
 
@@ -729,17 +780,17 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.clearMinLat = functio
  * @return {boolean}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.hasMinLat = function() {
-  return jspb.Message.getField(this, 4) != null;
+  return jspb.Message.getField(this, 5) != null;
 };
 
 
 /**
- * optional google.protobuf.DoubleValue max_lat = 5;
+ * optional google.protobuf.DoubleValue max_lat = 6;
  * @return {?proto.google.protobuf.DoubleValue}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMaxLat = function() {
   return /** @type{?proto.google.protobuf.DoubleValue} */ (
-    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 5));
+    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.DoubleValue, 6));
 };
 
 
@@ -748,7 +799,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getMaxLat = function(
  * @return {!proto.syndicode_economy_v1.QueryBuildingsRequest} returns this
 */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.setMaxLat = function(value) {
-  return jspb.Message.setWrapperField(this, 5, value);
+  return jspb.Message.setWrapperField(this, 6, value);
 };
 
 
@@ -766,17 +817,17 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.clearMaxLat = functio
  * @return {boolean}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.hasMaxLat = function() {
-  return jspb.Message.getField(this, 5) != null;
+  return jspb.Message.getField(this, 6) != null;
 };
 
 
 /**
- * optional google.protobuf.Int64Value limit = 6;
+ * optional google.protobuf.Int64Value limit = 7;
  * @return {?proto.google.protobuf.Int64Value}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getLimit = function() {
   return /** @type{?proto.google.protobuf.Int64Value} */ (
-    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.Int64Value, 6));
+    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.Int64Value, 7));
 };
 
 
@@ -785,7 +836,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.getLimit = function()
  * @return {!proto.syndicode_economy_v1.QueryBuildingsRequest} returns this
 */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.setLimit = function(value) {
-  return jspb.Message.setWrapperField(this, 6, value);
+  return jspb.Message.setWrapperField(this, 7, value);
 };
 
 
@@ -803,7 +854,7 @@ proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.clearLimit = function
  * @return {boolean}
  */
 proto.syndicode_economy_v1.QueryBuildingsRequest.prototype.hasLimit = function() {
-  return jspb.Message.getField(this, 6) != null;
+  return jspb.Message.getField(this, 7) != null;
 };
 
 

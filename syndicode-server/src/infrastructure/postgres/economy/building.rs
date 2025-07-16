@@ -149,6 +149,11 @@ impl PgBuildingRepository {
             qb.push_bind(corp_uuid);
         }
 
+        if let Some(business_uuid) = req.owning_business_uuid {
+            qb.push(" AND bo.owning_business_uuid = ");
+            qb.push_bind(business_uuid);
+        }
+
         // A valid bounding box requires all four coordinate values.
         if let (Some(min_lon), Some(min_lat), Some(max_lon), Some(max_lat)) =
             (req.min_lon, req.min_lat, req.max_lon, req.max_lat)

@@ -74,10 +74,15 @@ where
             parse_maybe_uuid(request.owning_corporation_uuid, "owning corporation uuid")
                 .map_err(|status| *status)?;
 
+        let owning_business_uuid =
+            parse_maybe_uuid(request.owning_business_uuid, "owning business uuid")
+                .map_err(|status| *status)?;
+
         let (game_tick, domain_buildings) = self
             .query_buildings_uc
             .execute()
             .maybe_owning_corporation_uuid(owning_corporation_uuid)
+            .maybe_owning_business_uuid(owning_business_uuid)
             .maybe_min_lon(request.min_lon)
             .maybe_max_lon(request.max_lon)
             .maybe_min_lat(request.min_lat)

@@ -25,6 +25,7 @@ where
     pub async fn execute(
         &self,
         owning_corporation_uuid: Option<Uuid>,
+        owning_business_uuid: Option<Uuid>,
         min_lon: Option<f64>,
         max_lon: Option<f64>,
         min_lat: Option<f64>,
@@ -33,6 +34,7 @@ where
     ) -> ApplicationResult<(i64, Vec<BuildingDetails>)> {
         let req = QueryBuildingsRequest::builder()
             .maybe_owning_corporation_uuid(owning_corporation_uuid)
+            .maybe_owning_business_uuid(owning_business_uuid)
             .maybe_min_lon(min_lon)
             .maybe_max_lon(max_lon)
             .maybe_min_lat(min_lat)

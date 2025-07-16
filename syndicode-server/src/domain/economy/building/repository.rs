@@ -9,6 +9,7 @@ use super::model::Building;
 #[derive(Builder, Clone, PartialEq)]
 pub struct QueryBuildingsRequest {
     pub owning_corporation_uuid: Option<Uuid>,
+    pub owning_business_uuid: Option<Uuid>,
     pub min_lon: Option<f64>,
     pub max_lon: Option<f64>,
     pub min_lat: Option<f64>,
