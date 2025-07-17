@@ -32,7 +32,7 @@ function AppContent() {
   const [zoom, setZoom] = useState(TOKYO_INITIAL_VIEW_STATE.zoom);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessDetails | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { setOpen } = useSidebar();
   const [prevAuthState, setPrevAuthState] = useState(isAuthenticated);
@@ -76,11 +76,12 @@ function AppContent() {
         ref={mapRef}
         initialViewState={TOKYO_INITIAL_VIEW_STATE}
         mapStyle={MAP_STYLE}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', backgroundColor: 'hsl(0, 0%, 20%)' }}
         maxBounds={TOKYO_BOUNDS}
         minZoom={12}
         maxZoom={18}
         onMove={handleViewStateChange}
+        attributionControl={false}
       >
         <DeckGLOverlay
           layers={layers}

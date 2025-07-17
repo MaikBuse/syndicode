@@ -33,3 +33,8 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
 }
+
+export async function logout(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete('auth_token');
+}

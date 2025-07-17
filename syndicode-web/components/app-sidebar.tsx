@@ -117,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         {!isAuthenticated && (
-          <div className="px-3 py-4 border-t border-b border-sidebar-border mb-4">
+          <div className="px-3 py-4 border-t border-b border-sidebar-border">
             <SidebarMenu>
               <SidebarMenuItem>
                 <AuthButton />
