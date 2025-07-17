@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.16.0](https://github.com/MaikBuse/syndicode/compare/v0.15.0...v0.16.0) (2025-07-17)
+
+
+### Features
+
+* **server:** allign email template colors with theme ([c10e2b7](https://github.com/MaikBuse/syndicode/commit/c10e2b7cc8c2927d17ee1600a3ad2cba618bc3e9))
+* **web:** add border to signin button ([d682ec1](https://github.com/MaikBuse/syndicode/commit/d682ec1df19b702c5bad38e58af3481c1d19bfee))
+* **web:** add global loading indicator ([8aaba27](https://github.com/MaikBuse/syndicode/commit/8aaba271480aee8389a84220f9c63ee5410ae65d))
+* **web:** add global loading indicator ([cf20e3d](https://github.com/MaikBuse/syndicode/commit/cf20e3d3855dd20f94fc20d27ada1d2f86738481))
+* **web:** adjust loading indicator placement ([5531141](https://github.com/MaikBuse/syndicode/commit/5531141257a65dd051f4221f7bcf2d4b8e6cfe6d))
+* **web:** remove cookie on logout ([f0be79e](https://github.com/MaikBuse/syndicode/commit/f0be79eabd46cd7ad30bb75b6dc59d876cb5ea35))
+
+
+### Bug Fixes
+
+* **web:** remove animation on loading indicator ([587d614](https://github.com/MaikBuse/syndicode/commit/587d614a43470af6b76a9efff08777d31bf8d793))
+* **web:** remove unused hover state handling ([92cfdf0](https://github.com/MaikBuse/syndicode/commit/92cfdf007da3998f4ab6dbf70464ce9e700815c1))
+
 ## [0.15.0](https://github.com/MaikBuse/syndicode/compare/v0.14.0...v0.15.0) (2025-07-17)
 
 
