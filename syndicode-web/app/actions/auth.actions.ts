@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getClientIp, isGrpcError } from './utils';
 import { status } from '@grpc/grpc-js';
 import { User } from '@/domain/auth/auth.types';
+import { UserInactiveError } from '@/domain/auth/auth.error';
 
 // Zod schemas for validation
 const loginSchema = z.object({
@@ -49,10 +50,8 @@ export async function loginAction(values: z.infer<typeof loginSchema>): Promise<
     const user = await authService.login(validatedFields.data, ipAddress);
     return { success: true, isInactive: false, user: user, message: "Login successful!" };
   } catch (error) {
-    if (isGrpcError(error)) {
-      if (error.code === status.FAILED_PRECONDITION) {
-        return { success: false, isInactive: true, user: null, message: "Login failed. Please verify your account." };
-      }
+    if (error instanceof UserInactiveError) {
+      return { success: false, isInactive: true, user: null, message: "Login failed. Please verify your account." };
     }
 
     console.error(error);
