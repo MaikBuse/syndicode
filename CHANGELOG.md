@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.15.0](https://github.com/MaikBuse/syndicode/compare/v0.14.0...v0.15.0) (2025-07-17)
+
+
+### Features
+
+* add arc layer to visually match headquarters with owned buildings ([5a49188](https://github.com/MaikBuse/syndicode/commit/5a49188c9d7fb94fb9de2f7a5b850036144cfbdf))
+* **web:** adjust business poi color ([5afa9c3](https://github.com/MaikBuse/syndicode/commit/5afa9c3b48380205e674528bc12cf341d0ed6d5f))
+* **web:** always show business info on selection ([1148b0f](https://github.com/MaikBuse/syndicode/commit/1148b0f9f9538a742b62246d03206e46aa9e9c9d))
+* **web:** click on headquarter to see owned buildings ([26a2d81](https://github.com/MaikBuse/syndicode/commit/26a2d81e64f4f7f03ab8f7451d7d9b76286a7972))
+* **web:** highlight login button ([820198b](https://github.com/MaikBuse/syndicode/commit/820198bbe50d2a12b12f66207df71b53e2f16b1e))
+* **web:** improve performance using conditional memoization ([e06cd10](https://github.com/MaikBuse/syndicode/commit/e06cd107f94b161bc81842025255df15791ca216))
+* **web:** improve performance with animation cashing ([f049305](https://github.com/MaikBuse/syndicode/commit/f0493052f4750d590f56e6fe46efb137e1e1c39e))
+* **web:** introducing popup for business mouseover ([b2638f5](https://github.com/MaikBuse/syndicode/commit/b2638f5a1e34224e36f7c783284a8edb70074b0e))
+* **web:** make signin more prominent in side menu ([3fcd4e5](https://github.com/MaikBuse/syndicode/commit/3fcd4e599a50e6110469efcf7bb754ca54c62198))
+* **web:** prevent resizing of map when collapsing menu ([6e1a391](https://github.com/MaikBuse/syndicode/commit/6e1a391687d092b1a34a8139c4f5469ce87b4ff9))
+
 ## [0.14.0](https://github.com/MaikBuse/syndicode/compare/v0.13.0...v0.14.0) (2025-07-17)
 
 
