@@ -18,4 +18,4 @@ export const TILE_URL = 'https://assets.syndicode.dev/tokyo-buildings/{z}/{x}/{y
 
 export const QUERY_ZOOM_LEVEL_THRESHOLD = 15;
 
-export const MAP_STYLE = 'https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json';
+export const MAP_STYLE = 'https://assets.syndicode.dev/alidade_smooth_dark.json';
