@@ -21,7 +21,7 @@ const calculateMapLoading = (state: Pick<MapLoadingState, 'businessesLoading' | 
   return state.businessesLoading || state.buildingsLoading || state.corporationLoading || state.boundaryLoading;
 };
 
-export const useMapLoadingStore = create<MapLoadingState>((set, get) => ({
+export const useMapLoadingStore = create<MapLoadingState>((set) => ({
   // Initial state
   businessesLoading: false,
   buildingsLoading: false,
