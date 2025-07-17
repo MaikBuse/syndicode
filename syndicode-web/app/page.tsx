@@ -6,6 +6,7 @@ import { DeckGLOverlay } from '@/components/map/deck-gl-overlay';
 import { AuthDialog } from '@/components/auth/auth-dialog';
 import { AppSidebar } from '@/components/app-sidebar';
 import { BusinessInfoCard } from '@/components/map/business-info-card';
+import { MapLoadingIndicator } from '@/components/map/map-loading-indicator';
 import { useAnimationTime } from '@/hooks/use-animation-time';
 import { useTokyoBoundary } from '@/hooks/use-tokyo-boundary';
 import { useOwnedBusinesses } from '@/hooks/use-owned-businesses';
@@ -80,6 +81,7 @@ function App() {
           />
         </Map>
         <AppSidebar />
+        <MapLoadingIndicator />
 
         {/* Business Info Card - positioned in bottom right */}
         {(hoveredBusiness || selectedBusiness) && (

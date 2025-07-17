@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Corporation } from '@/domain/economy/economy.types';
 import { getCurrentCorporationAction } from '@/app/actions/economy.actions';
+import { useMapLoadingStore } from './use-map-loading-store';
 
 interface UserData {
   corporation: Corporation;
@@ -18,6 +19,8 @@ export const useUserDataStore = create<UserDataState>((set) => ({
   isLoading: false,
   fetchUserData: async () => {
     set({ isLoading: true });
+    useMapLoadingStore.getState().setCorporationLoading(true);
+    
     try {
       const response = await getCurrentCorporationAction()
 
@@ -31,6 +34,8 @@ export const useUserDataStore = create<UserDataState>((set) => ({
     } catch (error) {
       console.error("Failed to fetch user data", error);
       set({ isLoading: false, data: null }); // Handle error state
+    } finally {
+      useMapLoadingStore.getState().setCorporationLoading(false);
     }
   },
 }));
