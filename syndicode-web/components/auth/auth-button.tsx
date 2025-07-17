@@ -1,12 +1,11 @@
 'use client';
 
-import { LogIn, User } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { useAuthModal } from '@/stores/use-auth-modal';
-import { SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
+import { SidebarMenuButton } from '@/components/ui/sidebar';
 
 export function AuthButton() {
   const openModal = useAuthModal((state) => state.openModal);
-  const { isMobile } = useSidebar();
 
   return (
     <SidebarMenuButton 
