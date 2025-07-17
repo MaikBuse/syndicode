@@ -21,7 +21,7 @@ export const useOwnedBusinesses = () => {
 
       const payload = {
         owningCorporationUuid: corporation.uuid,
-        limit: 1000 // Get all businesses owned by the corporation
+        limit: 100 // Maximum allowed limit
       };
 
       const response = await queryBusinessesAction(payload);
