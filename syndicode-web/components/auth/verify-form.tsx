@@ -90,7 +90,7 @@ export function VerifyForm() {
               <FormItem>
                 <FormLabel>Verification Code</FormLabel>
                 <FormControl>
-                  <InputOTP maxLength={10} {...field}>
+                  <InputOTP maxLength={10} autoFocus {...field}>
                     <InputOTPGroup>
                       <InputOTPSlot index={0} />
                       <InputOTPSlot index={1} />

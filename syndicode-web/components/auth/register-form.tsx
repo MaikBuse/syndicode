@@ -76,7 +76,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="your_username" {...field} />
+                <Input placeholder="your_username" autoFocus {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
