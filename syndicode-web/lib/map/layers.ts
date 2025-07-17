@@ -1,7 +1,7 @@
 import { MVTLayer } from '@deck.gl/geo-layers';
-import { GeoJsonLayer } from '@deck.gl/layers';
+import { GeoJsonLayer, ArcLayer } from '@deck.gl/layers';
 import type { TokyoBoundaryGeoJSON, BuildingProperties } from './types';
-import type { BusinessDetails } from '@/domain/economy/economy.types';
+import type { BusinessDetails, BuildingDetails } from '@/domain/economy/economy.types';
 import { TILE_URL } from './constants';
 
 // Pre-calculate animation values to avoid Math.sin calculations on every render
@@ -108,9 +108,9 @@ export const createBoundaryLayersWithSharedAnimation = (
 };
 
 export const createBuildingsLayer = (
-  ownedBusinessGmlIds: Set<string>, 
-  updateTrigger: string, 
-  selectedBusinessBuildingGmlIds: Set<string> = new Set(), 
+  ownedBusinessGmlIds: Set<string>,
+  updateTrigger: string,
+  selectedBusinessBuildingGmlIds: Set<string> = new Set(),
   selectedUpdateTrigger: string = 'empty'
 ) => {
   // Pre-defined color arrays to avoid repeated array creation
@@ -192,57 +192,27 @@ const generateHexagonVertices = (center: [number, number], radius: number): [num
   return vertices;
 };
 
-// Rotate vertices around a center point
-const rotateVertices = (vertices: [number, number][], center: [number, number], angle: number): [number, number][] => {
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  
-  return vertices.map(([x, y]) => {
-    // Translate to origin
-    const translatedX = x - center[0];
-    const translatedY = y - center[1];
-    
-    // Rotate
-    const rotatedX = translatedX * cos - translatedY * sin;
-    const rotatedY = translatedX * sin + translatedY * cos;
-    
-    // Translate back
-    return [rotatedX + center[0], rotatedY + center[1]] as [number, number];
-  });
-};
 
 export const createHeadquarterHexLayer = (
-  businesses: BusinessDetails[], 
-  time: number, 
-  zoom: number,
-  selectedBusiness: BusinessDetails | null = null
+  businesses: BusinessDetails[],
+  time: number,
+  zoom: number
 ) => {
   // Convert businesses to hexagon geometries centered on their exact coordinates
   const hexagonData = businesses.flatMap((business, index) => {
     const center: [number, number] = [business.headquarterLongitude, business.headquarterLatitude];
 
-    // Check if this business is selected
-    const isSelected = selectedBusiness?.businessUuid === business.businessUuid;
-
     // Each headquarters has its own animation offset based on its index for color pulsing
     const animationOffset = index * 0.7;
-
-    // Rotation angle for selected hexagon
-    const rotationAngle = isSelected ? time * 2 : 0; // Rotate selected hexagon
 
     // Zoom-dependent radius: larger at lower zoom levels, smaller at higher zoom levels
     // At zoom 12: ~200m radius, at zoom 15: ~100m radius, at zoom 18: ~50m radius
     const baseRadius = 0.0018; // Base radius in decimal degrees
     const zoomFactor = Math.pow(0.7, zoom - 12); // Exponential scaling
     const radiusInDegrees = baseRadius * zoomFactor;
-    
-    // Generate base hexagon vertices
-    const baseVertices = generateHexagonVertices(center, radiusInDegrees);
-    
-    // Apply rotation if selected
-    const vertices = isSelected ? 
-      rotateVertices(baseVertices, center, rotationAngle) : 
-      baseVertices;
+
+    // Generate hexagon vertices
+    const vertices = generateHexagonVertices(center, radiusInDegrees);
 
     // Increased height for better visibility
     const height = 2000;
@@ -317,8 +287,43 @@ export const createHeadquarterHexLayer = (
       return Math.max(1, Math.min(4, 6 - (zoom - 12) * 0.4));
     },
     updateTriggers: {
-      getFillColor: [time, zoom, selectedBusiness?.businessUuid],
-      getLineColor: [time, selectedBusiness?.businessUuid]
+      getFillColor: [time, zoom],
+      getLineColor: [time]
     },
+  });
+};
+
+// Create arc layer connecting headquarters to owned buildings
+export const createHeadquarterArcLayer = (
+  selectedBusiness: BusinessDetails,
+  selectedBusinessBuildings: BuildingDetails[],
+  time: number
+) => {
+  const arcData = selectedBusinessBuildings.map((building) => {
+    return {
+      sourcePosition: [selectedBusiness.headquarterLongitude, selectedBusiness.headquarterLatitude],
+      targetPosition: [building.longitude, building.latitude],
+      buildingId: building.gmlId
+    };
+  });
+
+  return new ArcLayer({
+    id: 'headquarters-arcs',
+    data: arcData,
+    pickable: true,
+    getWidth: 4,
+    getSourcePosition: (d: { sourcePosition: [number, number] }) => d.sourcePosition,
+    getTargetPosition: (d: { targetPosition: [number, number] }) => d.targetPosition,
+    getSourceColor: [255, 215, 0, 75], // Gold from headquarters
+    getTargetColor: [147, 51, 234, 50], // Purple to buildings
+    widthMinPixels: 2,
+    widthMaxPixels: 8,
+    // Arc height controls the curvature - needs to be much larger for visibility
+    getHeight: 1.0, // Much larger height for visible arc curvature
+    // Alternative: animated height
+    // getHeight: (d: any) => Math.sin(time * 2 + d.sourcePosition[0] * 100) * 0.05 + 0.1,
+    updateTriggers: {
+      getHeight: [time]
+    }
   });
 };

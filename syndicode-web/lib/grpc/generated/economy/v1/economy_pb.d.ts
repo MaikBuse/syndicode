@@ -70,6 +70,10 @@ export namespace QueryBuildingsRequest {
 export class BuildingDetails extends jspb.Message { 
     getGmlId(): string;
     setGmlId(value: string): BuildingDetails;
+    getLongitude(): number;
+    setLongitude(value: number): BuildingDetails;
+    getLatitude(): number;
+    setLatitude(value: number): BuildingDetails;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): BuildingDetails.AsObject;
@@ -84,6 +88,8 @@ export class BuildingDetails extends jspb.Message {
 export namespace BuildingDetails {
     export type AsObject = {
         gmlId: string,
+        longitude: number,
+        latitude: number,
     }
 }
 

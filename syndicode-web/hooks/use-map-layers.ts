@@ -4,6 +4,7 @@ import type { BusinessDetails, BuildingDetails } from '@/domain/economy/economy.
 import {
   createBuildingsLayer,
   createHeadquarterHexLayer,
+  createHeadquarterArcLayer,
   createBoundaryLayersWithSharedAnimation
 } from '@/lib/map/layers';
 
@@ -54,7 +55,18 @@ export const useMapLayers = (
 
     // Add hex layer for headquarters (visible from far away) with selection support
     if (ownedBusinesses.length > 0) {
-      layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom, selectedBusiness));
+      // If a business is selected and has buildings, show arc layer instead of hexagon
+      if (selectedBusiness && selectedBusinessBuildings && selectedBusinessBuildings.length > 0) {
+        layersList.push(createHeadquarterArcLayer(selectedBusiness, selectedBusinessBuildings, time));
+        // Add hexagons for non-selected businesses
+        const nonSelectedBusinesses = ownedBusinesses.filter(b => b.businessUuid !== selectedBusiness.businessUuid);
+        if (nonSelectedBusinesses.length > 0) {
+          layersList.push(createHeadquarterHexLayer(nonSelectedBusinesses, time, zoom));
+        }
+      } else {
+        // Show all businesses as hexagons
+        layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom));
+      }
     }
 
     return layersList;

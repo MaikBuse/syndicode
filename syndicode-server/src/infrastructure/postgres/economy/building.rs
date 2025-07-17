@@ -133,7 +133,9 @@ impl PgBuildingRepository {
         let mut qb = QueryBuilder::new(
             r#"
         SELECT
-            bui.gml_id
+            bui.gml_id,
+            ST_X(bui.center) as longitude,
+            ST_Y(bui.center) as latitude
         FROM building_ownerships bo
         JOIN businesses b ON b.uuid = bo.owning_business_uuid AND b.game_tick = 
         "#,

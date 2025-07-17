@@ -10,7 +10,15 @@ export const useBusinessBuildings = (selectedBusiness: BusinessDetails | null) =
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
-    if (!selectedBusiness || !user) {
+    // Immediately clear buildings when no business is selected
+    if (!selectedBusiness) {
+      setBuildings([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    if (!user) {
       setBuildings([]);
       setLoading(false);
       setError(null);
@@ -18,6 +26,8 @@ export const useBusinessBuildings = (selectedBusiness: BusinessDetails | null) =
     }
 
     const fetchBuildings = async () => {
+      // Clear previous buildings immediately when switching between businesses
+      setBuildings([]);
       setLoading(true);
       setError(null);
 

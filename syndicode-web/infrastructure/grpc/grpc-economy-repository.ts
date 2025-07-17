@@ -128,6 +128,8 @@ export class GrpcEconomyRepository implements EconomyRepository {
       gameTick: response.getGameTick(),
       buildings: response.getBuildingsList().map((b: BuildingDetails) => ({
         gmlId: b.getGmlId(),
+        longitude: b.getLongitude(),
+        latitude: b.getLatitude(),
       })),
       totalCount: response.getTotalCount(),
     };

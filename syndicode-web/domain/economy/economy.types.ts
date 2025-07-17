@@ -18,6 +18,8 @@ export type QueryBuildingsFilters = {
 // Represents a single building's details.
 export type BuildingDetails = {
   gmlId: string;
+  longitude: number;
+  latitude: number;
 };
 
 // Represents the complete result of a building query.

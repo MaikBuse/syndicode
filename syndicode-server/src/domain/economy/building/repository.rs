@@ -20,6 +20,8 @@ pub struct QueryBuildingsRequest {
 #[derive(sqlx::FromRow, Debug)]
 pub struct BuildingDetails {
     pub gml_id: String,
+    pub longitude: f64,
+    pub latitude: f64,
 }
 
 #[async_trait]

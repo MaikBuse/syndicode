@@ -96,7 +96,11 @@ where
         let mut buildings = Vec::with_capacity(total_count);
 
         for o in domain_buildings {
-            buildings.push(BuildingDetails { gml_id: o.gml_id });
+            buildings.push(BuildingDetails { 
+                gml_id: o.gml_id,
+                longitude: o.longitude,
+                latitude: o.latitude,
+            });
         }
 
         Ok(Response::new(QueryBuildingsResponse {

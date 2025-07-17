@@ -890,7 +890,9 @@ proto.syndicode_economy_v1.BuildingDetails.prototype.toObject = function(opt_inc
  */
 proto.syndicode_economy_v1.BuildingDetails.toObject = function(includeInstance, msg) {
   var f, obj = {
-    gmlId: jspb.Message.getFieldWithDefault(msg, 1, "")
+    gmlId: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    longitude: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    latitude: jspb.Message.getFloatingPointFieldWithDefault(msg, 3, 0.0)
   };
 
   if (includeInstance) {
@@ -931,6 +933,14 @@ proto.syndicode_economy_v1.BuildingDetails.deserializeBinaryFromReader = functio
       var value = /** @type {string} */ (reader.readString());
       msg.setGmlId(value);
       break;
+    case 2:
+      var value = /** @type {number} */ (reader.readDouble());
+      msg.setLongitude(value);
+      break;
+    case 3:
+      var value = /** @type {number} */ (reader.readDouble());
+      msg.setLatitude(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -967,6 +977,20 @@ proto.syndicode_economy_v1.BuildingDetails.serializeBinaryToWriter = function(me
       f
     );
   }
+  f = message.getLongitude();
+  if (f !== 0.0) {
+    writer.writeDouble(
+      2,
+      f
+    );
+  }
+  f = message.getLatitude();
+  if (f !== 0.0) {
+    writer.writeDouble(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -985,6 +1009,42 @@ proto.syndicode_economy_v1.BuildingDetails.prototype.getGmlId = function() {
  */
 proto.syndicode_economy_v1.BuildingDetails.prototype.setGmlId = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional double longitude = 2;
+ * @return {number}
+ */
+proto.syndicode_economy_v1.BuildingDetails.prototype.getLongitude = function() {
+  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 2, 0.0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.syndicode_economy_v1.BuildingDetails} returns this
+ */
+proto.syndicode_economy_v1.BuildingDetails.prototype.setLongitude = function(value) {
+  return jspb.Message.setProto3FloatField(this, 2, value);
+};
+
+
+/**
+ * optional double latitude = 3;
+ * @return {number}
+ */
+proto.syndicode_economy_v1.BuildingDetails.prototype.getLatitude = function() {
+  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 3, 0.0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.syndicode_economy_v1.BuildingDetails} returns this
+ */
+proto.syndicode_economy_v1.BuildingDetails.prototype.setLatitude = function(value) {
+  return jspb.Message.setProto3FloatField(this, 3, value);
 };
 
 

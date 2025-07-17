@@ -31,6 +31,10 @@ pub struct QueryBuildingsRequest {
 pub struct BuildingDetails {
     #[prost(string, tag = "1")]
     pub gml_id: ::prost::alloc::string::String,
+    #[prost(double, tag = "2")]
+    pub longitude: f64,
+    #[prost(double, tag = "3")]
+    pub latitude: f64,
 }
 /// Response containing the list of matching building details
 #[derive(Clone, PartialEq, ::prost::Message)]

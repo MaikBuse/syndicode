@@ -34,6 +34,8 @@ message QueryBuildingsRequest {
 // Represents detailed information about a building.
 message BuildingDetails {
   string gml_id = 1;
+  double longitude = 2;
+  double latitude = 3;
 }
 
 // Response containing the list of matching building details
