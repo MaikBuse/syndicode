@@ -56,7 +56,7 @@ export const createTokyoBoundaryGlowLayer = (
   });
 };
 
-export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>) => {
+export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, updateTrigger: string) => {
   // Pre-defined color arrays to avoid repeated array creation
   // Lighter orange: brighter than the previous dark orange but not as bright as gold
   const ownedFill: [number, number, number, number] = [255, 150, 30, 255];
@@ -86,9 +86,9 @@ export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>) => {
       return ownedBusinessGmlIds.has(d.properties.gml_id) ? 2 : 1;
     },
     updateTriggers: {
-      getLineColor: [ownedBusinessGmlIds],
-      getFillColor: [ownedBusinessGmlIds],
-      getLineWidth: [ownedBusinessGmlIds]
+      getLineColor: [updateTrigger],
+      getFillColor: [updateTrigger],
+      getLineWidth: [updateTrigger]
     },
   });
 };

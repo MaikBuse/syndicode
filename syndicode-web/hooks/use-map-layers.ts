@@ -14,6 +14,18 @@ export const useMapLayers = (
   tokyoBoundary: TokyoBoundaryGeoJSON | null,
   zoom: number
 ) => {
+  // Memoize the Set creation to avoid recreating it on every render
+  const ownedBusinessGmlIds = useMemo(() => {
+    return new Set(ownedBusinesses.map(b => b.headquarterBuildingGmlId));
+  }, [ownedBusinesses]);
+
+  // Memoize the update trigger hash to avoid expensive operations
+  const ownedBusinessesUpdateTrigger = useMemo(() => {
+    return ownedBusinessGmlIds.size > 0 ? 
+      Array.from(ownedBusinessGmlIds).sort().join(',') : 
+      'empty';
+  }, [ownedBusinessGmlIds]);
+
   return useMemo(() => {
     const layersList = [];
 
@@ -22,9 +34,8 @@ export const useMapLayers = (
       layersList.push(createTokyoBoundaryGlowLayer(tokyoBoundary, time));
     }
 
-    // Create GML ID set for buildings layer
-    const ownedBusinessGmlIds = new Set(ownedBusinesses.map(b => b.headquarterBuildingGmlId));
-    layersList.push(createBuildingsLayer(ownedBusinessGmlIds));
+    // Use memoized GML ID set for buildings layer
+    layersList.push(createBuildingsLayer(ownedBusinessGmlIds, ownedBusinessesUpdateTrigger));
 
     // Add hex layer for headquarters (visible from far away)
     if (ownedBusinesses.length > 0) {
@@ -32,5 +43,5 @@ export const useMapLayers = (
     }
 
     return layersList;
-  }, [ownedBusinesses, time, tokyoBoundary, zoom]);
+  }, [ownedBusinessGmlIds, ownedBusinessesUpdateTrigger, ownedBusinesses, time, tokyoBoundary, zoom]);
 };
