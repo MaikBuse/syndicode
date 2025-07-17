@@ -194,12 +194,12 @@ export const createHeadquarterHexLayer = (businesses: BusinessDetails[], time: n
     // Each headquarters has its own animation offset based on its index for color pulsing
     const animationOffset = index * 0.7;
 
-    // Improved magenta color with better contrast
-    const fillColor: [number, number, number] = [200, 50, 180]; // Brighter magenta
+    // Light gold color for headquarters
+    const fillColor: [number, number, number] = [255, 215, 0]; // Light gold
 
-    // Bright magenta outline with pulsing effect
+    // Light gold outline with pulsing effect
     const linePulse = Math.sin(time * 4 + animationOffset) * 0.2 + 0.8;
-    const lineColor: [number, number, number, number] = [Math.floor(255 * linePulse), 80, 220, 255];
+    const lineColor: [number, number, number, number] = [Math.floor(255 * linePulse), Math.floor(215 * linePulse), 0, 255];
 
     return {
       polygon: [vertices],
