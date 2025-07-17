@@ -5,7 +5,8 @@ import {
   createTokyoBoundaryLayer,
   createTokyoBoundaryGlowLayer,
   createBuildingsLayer,
-  createHeadquarterHexLayer
+  createHeadquarterHexLayer,
+  createBoundaryLayersWithSharedAnimation
 } from '@/lib/map/layers';
 
 export const useMapLayers = (
@@ -30,8 +31,9 @@ export const useMapLayers = (
     const layersList = [];
 
     if (tokyoBoundary) {
-      layersList.push(createTokyoBoundaryLayer(tokyoBoundary, time));
-      layersList.push(createTokyoBoundaryGlowLayer(tokyoBoundary, time));
+      // Use optimized boundary layer creation with shared animation calculations
+      const boundaryLayers = createBoundaryLayersWithSharedAnimation(tokyoBoundary, time);
+      layersList.push(...boundaryLayers);
     }
 
     // Use memoized GML ID set for buildings layer

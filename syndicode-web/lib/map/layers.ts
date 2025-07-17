@@ -4,10 +4,27 @@ import type { TokyoBoundaryGeoJSON, BuildingProperties } from './types';
 import type { BusinessDetails } from '@/domain/economy/economy.types';
 import { TILE_URL } from './constants';
 
+// Pre-calculate animation values to avoid Math.sin calculations on every render
+const calculateBoundaryAnimationValues = (time: number) => {
+  const colorPulse = Math.sin(time * 3) * 0.3 + 0.7;
+  const widthPulse = Math.sin(time * 2) * 2;
+  const glowColorPulse = Math.sin(time * 2.5 + Math.PI) * 0.2 + 0.3;
+  const glowWidthPulse = Math.sin(time * 1.5) * 3;
+
+  return {
+    boundaryColor: [0, 255, 255, Math.floor(255 * colorPulse)] as [number, number, number, number],
+    boundaryWidth: 4 + widthPulse,
+    glowColor: [255, 0, 255, Math.floor(255 * glowColorPulse * 0.4)] as [number, number, number, number],
+    glowWidth: 8 + glowWidthPulse
+  };
+};
+
 export const createTokyoBoundaryLayer = (
   tokyoBoundary: TokyoBoundaryGeoJSON,
   time: number
 ) => {
+  const animationValues = calculateBoundaryAnimationValues(time);
+
   return new GeoJsonLayer({
     id: 'tokyo-boundary',
     data: tokyoBoundary,
@@ -16,13 +33,8 @@ export const createTokyoBoundaryLayer = (
     filled: false,
     lineWidthMinPixels: 3,
     lineWidthMaxPixels: 8,
-    getLineColor: () => {
-      const pulse = Math.sin(time * 3) * 0.3 + 0.7;
-      return [0, 255, 255, Math.floor(255 * pulse)]; // Cyan with alpha pulse
-    },
-    getLineWidth: () => {
-      return 4 + Math.sin(time * 2) * 2; // Animated width
-    },
+    getLineColor: animationValues.boundaryColor,
+    getLineWidth: animationValues.boundaryWidth,
     updateTriggers: {
       getLineColor: [time],
       getLineWidth: [time]
@@ -34,6 +46,8 @@ export const createTokyoBoundaryGlowLayer = (
   tokyoBoundary: TokyoBoundaryGeoJSON,
   time: number
 ) => {
+  const animationValues = calculateBoundaryAnimationValues(time);
+
   return new GeoJsonLayer({
     id: 'tokyo-boundary-glow',
     data: tokyoBoundary,
@@ -42,18 +56,55 @@ export const createTokyoBoundaryGlowLayer = (
     filled: false,
     lineWidthMinPixels: 6,
     lineWidthMaxPixels: 12,
-    getLineColor: () => {
-      const pulse = Math.sin(time * 2.5 + Math.PI) * 0.2 + 0.3;
-      return [255, 0, 255, Math.floor(255 * pulse * 0.4)]; // Magenta glow
-    },
-    getLineWidth: () => {
-      return 8 + Math.sin(time * 1.5) * 3;
-    },
+    getLineColor: animationValues.glowColor,
+    getLineWidth: animationValues.glowWidth,
     updateTriggers: {
       getLineColor: [time],
       getLineWidth: [time]
     }
   });
+};
+
+// Optimized function to create both boundary layers with shared animation calculations
+export const createBoundaryLayersWithSharedAnimation = (
+  tokyoBoundary: TokyoBoundaryGeoJSON,
+  time: number
+) => {
+  const animationValues = calculateBoundaryAnimationValues(time);
+
+  const boundaryLayer = new GeoJsonLayer({
+    id: 'tokyo-boundary',
+    data: tokyoBoundary,
+    pickable: true,
+    stroked: true,
+    filled: false,
+    lineWidthMinPixels: 3,
+    lineWidthMaxPixels: 8,
+    getLineColor: animationValues.boundaryColor,
+    getLineWidth: animationValues.boundaryWidth,
+    updateTriggers: {
+      getLineColor: [time],
+      getLineWidth: [time]
+    }
+  });
+
+  const glowLayer = new GeoJsonLayer({
+    id: 'tokyo-boundary-glow',
+    data: tokyoBoundary,
+    pickable: false,
+    stroked: true,
+    filled: false,
+    lineWidthMinPixels: 6,
+    lineWidthMaxPixels: 12,
+    getLineColor: animationValues.glowColor,
+    getLineWidth: animationValues.glowWidth,
+    updateTriggers: {
+      getLineColor: [time],
+      getLineWidth: [time]
+    }
+  });
+
+  return [boundaryLayer, glowLayer];
 };
 
 export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, updateTrigger: string) => {
@@ -93,8 +144,18 @@ export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, updateTri
   });
 };
 
-// Generate hexagon vertices around a center point
+// Cached hexagon geometry for performance
+const hexagonGeometryCache = new Map<string, [number, number][]>();
+
+// Generate hexagon vertices around a center point with caching
 const generateHexagonVertices = (center: [number, number], radius: number): [number, number][] => {
+  // Create a cache key based on center and radius (rounded for cache efficiency)
+  const cacheKey = `${center[0].toFixed(6)}_${center[1].toFixed(6)}_${radius.toFixed(6)}`;
+
+  if (hexagonGeometryCache.has(cacheKey)) {
+    return hexagonGeometryCache.get(cacheKey)!;
+  }
+
   const vertices: [number, number][] = [];
   for (let i = 0; i < 6; i++) {
     const angle = (i * Math.PI) / 3; // 60-degree intervals
@@ -102,6 +163,16 @@ const generateHexagonVertices = (center: [number, number], radius: number): [num
     const y = center[1] + radius * Math.sin(angle);
     vertices.push([x, y]);
   }
+
+  // Cache the result and implement simple LRU by limiting cache size
+  if (hexagonGeometryCache.size > 1000) {
+    const firstKey = hexagonGeometryCache.keys().next().value;
+    if (firstKey) {
+      hexagonGeometryCache.delete(firstKey);
+    }
+  }
+  hexagonGeometryCache.set(cacheKey, vertices);
+
   return vertices;
 };
 
