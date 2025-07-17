@@ -30,7 +30,6 @@ function AppContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapRef | null>(null);
   const [zoom, setZoom] = useState(TOKYO_INITIAL_VIEW_STATE.zoom);
-  const [hoveredBusiness, setHoveredBusiness] = useState<BusinessDetails | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessDetails | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
@@ -56,13 +55,6 @@ function AppContent() {
     setZoom(evt.viewState.zoom);
   };
 
-  const handleHover = (info: PickingInfo) => {
-    if (info.layer?.id === 'headquarters-hex' && info.object?.properties?.business) {
-      setHoveredBusiness(info.object.properties.business);
-    } else {
-      setHoveredBusiness(null);
-    }
-  };
 
   const handleClick = (info: PickingInfo) => {
     if (info.layer?.id === 'headquarters-hex' && info.object?.properties?.business) {
@@ -94,7 +86,6 @@ function AppContent() {
           layers={layers}
           useDevicePixels={true}
           pickingRadius={5}
-          onHover={handleHover}
           onClick={handleClick}
         />
       </Map>
