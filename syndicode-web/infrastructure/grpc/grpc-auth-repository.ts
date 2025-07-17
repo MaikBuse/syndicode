@@ -27,6 +27,13 @@ export class GrpcAuthRepository implements AuthRepository {
       // The error handling now lives inside the callback
       this.client.register(request, metadata, callOptions, (error, response) => {
         if (error) {
+          console.log('gRPC registration error:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            metadata: error.metadata
+          });
+          
           switch (error.code) {
             case grpc.status.ALREADY_EXISTS:
               return reject(new UniqueConstraint(error.details));
@@ -35,6 +42,10 @@ export class GrpcAuthRepository implements AuthRepository {
               return reject(new UserInactiveError(error.details));
 
             default:
+              console.log('Unknown error code:', error.code, 'Expected codes:', {
+                ALREADY_EXISTS: grpc.status.ALREADY_EXISTS,
+                FAILED_PRECONDITION: grpc.status.FAILED_PRECONDITION
+              });
               return reject(new UnknownAuthError("An unexpected error occurred during registration."));
           }
         }

@@ -1,10 +1,11 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { Eye, EyeOff } from 'lucide-react';
 
 import { useAuthModal } from '@/stores/use-auth-modal';
 import { registerAction } from '@/app/actions/auth.actions';
@@ -18,10 +19,16 @@ const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   corporationName: z.string().min(1, "Corporation name is required."),
   userPassword: z.string().min(6, "Password must be at least 6 characters."),
+  confirmPassword: z.string().min(6, "Password confirmation is required."),
+}).refine((data) => data.userPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 export function RegisterForm() {
   const [isPending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { setView, setUserNameToVerify } = useAuthModal();
 
   const form = useForm<z.infer<typeof registerSchema>>({
@@ -31,12 +38,20 @@ export function RegisterForm() {
       email: '',
       corporationName: '',
       userPassword: '',
+      confirmPassword: '',
     },
   });
 
   const onSubmit = (values: z.infer<typeof registerSchema>) => {
     startTransition(async () => {
-      const result = await registerAction(values);
+      // Exclude confirmPassword from the API call
+      const registerData = {
+        userName: values.userName,
+        email: values.email,
+        corporationName: values.corporationName,
+        userPassword: values.userPassword,
+      };
+      const result = await registerAction(registerData);
 
       if (result.success) {
         toast.success(result.message);
@@ -103,7 +118,64 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowPassword(!showPassword);
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Confirm Password */}
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowConfirmPassword(!showConfirmPassword);
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -131,6 +131,8 @@ message BusinessDetails {
   int64 operational_expenses = 5;
   string headquarter_building_uuid = 6;
   string headquarter_building_gml_id = 7;
+  double headquarter_longitude = 8;
+  double headquarter_latitude = 9;
 }
 
 // Response containing the list of matching business details.

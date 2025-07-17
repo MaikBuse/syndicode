@@ -265,6 +265,8 @@ where
                     operational_expenses: b.operational_expenses,
                     headquarter_building_uuid: b.headquarter_building_uuid.to_string(),
                     headquarter_building_gml_id: b.headquarter_building_gml_id.to_string(),
+                    headquarter_longitude: b.headquarter_longitude,
+                    headquarter_latitude: b.headquarter_latitude,
                 };
 
                 businesses.push(business);

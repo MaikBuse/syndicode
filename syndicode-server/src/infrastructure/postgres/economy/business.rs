@@ -143,6 +143,8 @@ impl PgBusinessRepository {
                 b.operational_expenses,
                 b.headquarter_building_uuid,
                 bui.gml_id AS headquarter_building_gml_id,
+                ST_X(bui.center) AS headquarter_longitude,
+                ST_Y(bui.center) AS headquarter_latitude,
                 m.volume AS market_volume
             FROM businesses b
             JOIN markets m ON b.market_uuid = m.uuid AND m.game_tick = "#,

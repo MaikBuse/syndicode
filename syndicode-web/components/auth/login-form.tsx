@@ -1,11 +1,12 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthModal } from '@/stores/use-auth-modal';
 import { loginAction } from '@/app/actions/auth.actions';
+import { Eye, EyeOff } from 'lucide-react';
 
 import { toast } from 'sonner';
 
@@ -21,6 +22,7 @@ const loginSchema = z.object({
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
   const { setView, closeModal, setUserNameToVerify } = useAuthModal();
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -31,22 +33,20 @@ export function LoginForm() {
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     startTransition(async () => {
       const loginResult = await loginAction(values);
+      
       if (loginResult.isInactive) {
-        toast.error(loginResult.message);
-
-        // Pass the username to the store so the verify form knows who to verify
+        // User needs to verify their account
         setUserNameToVerify(values.userName);
-        // Switch the modal to the 'verify' view
         setView('verify');
+        toast.info(loginResult.message);
+        return;
       }
+      
       if (loginResult.success) {
         toast.success(loginResult.message);
-
-
         if (loginResult.user) {
           useAuthStore.getState().login(loginResult.user);
         }
-
         closeModal();
       } else {
         toast.error(loginResult.message);
@@ -77,7 +77,28 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowPassword(!showPassword);
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

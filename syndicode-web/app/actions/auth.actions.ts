@@ -63,6 +63,7 @@ export async function loginAction(values: z.infer<typeof loginSchema>): Promise<
 export async function registerAction(values: z.infer<typeof registerSchema>): Promise<ActionResponse> {
   const validatedFields = registerSchema.safeParse(values);
   if (!validatedFields.success) {
+    console.error('Validation failed:', validatedFields.error);
     return { success: false, message: "Invalid input." };
   }
 
@@ -72,6 +73,7 @@ export async function registerAction(values: z.infer<typeof registerSchema>): Pr
     await authService.register(validatedFields.data, ipAddress);
     return { success: true, message: "Registration successful! Please check your email for a verification code." };
   } catch (error) {
+    console.error('Registration error:', error);
     const message = (typeof error === 'object' && error && 'message' in error)
       ? String((error as { message: unknown }).message)
       : 'Registration failed.';

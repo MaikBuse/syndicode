@@ -15,6 +15,7 @@
     "pre-deploy": "npm run type-check && npm run lint:check && npm run format:check && npm run build"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.1.13",
     "@deck.gl/core": "^9.1.12",
     "@deck.gl/geo-layers": "^9.1.12",
     "@deck.gl/mapbox": "^9.1.12",

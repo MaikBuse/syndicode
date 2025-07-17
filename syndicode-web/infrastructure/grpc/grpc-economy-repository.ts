@@ -195,6 +195,8 @@ export class GrpcEconomyRepository implements EconomyRepository {
         operationalExpenses: b.getOperationalExpenses(),
         headquarterBuildingUuid: b.getHeadquarterBuildingUuid(),
         headquarterBuildingGmlId: b.getHeadquarterBuildingGmlId(),
+        headquarterLongitude: b.getHeadquarterLongitude(),
+        headquarterLatitude: b.getHeadquarterLatitude(),
       })),
       totalCount: response.getTotalCount(),
     };

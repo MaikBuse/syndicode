@@ -125,6 +125,10 @@ pub struct BusinessDetails {
     pub headquarter_building_uuid: ::prost::alloc::string::String,
     #[prost(string, tag = "7")]
     pub headquarter_building_gml_id: ::prost::alloc::string::String,
+    #[prost(double, tag = "8")]
+    pub headquarter_longitude: f64,
+    #[prost(double, tag = "9")]
+    pub headquarter_latitude: f64,
 }
 /// Response containing the list of matching business details.
 #[derive(Clone, PartialEq, ::prost::Message)]

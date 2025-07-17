@@ -39,6 +39,8 @@ pub struct BusinessDetails {
     pub operational_expenses: i64,
     pub headquarter_building_uuid: Uuid,
     pub headquarter_building_gml_id: String,
+    pub headquarter_longitude: f64,
+    pub headquarter_latitude: f64,
 }
 
 #[async_trait]

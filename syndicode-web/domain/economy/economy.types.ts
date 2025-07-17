@@ -61,6 +61,8 @@ export type BusinessDetails = {
   operationalExpenses: number;
   headquarterBuildingUuid: string;
   headquarterBuildingGmlId: string;
+  headquarterLongitude: number;
+  headquarterLatitude: number;
 };
 
 // Represents the complete result of a business query.

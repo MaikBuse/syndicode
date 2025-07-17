@@ -263,6 +263,10 @@ export class BusinessDetails extends jspb.Message {
     setHeadquarterBuildingUuid(value: string): BusinessDetails;
     getHeadquarterBuildingGmlId(): string;
     setHeadquarterBuildingGmlId(value: string): BusinessDetails;
+    getHeadquarterLongitude(): number;
+    setHeadquarterLongitude(value: number): BusinessDetails;
+    getHeadquarterLatitude(): number;
+    setHeadquarterLatitude(value: number): BusinessDetails;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): BusinessDetails.AsObject;
@@ -283,6 +287,8 @@ export namespace BusinessDetails {
         operationalExpenses: number,
         headquarterBuildingUuid: string,
         headquarterBuildingGmlId: string,
+        headquarterLongitude: number,
+        headquarterLatitude: number,
     }
 }
 

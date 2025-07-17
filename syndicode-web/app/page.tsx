@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Map, MapRef } from 'react-map-gl/maplibre';
+import React, { useRef, useState } from 'react';
+import { Map, MapRef, ViewStateChangeEvent } from 'react-map-gl/maplibre';
 import { DeckGLOverlay } from '@/components/map/deck-gl-overlay';
 import { AuthOverlay } from '@/components/map/auth-overlay';
 import { useAnimationTime } from '@/hooks/use-animation-time';
@@ -17,11 +17,16 @@ import {
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapRef | null>(null);
+  const [zoom, setZoom] = useState(TOKYO_INITIAL_VIEW_STATE.zoom);
 
   const time = useAnimationTime();
   const tokyoBoundary = useTokyoBoundary();
-  const ownedBusinessGmlIds = useOwnedBusinesses();
-  const layers = useMapLayers(ownedBusinessGmlIds, time, tokyoBoundary);
+  const ownedBusinesses = useOwnedBusinesses();
+  const layers = useMapLayers(ownedBusinesses, time, tokyoBoundary, zoom);
+
+  const handleViewStateChange = (evt: ViewStateChangeEvent) => {
+    setZoom(evt.viewState.zoom);
+  };
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -35,6 +40,7 @@ function App() {
         maxBounds={TOKYO_BOUNDS}
         minZoom={12}
         maxZoom={18}
+        onMove={handleViewStateChange}
       >
         <DeckGLOverlay
           layers={layers}

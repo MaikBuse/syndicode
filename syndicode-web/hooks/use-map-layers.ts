@@ -1,15 +1,18 @@
 import { useMemo } from 'react';
 import type { TokyoBoundaryGeoJSON } from '@/lib/map/types';
-import { 
-  createTokyoBoundaryLayer, 
-  createTokyoBoundaryGlowLayer, 
-  createBuildingsLayer 
+import type { BusinessDetails } from '@/domain/economy/economy.types';
+import {
+  createTokyoBoundaryLayer,
+  createTokyoBoundaryGlowLayer,
+  createBuildingsLayer,
+  createHeadquarterHexLayer
 } from '@/lib/map/layers';
 
 export const useMapLayers = (
-  ownedBusinessGmlIds: Set<string>,
+  ownedBusinesses: BusinessDetails[],
   time: number,
-  tokyoBoundary: TokyoBoundaryGeoJSON | null
+  tokyoBoundary: TokyoBoundaryGeoJSON | null,
+  zoom: number
 ) => {
   return useMemo(() => {
     const layersList = [];
@@ -19,8 +22,15 @@ export const useMapLayers = (
       layersList.push(createTokyoBoundaryGlowLayer(tokyoBoundary, time));
     }
 
-    layersList.push(createBuildingsLayer(ownedBusinessGmlIds, time));
+    // Create GML ID set for buildings layer
+    const ownedBusinessGmlIds = new Set(ownedBusinesses.map(b => b.headquarterBuildingGmlId));
+    layersList.push(createBuildingsLayer(ownedBusinessGmlIds));
+
+    // Add hex layer for headquarters (visible from far away)
+    if (ownedBusinesses.length > 0) {
+      layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom));
+    }
 
     return layersList;
-  }, [ownedBusinessGmlIds, time, tokyoBoundary]);
+  }, [ownedBusinesses, time, tokyoBoundary, zoom]);
 };

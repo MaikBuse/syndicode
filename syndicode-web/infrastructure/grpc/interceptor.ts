@@ -6,7 +6,7 @@ import { CallContext } from './types';
  * A unified gRPC interceptor that handles both static and dynamic metadata.
  */
 export const contextMetadataInterceptor: grpc.Interceptor = (options, nextCall) => {
-  const customContext = (options as any).customContext as CallContext | undefined;
+  const customContext = (options as grpc.CallOptions & { customContext?: CallContext }).customContext;
 
   return new grpc.InterceptingCall(nextCall(options), {
     start: function(metadata: grpc.Metadata, listener, next) {
