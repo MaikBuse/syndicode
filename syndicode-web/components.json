@@ -4,7 +4,7 @@
   "tailwind": {
     "config": "",
     "css": "app/globals.css",
-    "baseColor": "Neutral",
+    "baseColor": "neutral",
     "cssVariables": true
   },
   "aliases": {

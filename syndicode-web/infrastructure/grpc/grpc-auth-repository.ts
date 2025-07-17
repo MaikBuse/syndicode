@@ -93,7 +93,7 @@ export class GrpcAuthRepository implements AuthRepository {
           resolve(
             {
               uuid: response.getUserUuid(),
-              name: response.getEmail(),
+              name: response.getUserName(),
               email: response.getEmail(),
               role: response.getUserRole().toString()
             }
