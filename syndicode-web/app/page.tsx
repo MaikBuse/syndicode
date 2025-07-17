@@ -82,9 +82,9 @@ function App() {
         <AppSidebar />
 
         {/* Business Info Card - positioned in bottom right */}
-        {hoveredBusiness && (
+        {(hoveredBusiness || selectedBusiness) && (
           <div className="absolute bottom-4 right-4 z-10 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-            <BusinessInfoCard business={hoveredBusiness} />
+            <BusinessInfoCard business={selectedBusiness || hoveredBusiness} />
           </div>
         )}
       </div>
