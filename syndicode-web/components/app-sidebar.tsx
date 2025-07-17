@@ -89,7 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { toggleSidebar } = useSidebar()
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" className="[&>*]:bg-background bg-background" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

@@ -8,7 +8,7 @@ export function MapLoadingIndicator() {
   if (!isMapLoading) return null;
 
   // Adjust left position based on sidebar state
-  const leftPosition = sidebarState === 'expanded' ? 'left-64' : 'left-20';
+  const leftPosition = sidebarState === 'expanded' ? 'left-66' : 'left-16';
 
   return (
     <div className={`absolute top-4 ${leftPosition} z-20 flex items-center gap-2 bg-black/80 backdrop-blur-sm border border-cyan-500/20 rounded-lg px-3 py-2 transition-all duration-200`}>

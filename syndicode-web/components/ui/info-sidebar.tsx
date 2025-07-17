@@ -39,7 +39,7 @@ export function InfoSidebar({ isOpen, onClose, title, children }: InfoSidebarPro
         </div>
 
         {/* Content */}
-        <div className="p-4 h-full overflow-y-auto">
+        <div className="p-3 h-full overflow-y-auto">
           {children}
         </div>
       </div>
