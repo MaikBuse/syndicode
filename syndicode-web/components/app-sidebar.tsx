@@ -116,21 +116,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        {!isAuthenticated && (
+          <div className="px-3 py-4 border-b border-sidebar-border mb-4">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <AuthButton />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </div>
+        )}
         <NavMain items={syndicodeNavigation} />
       </SidebarContent>
       <SidebarFooter>
-        {isAuthenticated && user ? (
+        {isAuthenticated && user && (
           <NavUser user={{
             name: user.name,
             email: user.email,
             avatar: ""
           }} />
-        ) : (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <AuthButton />
-            </SidebarMenuItem>
-          </SidebarMenu>
         )}
       </SidebarFooter>
       <SidebarRail />
