@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.0](https://github.com/MaikBuse/syndicode/compare/v0.13.0...v0.14.0) (2025-07-17)
+
+
+### Features
+
+* add visuals for headquarter display on map ([e4cd0f0](https://github.com/MaikBuse/syndicode/commit/e4cd0f07a896b0c01bc2367e856122c8b5457649))
+* **server:** increase building layer performance by reducing calculations ([36b1fe8](https://github.com/MaikBuse/syndicode/commit/36b1fe8d5e4f95163fe42951f217004543be5e0f))
+* **web:** add custom map ([92e8640](https://github.com/MaikBuse/syndicode/commit/92e86405f04c2be58768c9c56981996e4b5d286e))
+* **web:** add sidebar ([d3f1979](https://github.com/MaikBuse/syndicode/commit/d3f19796bcfdde5efee6dcf9e62f82c868e18275))
+* **web:** autofocus on forms ([bcf7652](https://github.com/MaikBuse/syndicode/commit/bcf765295ca1ccd1dc83f51e1ff1cfb91e60a122))
+* **web:** send people to verification if user inactive ([b7283f5](https://github.com/MaikBuse/syndicode/commit/b7283f513155d2108fe825f384862ae521ece854))
+
 ## [0.13.0](https://github.com/MaikBuse/syndicode/compare/v0.12.2...v0.13.0) (2025-07-16)
 
 
