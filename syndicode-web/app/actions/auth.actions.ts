@@ -3,8 +3,7 @@
 import { headers } from 'next/headers';
 import authService from '@/application/auth-service';
 import { z } from 'zod';
-import { getClientIp, isGrpcError } from './utils';
-import { status } from '@grpc/grpc-js';
+import { getClientIp } from './utils';
 import { User } from '@/domain/auth/auth.types';
 import { UserInactiveError } from '@/domain/auth/auth.error';
 
