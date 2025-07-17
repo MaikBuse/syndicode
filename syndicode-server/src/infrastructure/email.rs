@@ -1,8 +1,11 @@
+mod colors;
+
 use crate::application::ports::verification::{
     VerificationSendable, VerificationSendableError, VerificationSendableResult,
 };
 use crate::config::ServerConfig;
 use crate::domain::user_verify::model::code::VerificationCode;
+use colors::EmailColors;
 use lettre::message::{header::ContentType, Mailbox, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::PoolConfig;
@@ -13,7 +16,7 @@ use std::time::Duration;
 use time::OffsetDateTime;
 
 const LOGO_URL: &str =
-    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/assets/images/logo.svg";
+    "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/assets/images/logo-email.png";
 const BANNER_URL: &str =
     "https://raw.githubusercontent.com/MaikBuse/syndicode/refs/heads/main/assets/images/hero.png";
 const FOOTER_IMAGE_URL: &str =
@@ -67,7 +70,10 @@ impl EmailHandler {
         // We ignore the Result because writing to a String should not fail.
         let _ = write!(
             &mut output,
-            r#"<span style="display: inline-block; border: 1px solid #555; padding: 5px 8px; margin: 0 3px; background-color: #1a1a1a; color: #00ffff; font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; min-width: 20px; text-align: center;">{c}</span>"#
+            r#"<span style="display: inline-block; border: 1px solid {}; padding: 5px 8px; margin: 0 3px; background-color: {}; color: {}; font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; min-width: 20px; text-align: center;">{c}</span>"#,
+            EmailColors::CODE_BORDER,
+            EmailColors::CODE_BACKGROUND,
+            EmailColors::CODE_TEXT
         );
         // Return the modified string buffer for the next iteration
         output
@@ -88,17 +94,17 @@ impl EmailHandler {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syndicode Email Verification</title>
     <style>
-        body {{ margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
-        .container {{ max-width: 600px; margin: 20px auto; background-color: #121212; color: #e0e0e0; border: 1px solid #333; box-shadow: 0 0 15px rgba(0, 255, 255, 0.1); }}
-        .header {{ padding: 20px; text-align: center; border-bottom: 1px solid #333; }}
-        .header img.logo {{ max-width: 100px; height: auto; margin-bottom: 10px; }}
+        body {{ margin: 0; padding: 0; background-color: {}; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+        .container {{ max-width: 600px; margin: 20px auto; background-color: {}; color: {}; border: 1px solid {}; box-shadow: 0 0 15px rgba(107, 182, 255, 0.1); }}
+        .header {{ padding: 20px; text-align: center; border-bottom: 1px solid {}; }}
+        .header img.logo {{ max-width: 120px; height: auto; margin-bottom: 10px; }}
         .banner img {{ width: 100%; height: auto; display: block; }}
         .content {{ padding: 30px; line-height: 1.6; }}
-        .content h1 {{ color: #00ffff; font-weight: normal; margin-top: 0; text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);}}
+        .content h1 {{ color: {}; font-weight: normal; margin-top: 0; text-shadow: 0 0 5px rgba(107, 182, 255, 0.3);}}
         .code-container {{ margin: 25px 0; text-align: center; }}
-        .code-label {{ display: block; margin-bottom: 10px; font-size: 0.9em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }}
-        .footer {{ padding: 20px; text-align: center; font-size: 0.8em; color: #777; border-top: 1px solid #333; }}
-        .footer a {{ color: #ff004f; text-decoration: none; }}
+        .code-label {{ display: block; margin-bottom: 10px; font-size: 0.9em; color: {}; text-transform: uppercase; letter-spacing: 1px; }}
+        .footer {{ padding: 20px; text-align: center; font-size: 0.8em; color: {}; border-top: 1px solid {}; }}
+        .footer a {{ color: {}; text-decoration: none; }}
         .footer a:hover {{ text-decoration: underline; }}
         /* Code span styles are inline for better compatibility */
     </style>
@@ -106,8 +112,8 @@ impl EmailHandler {
 <body>
     <div class="container">
         <div class="header">
-            <img src="{LOGO_URL}" alt="Syndicode Logo" class="logo" width="160" height="160">
-            <h2 style="color: #ff004f; margin: 0; font-weight: normal;">// Authentication Sequence Initiated //</h2>
+            <img src="{LOGO_URL}" alt="Syndicode Logo" class="logo" width="120" height="120">
+            <h2 style="color: {}; margin: 0; font-weight: normal;">// Authentication Sequence Initiated //</h2>
         </div>
         <div class="banner">
             <img src="{BANNER_URL}" alt="Syndicode Network">
@@ -129,7 +135,18 @@ impl EmailHandler {
         </div>
     </div>
 </body>
-</html>"#
+</html>"#,
+            EmailColors::BACKGROUND,       // body background
+            EmailColors::CARD_BACKGROUND,  // container background
+            EmailColors::MUTED_FOREGROUND, // container text color
+            EmailColors::BORDER,           // container border
+            EmailColors::BORDER,           // header border
+            EmailColors::SECONDARY,        // h1 color (cyan)
+            EmailColors::MUTED_FOREGROUND, // code label color
+            EmailColors::MUTED_FOREGROUND, // footer text color
+            EmailColors::BORDER,           // footer border
+            EmailColors::PRIMARY,          // footer link color (magenta)
+            EmailColors::PRIMARY           // header h2 color (magenta)
         )
     }
 }
