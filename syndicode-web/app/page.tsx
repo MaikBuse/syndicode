@@ -35,27 +35,25 @@ function App() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <div ref={containerRef} style={{ width: '100%', height: '100vh', position: 'relative' }}>
-          <Map
-            ref={mapRef}
-            initialViewState={TOKYO_INITIAL_VIEW_STATE}
-            mapStyle={MAP_STYLE}
-            style={{ width: '100%', height: '100%' }}
-            maxBounds={TOKYO_BOUNDS}
-            minZoom={12}
-            maxZoom={18}
-            onMove={handleViewStateChange}
-          >
-            <DeckGLOverlay
-              layers={layers}
-              useDevicePixels={true}
-              pickingRadius={5}
-            />
-          </Map>
-        </div>
-      </SidebarInset>
+      <div ref={containerRef} style={{ width: '100%', height: '100vh', position: 'relative' }}>
+        <Map
+          ref={mapRef}
+          initialViewState={TOKYO_INITIAL_VIEW_STATE}
+          mapStyle={MAP_STYLE}
+          style={{ width: '100%', height: '100%' }}
+          maxBounds={TOKYO_BOUNDS}
+          minZoom={12}
+          maxZoom={18}
+          onMove={handleViewStateChange}
+        >
+          <DeckGLOverlay
+            layers={layers}
+            useDevicePixels={true}
+            pickingRadius={5}
+          />
+        </Map>
+        <AppSidebar />
+      </div>
       <AuthDialog />
     </SidebarProvider>
   );
