@@ -107,14 +107,20 @@ export const createBoundaryLayersWithSharedAnimation = (
   return [boundaryLayer, glowLayer];
 };
 
-export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, updateTrigger: string) => {
+export const createBuildingsLayer = (
+  ownedBusinessGmlIds: Set<string>, 
+  updateTrigger: string, 
+  selectedBusinessBuildingGmlIds: Set<string> = new Set(), 
+  selectedUpdateTrigger: string = 'empty'
+) => {
   // Pre-defined color arrays to avoid repeated array creation
-  // Lighter orange: brighter than the previous dark orange but not as bright as gold
-  const ownedFill: [number, number, number, number] = [255, 150, 30, 255];
-  const notOwnedFill: [number, number, number, number] = [150, 150, 150, 255];
+  const ownedFill: [number, number, number, number] = [255, 150, 30, 255]; // Orange/gold for owned headquarters
+  const selectedFill: [number, number, number, number] = [147, 51, 234, 255]; // Purple for selected business buildings
+  const notOwnedFill: [number, number, number, number] = [150, 150, 150, 255]; // Gray for not owned
 
-  const ownedLine: [number, number, number] = [255, 170, 50];
-  const notOwnedLine: [number, number, number] = [60, 60, 60];
+  const ownedLine: [number, number, number] = [255, 170, 50]; // Orange outline
+  const selectedLine: [number, number, number] = [168, 85, 247]; // Purple outline
+  const notOwnedLine: [number, number, number] = [60, 60, 60]; // Gray outline
 
   return new MVTLayer({
     id: 'buildings',
@@ -126,20 +132,30 @@ export const createBuildingsLayer = (ownedBusinessGmlIds: Set<string>, updateTri
     autoHighlight: true,
     getElevation: (d: { properties: BuildingProperties }) => d.properties.cal_height_m,
     getFillColor: (d: { properties: BuildingProperties }) => {
-      return ownedBusinessGmlIds.has(d.properties.gml_id) ? ownedFill : notOwnedFill;
+      const gmlId = d.properties.gml_id;
+      // Priority: Selected business buildings (purple) > Owned headquarters (gold) > Not owned (gray)
+      if (selectedBusinessBuildingGmlIds.has(gmlId)) return selectedFill;
+      if (ownedBusinessGmlIds.has(gmlId)) return ownedFill;
+      return notOwnedFill;
     },
     getLineColor: (d: { properties: BuildingProperties }) => {
-      return ownedBusinessGmlIds.has(d.properties.gml_id) ? ownedLine : notOwnedLine;
+      const gmlId = d.properties.gml_id;
+      if (selectedBusinessBuildingGmlIds.has(gmlId)) return selectedLine;
+      if (ownedBusinessGmlIds.has(gmlId)) return ownedLine;
+      return notOwnedLine;
     },
     lineWidthMinPixels: 1,
     lineWidthMaxPixels: 3,
     getLineWidth: (d: { properties: BuildingProperties }) => {
-      return ownedBusinessGmlIds.has(d.properties.gml_id) ? 2 : 1;
+      const gmlId = d.properties.gml_id;
+      if (selectedBusinessBuildingGmlIds.has(gmlId)) return 3; // Thicker outline for selected business buildings
+      if (ownedBusinessGmlIds.has(gmlId)) return 2; // Medium outline for owned headquarters
+      return 1; // Thin outline for not owned
     },
     updateTriggers: {
-      getLineColor: [updateTrigger],
-      getFillColor: [updateTrigger],
-      getLineWidth: [updateTrigger]
+      getLineColor: [updateTrigger, selectedUpdateTrigger],
+      getFillColor: [updateTrigger, selectedUpdateTrigger],
+      getLineWidth: [updateTrigger, selectedUpdateTrigger]
     },
   });
 };
@@ -176,23 +192,60 @@ const generateHexagonVertices = (center: [number, number], radius: number): [num
   return vertices;
 };
 
-export const createHeadquarterHexLayer = (businesses: BusinessDetails[], time: number, zoom: number) => {
+// Rotate vertices around a center point
+const rotateVertices = (vertices: [number, number][], center: [number, number], angle: number): [number, number][] => {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  
+  return vertices.map(([x, y]) => {
+    // Translate to origin
+    const translatedX = x - center[0];
+    const translatedY = y - center[1];
+    
+    // Rotate
+    const rotatedX = translatedX * cos - translatedY * sin;
+    const rotatedY = translatedX * sin + translatedY * cos;
+    
+    // Translate back
+    return [rotatedX + center[0], rotatedY + center[1]] as [number, number];
+  });
+};
+
+export const createHeadquarterHexLayer = (
+  businesses: BusinessDetails[], 
+  time: number, 
+  zoom: number,
+  selectedBusiness: BusinessDetails | null = null
+) => {
   // Convert businesses to hexagon geometries centered on their exact coordinates
   const hexagonData = businesses.flatMap((business, index) => {
     const center: [number, number] = [business.headquarterLongitude, business.headquarterLatitude];
+
+    // Check if this business is selected
+    const isSelected = selectedBusiness?.businessUuid === business.businessUuid;
+
+    // Each headquarters has its own animation offset based on its index for color pulsing
+    const animationOffset = index * 0.7;
+
+    // Rotation angle for selected hexagon
+    const rotationAngle = isSelected ? time * 2 : 0; // Rotate selected hexagon
 
     // Zoom-dependent radius: larger at lower zoom levels, smaller at higher zoom levels
     // At zoom 12: ~200m radius, at zoom 15: ~100m radius, at zoom 18: ~50m radius
     const baseRadius = 0.0018; // Base radius in decimal degrees
     const zoomFactor = Math.pow(0.7, zoom - 12); // Exponential scaling
     const radiusInDegrees = baseRadius * zoomFactor;
-    const vertices = generateHexagonVertices(center, radiusInDegrees);
+    
+    // Generate base hexagon vertices
+    const baseVertices = generateHexagonVertices(center, radiusInDegrees);
+    
+    // Apply rotation if selected
+    const vertices = isSelected ? 
+      rotateVertices(baseVertices, center, rotationAngle) : 
+      baseVertices;
 
     // Increased height for better visibility
     const height = 2000;
-
-    // Each headquarters has its own animation offset based on its index for color pulsing
-    const animationOffset = index * 0.7;
 
     // Light gold color for headquarters
     const fillColor: [number, number, number] = [255, 215, 0]; // Light gold
@@ -264,8 +317,8 @@ export const createHeadquarterHexLayer = (businesses: BusinessDetails[], time: n
       return Math.max(1, Math.min(4, 6 - (zoom - 12) * 0.4));
     },
     updateTriggers: {
-      getFillColor: [time, zoom],
-      getLineColor: [time]
+      getFillColor: [time, zoom, selectedBusiness?.businessUuid],
+      getLineColor: [time, selectedBusiness?.businessUuid]
     },
   });
 };

@@ -73,6 +73,11 @@ export class GrpcEconomyRepository implements EconomyRepository {
       uuidValue.setValue(filters.owningCorporationUuid);
       grpcRequest.setOwningCorporationUuid(uuidValue);
     }
+    if (filters.owningBusinessUuid) {
+      const uuidValue = new google_protobuf_wrappers_pb.StringValue();
+      uuidValue.setValue(filters.owningBusinessUuid);
+      grpcRequest.setOwningBusinessUuid(uuidValue);
+    }
     if (filters.minLon != null) {
       const minLonValue = new google_protobuf_wrappers_pb.DoubleValue();
       minLonValue.setValue(filters.minLon);

@@ -1,9 +1,7 @@
 import { useMemo } from 'react';
 import type { TokyoBoundaryGeoJSON } from '@/lib/map/types';
-import type { BusinessDetails } from '@/domain/economy/economy.types';
+import type { BusinessDetails, BuildingDetails } from '@/domain/economy/economy.types';
 import {
-  createTokyoBoundaryLayer,
-  createTokyoBoundaryGlowLayer,
   createBuildingsLayer,
   createHeadquarterHexLayer,
   createBoundaryLayersWithSharedAnimation
@@ -13,19 +11,34 @@ export const useMapLayers = (
   ownedBusinesses: BusinessDetails[],
   time: number,
   tokyoBoundary: TokyoBoundaryGeoJSON | null,
-  zoom: number
+  zoom: number,
+  selectedBusiness: BusinessDetails | null = null,
+  selectedBusinessBuildings: BuildingDetails[] = []
 ) => {
   // Memoize the Set creation to avoid recreating it on every render
   const ownedBusinessGmlIds = useMemo(() => {
     return new Set(ownedBusinesses.map(b => b.headquarterBuildingGmlId));
   }, [ownedBusinesses]);
 
+  // Memoize selected business buildings GML IDs for performance
+  const selectedBusinessBuildingGmlIds = useMemo(() => {
+    if (!selectedBusinessBuildings || selectedBusinessBuildings.length === 0) return new Set<string>();
+    return new Set(selectedBusinessBuildings.map(b => b.gmlId));
+  }, [selectedBusinessBuildings]);
+
   // Memoize the update trigger hash to avoid expensive operations
   const ownedBusinessesUpdateTrigger = useMemo(() => {
-    return ownedBusinessGmlIds.size > 0 ? 
-      Array.from(ownedBusinessGmlIds).sort().join(',') : 
+    return ownedBusinessGmlIds.size > 0 ?
+      Array.from(ownedBusinessGmlIds).sort().join(',') :
       'empty';
   }, [ownedBusinessGmlIds]);
+
+  // Memoize selected business buildings update trigger
+  const selectedBusinessBuildingUpdateTrigger = useMemo(() => {
+    return selectedBusinessBuildingGmlIds.size > 0 ?
+      Array.from(selectedBusinessBuildingGmlIds).sort().join(',') :
+      'empty';
+  }, [selectedBusinessBuildingGmlIds]);
 
   return useMemo(() => {
     const layersList = [];
@@ -36,14 +49,14 @@ export const useMapLayers = (
       layersList.push(...boundaryLayers);
     }
 
-    // Use memoized GML ID set for buildings layer
-    layersList.push(createBuildingsLayer(ownedBusinessGmlIds, ownedBusinessesUpdateTrigger));
+    // Use memoized GML ID set for buildings layer with selection support
+    layersList.push(createBuildingsLayer(ownedBusinessGmlIds, ownedBusinessesUpdateTrigger, selectedBusinessBuildingGmlIds, selectedBusinessBuildingUpdateTrigger));
 
-    // Add hex layer for headquarters (visible from far away)
+    // Add hex layer for headquarters (visible from far away) with selection support
     if (ownedBusinesses.length > 0) {
-      layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom));
+      layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom, selectedBusiness));
     }
 
     return layersList;
-  }, [ownedBusinessGmlIds, ownedBusinessesUpdateTrigger, ownedBusinesses, time, tokyoBoundary, zoom]);
+  }, [ownedBusinessGmlIds, ownedBusinessesUpdateTrigger, selectedBusinessBuildingGmlIds, selectedBusinessBuildingUpdateTrigger, ownedBusinesses, time, tokyoBoundary, zoom, selectedBusiness, selectedBusinessBuildings]);
 };
