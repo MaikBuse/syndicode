@@ -6,9 +6,9 @@ import { TILE_URL } from './constants';
 
 // Pre-calculate animation values to avoid Math.sin calculations on every render
 const calculateBoundaryAnimationValues = (time: number) => {
-  const colorPulse = Math.sin(time * 3) * 0.3 + 0.7;
+  const colorPulse = Math.sin(time * 3) * 0.15 + 0.85; // Reduced range: 0.7 to 1.0
   const widthPulse = Math.sin(time * 2) * 2;
-  const glowColorPulse = Math.sin(time * 2.5 + Math.PI) * 0.2 + 0.3;
+  const glowColorPulse = Math.sin(time * 2.5 + Math.PI) * 0.1 + 0.4; // Reduced range: 0.3 to 0.5
   const glowWidthPulse = Math.sin(time * 1.5) * 3;
 
   return {
@@ -130,6 +130,7 @@ export const createBuildingsLayer = (
     extruded: true,
     pickable: true,
     autoHighlight: true,
+    beforeId: 'place_city',
     getElevation: (d: { properties: BuildingProperties }) => d.properties.cal_height_m,
     getFillColor: (d: { properties: BuildingProperties }) => {
       const gmlId = d.properties.gml_id;

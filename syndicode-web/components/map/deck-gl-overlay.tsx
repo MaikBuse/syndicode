@@ -3,7 +3,15 @@ import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { DeckProps } from '@deck.gl/core';
 
 export function DeckGLOverlay(props: DeckProps) {
-  const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
-  overlay.setProps(props);
+  const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay({
+    ...props,
+    interleaved: true
+  }));
+  
+  overlay.setProps({
+    ...props,
+    interleaved: true
+  });
+  
   return null;
 }
