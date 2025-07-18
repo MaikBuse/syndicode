@@ -23,9 +23,9 @@ export async function getCurrentUser(): Promise<User | null> {
 
     return {
       uuid: payload.sub as string,
-      name: payload.userName as string,
-      email: payload.userEmail as string,
-      role: payload.userRole as string
+      name: payload.user_name as string,
+      email: payload.user_email as string,
+      role: payload.user_role as string
     };
   } catch (error) {
     // Token is invalid or expired
