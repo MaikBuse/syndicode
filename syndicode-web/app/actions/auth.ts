@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { serverConfig } from '@/config/server';
 import { User } from '@/domain/auth/auth.types';
+import { TokenInvalidError } from '@/lib/errors/auth-errors';
 
 function getJwtSecretKey() {
   const secret = serverConfig.jwt_secret;
@@ -28,9 +29,12 @@ export async function getCurrentUser(): Promise<User | null> {
       role: payload.user_role as string
     };
   } catch (error) {
-    // Token is invalid or expired
+    // Any token verification error - clear the cookie and handle client-side logout
     console.error('JWT Verification Error:', error);
-    return null;
+    const cookieStore = await cookies();
+    cookieStore.delete('auth_token');
+    
+    throw new TokenInvalidError('JWT token verification failed');
   }
 }
 
