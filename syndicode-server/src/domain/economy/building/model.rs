@@ -19,5 +19,4 @@ pub struct Building {
     pub footprint: Polygon,
     pub height: f64,
     pub volume: f64,
-    pub prefecture: Option<String>,
 }

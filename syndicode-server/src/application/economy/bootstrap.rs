@@ -241,12 +241,6 @@ pub fn load_buildings_from_parquet() -> anyhow::Result<Vec<Building>> {
                     .as_any()
                     .downcast_ref::<arrow::array::StringArray>()
                     .unwrap();
-                let prefecture_arr = batch
-                    .column_by_name("prefecture")
-                    .unwrap()
-                    .as_any()
-                    .downcast_ref::<arrow::array::StringArray>()
-                    .unwrap();
                 let class_arr = batch
                     .column_by_name("class")
                     .unwrap()
@@ -376,7 +370,6 @@ pub fn load_buildings_from_parquet() -> anyhow::Result<Vec<Building>> {
                             class_code: get_opt_string(class_code_arr, i),
                             usage: get_opt_string(usage_arr, i),
                             usage_code: get_opt_string(usage_code_arr, i),
-                            prefecture: get_opt_string(prefecture_arr, i),
                             volume,
                         }
                     })

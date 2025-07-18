@@ -97,7 +97,6 @@ CREATE TABLE buildings (
     footprint GEOMETRY(Polygon, 4326) NOT NULL,
     height DOUBLE PRECISION NOT NULL,
     volume DOUBLE PRECISION NOT NULL,
-    prefecture TEXT
 );
 
 -- Comments explaining the indexes

@@ -44,7 +44,6 @@ impl PgBuildingRepository {
         let mut city_code_vec: Vec<Option<String>> = Vec::with_capacity(count);
         let mut height_vec = Vec::with_capacity(count);
         let mut volume_vec = Vec::with_capacity(count);
-        let mut prefecture_vec: Vec<Option<String>> = Vec::with_capacity(count);
 
         let mut center_wkt_vec: Vec<String> = Vec::with_capacity(count);
         let mut footprint_wkt_vec: Vec<String> = Vec::with_capacity(count);
@@ -62,7 +61,6 @@ impl PgBuildingRepository {
             city_code_vec.push(building.city_code);
             height_vec.push(building.height);
             volume_vec.push(building.volume);
-            prefecture_vec.push(building.prefecture);
 
             center_wkt_vec.push(building.center.to_wkt().to_string());
             footprint_wkt_vec.push(building.footprint.to_wkt().to_string());
@@ -79,7 +77,7 @@ impl PgBuildingRepository {
                 -- Use ST_GeomFromText to convert WKT strings to geometry
                 ST_SetSRID(ST_GeomFromText(u.center), $16),
                 ST_SetSRID(ST_GeomFromText(u.footprint), $16),
-                u.height, u.volume, u.prefecture
+                u.height, u.volume
             FROM unnest(
                 $1::UUID[],
                 $2::TEXT[],
@@ -95,10 +93,9 @@ impl PgBuildingRepository {
                 $12::TEXT[],
                 $13::DOUBLE PRECISION[],
                 $14::DOUBLE PRECISION[],
-                $15::TEXT[]
             ) AS u(
                 uuid, gml_id, name, address, usage, usage_code, class, class_code,
-                city, city_code, center, footprint, height, volume, prefecture
+                city, city_code, center, footprint, height, volume
             )
         "#,
         )
@@ -116,7 +113,6 @@ impl PgBuildingRepository {
         .bind(&footprint_wkt_vec)
         .bind(&height_vec)
         .bind(&volume_vec)
-        .bind(&prefecture_vec)
         .bind(SRID)
         .execute(executor)
         .await?;
