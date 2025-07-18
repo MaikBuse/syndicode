@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import economyService from '@/application/economy-service';
-import type { Corporation, QueryBuildingsResult, QueryBusinessesResult, QueryBusinessListingsResult } from '@/domain/economy/economy.types';
+import type { Corporation, QueryBuildingsResult, QueryBusinessesResult, QueryBusinessListingsResult, AcquireBusinessResult } from '@/domain/economy/economy.types';
 import { cookies, headers } from 'next/headers';
 import { getClientIp } from './utils';
 
@@ -43,6 +43,10 @@ const queryBusinessListingsSchema = z.object({
   sortDirection: z.number().int().min(0).max(2).optional().nullable(),
   limit: z.coerce.number().int().positive().max(100, "Limit cannot exceed 100.").optional().nullable(),
   offset: z.coerce.number().int().min(0).optional().nullable(),
+});
+
+const acquireListedBusinessSchema = z.object({
+  businessListingUuid: z.string().uuid(),
 });
 
 export async function getCurrentCorporationAction(): Promise<ActionResponse<Corporation>> {
@@ -174,5 +178,47 @@ export async function queryBusinessListings(
     // 4. Catch any errors (e.g., from the gRPC call) and re-throw.
     console.error("queryBusinessListings failed:", error);
     throw error;
+  }
+}
+
+/**
+ * Server Action to acquire a listed business.
+ */
+export async function acquireListedBusinessAction(
+  values: z.infer<typeof acquireListedBusinessSchema>,
+): Promise<ActionResponse<AcquireBusinessResult>> {
+  // 1. Validate the input from the client.
+  const validatedFields = acquireListedBusinessSchema.safeParse(values);
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: "Invalid input provided.",
+      errors: validatedFields.error.issues,
+    };
+  }
+
+  const ipAddress = getClientIp(await headers());
+
+  try {
+    const cookieStore = await cookies();
+    const jwt = cookieStore.get('auth_token')?.value;
+
+    if (!jwt) {
+      return { success: false, message: "Failed to retrieve jwt." };
+    }
+
+    // 2. Call the application service with the validated data.
+    const result = await economyService.acquireListedBusiness(
+      validatedFields.data.businessListingUuid,
+      ipAddress,
+      jwt
+    );
+
+    // 3. Return a successful response with the data.
+    return { success: true, data: result };
+  } catch (error) {
+    // 4. Catch any errors (e.g., from the gRPC call) and return a friendly message.
+    console.error("acquireListedBusinessAction failed:", error);
+    return { success: false, message: "An unexpected error occurred while acquiring the business." };
   }
 }

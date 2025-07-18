@@ -3,6 +3,7 @@ syntax = "proto3";
 package syndicode_interface_v1;
 
 import "economy/v1/economy.proto";
+import "interface/v1/shared.proto";
 
 // EconomyService provides methods for querying economy-related data.
 service EconomyService {
@@ -17,4 +18,7 @@ service EconomyService {
 
   // Queries business listings with optional filters and pagination.
   rpc QueryBusinessListings(syndicode_economy_v1.QueryBusinessListingsRequest) returns (syndicode_economy_v1.QueryBusinessListingsResponse);
+
+  // Acquires a listed business for the current corporation.
+  rpc AcquireListedBusiness(syndicode_economy_v1.AcquireListedBusinessRequest) returns (ActionInitResponse);
 }

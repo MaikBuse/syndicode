@@ -1,12 +1,20 @@
+'use client';
+
 import type { BusinessDetails, BusinessListingDetails } from '@/domain/economy/economy.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Building, MapPin, DollarSign, ShoppingCart } from 'lucide-react';
+import { acquireListedBusinessAction } from '@/app/actions/economy.actions';
+import { useState } from 'react';
 
 interface BusinessInfoContentProps {
   business: BusinessDetails | BusinessListingDetails | null;
 }
 
 export function BusinessInfoContent({ business }: BusinessInfoContentProps) {
+  const [isAcquiring, setIsAcquiring] = useState(false);
+  const [acquisitionResult, setAcquisitionResult] = useState<string | null>(null);
+
   if (!business) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground">
@@ -20,6 +28,29 @@ export function BusinessInfoContent({ business }: BusinessInfoContentProps) {
 
   // Check if it's a listed business
   const isListedBusiness = 'listingUuid' in business;
+
+  const handleAcquireBusiness = async () => {
+    if (!isListedBusiness) return;
+    
+    setIsAcquiring(true);
+    setAcquisitionResult(null);
+    
+    try {
+      const result = await acquireListedBusinessAction({
+        businessListingUuid: (business as BusinessListingDetails).listingUuid,
+      });
+      
+      if (result.success) {
+        setAcquisitionResult(`Business acquisition has been queued and is being processed. Check your owned businesses to see when it completes.`);
+      } else {
+        setAcquisitionResult(`Failed to queue business acquisition: ${result.message}`);
+      }
+    } catch (error) {
+      setAcquisitionResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsAcquiring(false);
+    }
+  };
   
   const formatCurrency = (amount: number) => {
     // Format as Japanese Digital Yen
@@ -70,6 +101,29 @@ export function BusinessInfoContent({ business }: BusinessInfoContentProps) {
             {formatCurrency(business.operationalExpenses)}
           </span>
         </div>
+
+        {isListedBusiness && (
+          <div className="space-y-3">
+            <Button 
+              onClick={handleAcquireBusiness}
+              disabled={isAcquiring}
+              className="w-full"
+              size="sm"
+            >
+              {isAcquiring ? 'Queueing Acquisition...' : 'Queue Business Acquisition'}
+            </Button>
+            
+            {acquisitionResult && (
+              <div className={`text-xs p-2 rounded ${
+                acquisitionResult.includes('queued and is being processed') 
+                  ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                  : 'bg-red-100 text-red-800 border border-red-300'
+              }`}>
+                {acquisitionResult}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="pt-2 border-t space-y-2">
           {isListedBusiness && (

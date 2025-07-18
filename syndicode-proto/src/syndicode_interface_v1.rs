@@ -1957,6 +1957,38 @@ pub mod economy_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Acquires a listed business for the current corporation.
+        pub async fn acquire_listed_business(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                super::super::syndicode_economy_v1::AcquireListedBusinessRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<super::ActionInitResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/syndicode_interface_v1.EconomyService/AcquireListedBusiness",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "syndicode_interface_v1.EconomyService",
+                        "AcquireListedBusiness",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -2012,6 +2044,16 @@ pub mod economy_service_server {
             tonic::Response<
                 super::super::syndicode_economy_v1::QueryBusinessListingsResponse,
             >,
+            tonic::Status,
+        >;
+        /// Acquires a listed business for the current corporation.
+        async fn acquire_listed_business(
+            &self,
+            request: tonic::Request<
+                super::super::syndicode_economy_v1::AcquireListedBusinessRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<super::ActionInitResponse>,
             tonic::Status,
         >;
     }
@@ -2279,6 +2321,58 @@ pub mod economy_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = QueryBusinessListingsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/syndicode_interface_v1.EconomyService/AcquireListedBusiness" => {
+                    #[allow(non_camel_case_types)]
+                    struct AcquireListedBusinessSvc<T: EconomyService>(pub Arc<T>);
+                    impl<
+                        T: EconomyService,
+                    > tonic::server::UnaryService<
+                        super::super::syndicode_economy_v1::AcquireListedBusinessRequest,
+                    > for AcquireListedBusinessSvc<T> {
+                        type Response = super::ActionInitResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::super::syndicode_economy_v1::AcquireListedBusinessRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as EconomyService>::acquire_listed_business(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = AcquireListedBusinessSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

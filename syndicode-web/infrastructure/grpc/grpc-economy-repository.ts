@@ -6,7 +6,8 @@ import type {
   QueryBusinessesFilters,
   QueryBusinessesResult,
   QueryBusinessListingsFilters,
-  QueryBusinessListingsResult
+  QueryBusinessListingsResult,
+  AcquireBusinessResult
 } from '@/domain/economy/economy.types';
 import { BusinessSortBy, BusinessListingSortBy, SortDirection } from '@/domain/economy/economy.types';
 import { getEconomyServiceClient } from '@/lib/grpc/economy-client';
@@ -19,11 +20,12 @@ import {
   QueryBusinessesResponse,
   QueryBusinessListingsRequest,
   QueryBusinessListingsResponse,
+  AcquireListedBusinessRequest,
   BusinessSortBy as ProtoBusinessSortBy,
   BusinessListingSortBy as ProtoBusinessListingSortBy,
 } from '@/lib/grpc/generated/economy/v1/economy_pb';
 import { BuildingDetails, BusinessDetails, BusinessListingDetails } from '@/lib/grpc/generated/economy/v1/economy_pb';
-import { SortDirection as ProtoSortDirection } from '@/lib/grpc/generated/interface/v1/shared_pb';
+import { SortDirection as ProtoSortDirection, ActionInitResponse } from '@/lib/grpc/generated/interface/v1/shared_pb';
 import { CallContext } from './types';
 import { UnknownAuthError } from '@/domain/auth/auth.error';
 import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
@@ -338,5 +340,32 @@ export class GrpcEconomyRepository implements EconomyRepository {
       default:
         return ProtoSortDirection.SORT_DIRECTION_UNSPECIFIED;
     }
+  }
+
+  async acquireListedBusiness(businessListingUuid: string, ipAddress: string, jwt: string): Promise<AcquireBusinessResult> {
+    const grpcRequest = new AcquireListedBusinessRequest();
+    grpcRequest.setBusinessListingUuid(businessListingUuid);
+
+    const metadata = new grpc.Metadata();
+    const customContext: CallContext = { ipAddress, jwt };
+    const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+      customContext: customContext,
+    };
+
+    const response: ActionInitResponse = await new Promise((resolve, reject) => {
+      this.client.acquireListedBusiness(grpcRequest, metadata, callOptions, (error, response) => {
+        if (error) {
+          reject(error);
+        } else if (response) {
+          resolve(response);
+        } else {
+          reject(new Error("No response or error received from gRPC call."));
+        }
+      });
+    });
+
+    return {
+      requestUuid: response.getRequestUuid(),
+    };
   }
 }

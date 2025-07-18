@@ -116,3 +116,17 @@ export type QueryBusinessListingsResult = {
   listings: BusinessListingDetails[];
   totalCount: number;
 };
+
+// Represents a business entity
+export type Business = {
+  uuid: string;
+  marketUuid: string;
+  owningCorporationUuid: string;
+  name: string;
+  operationalExpenses: number;
+};
+
+// Represents the result of acquiring a business (action init response)
+export type AcquireBusinessResult = {
+  requestUuid: string;
+};

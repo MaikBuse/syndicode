@@ -6,7 +6,8 @@ import type {
   QueryBusinessesFilters,
   QueryBusinessesResult,
   QueryBusinessListingsFilters,
-  QueryBusinessListingsResult
+  QueryBusinessListingsResult,
+  AcquireBusinessResult
 } from '@/domain/economy/economy.types';
 import { GrpcEconomyRepository } from '@/infrastructure/grpc/grpc-economy-repository';
 
@@ -38,6 +39,14 @@ class EconomyService {
    */
   async getBusinessListings(filters: QueryBusinessListingsFilters, ipAddress: string, jwt: string): Promise<QueryBusinessListingsResult> {
     return this.economyRepository.queryBusinessListings(filters, ipAddress, jwt);
+  }
+
+  /**
+   * The "Acquire Listed Business" use case.
+   * It takes a business listing UUID and uses the repository to acquire it.
+   */
+  async acquireListedBusiness(businessListingUuid: string, ipAddress: string, jwt: string): Promise<AcquireBusinessResult> {
+    return this.economyRepository.acquireListedBusiness(businessListingUuid, ipAddress, jwt);
   }
 
 }

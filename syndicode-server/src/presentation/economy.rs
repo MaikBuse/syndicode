@@ -3,27 +3,37 @@ use std::sync::Arc;
 use bon::Builder;
 use syndicode_proto::{
     syndicode_economy_v1::{
-        BuildingDetails, BusinessDetails, BusinessListingDetails, BusinessListingSortBy, BusinessSortBy, GetCorporationRequest,
-        QueryBuildingsRequest, QueryBuildingsResponse, QueryBusinessesRequest,
-        QueryBusinessesResponse, QueryBusinessListingsRequest, QueryBusinessListingsResponse,
+        AcquireListedBusinessRequest, BuildingDetails,
+        BusinessDetails, BusinessListingDetails, BusinessListingSortBy, BusinessSortBy,
+        GetCorporationRequest, QueryBuildingsRequest, QueryBuildingsResponse,
+        QueryBusinessListingsRequest, QueryBusinessListingsResponse, QueryBusinessesRequest,
+        QueryBusinessesResponse,
     },
-    syndicode_interface_v1::{economy_service_server::EconomyService, SortDirection},
+    syndicode_interface_v1::{economy_service_server::EconomyService, SortDirection, ActionInitResponse},
 };
 use tonic::Response;
 
 use crate::{
     application::{
         economy::{
+            acquire_listed_business::AcquireListedBusinessUseCase,
             get_corporation::GetCorporationUseCase, query_buildings::QueryBuildingsUseCase,
-            query_businesses::QueryBusinessesUseCase, query_business_listings::QueryBusinessListingsUseCase,
+            query_business_listings::QueryBusinessListingsUseCase,
+            query_businesses::QueryBusinessesUseCase,
         },
-        ports::limiter::{LimiterCategory, RateLimitEnforcer},
+        ports::{
+            game_tick::GameTickRepository,
+            limiter::{LimiterCategory, RateLimitEnforcer},
+            queuer::ActionQueueable,
+        },
     },
     domain::{
         economy::{
             building::repository::BuildingRepository,
             business::repository::{BusinessRepository, DomainBusinessSortBy},
-            business_listing::repository::{BusinessListingRepository, DomainBusinessListingSortBy},
+            business_listing::repository::{
+                BusinessListingRepository, DomainBusinessListingSortBy,
+            },
             corporation::repository::CorporationRepository,
         },
         repository::DomainSortDirection,
@@ -34,31 +44,37 @@ use super::{
     common::{check_rate_limit, parse_maybe_uuid, uuid_from_metadata},
     error::PresentationError,
 };
+use uuid::Uuid;
 
 #[derive(Builder)]
-pub struct EconomyPresenter<R, BUI, CRP, B, BL>
+pub struct EconomyPresenter<R, BUI, CRP, B, BL, Q, GTR>
 where
     R: RateLimitEnforcer,
     BUI: BuildingRepository,
     CRP: CorporationRepository,
     B: BusinessRepository,
     BL: BusinessListingRepository,
+    Q: ActionQueueable,
+    GTR: GameTickRepository + 'static,
 {
     pub limit: Arc<R>,
     pub query_buildings_uc: Arc<QueryBuildingsUseCase<BUI>>,
     pub get_corporation_uc: Arc<GetCorporationUseCase<CRP>>,
     pub query_businesses_uc: Arc<QueryBusinessesUseCase<B>>,
     pub query_business_listings_uc: Arc<QueryBusinessListingsUseCase<BL>>,
+    pub acquire_listed_business_uc: Arc<AcquireListedBusinessUseCase<Q, GTR>>,
 }
 
 #[tonic::async_trait]
-impl<R, BUI, CRP, B, BL> EconomyService for EconomyPresenter<R, BUI, CRP, B, BL>
+impl<R, BUI, CRP, B, BL, Q, GTR> EconomyService for EconomyPresenter<R, BUI, CRP, B, BL, Q, GTR>
 where
     R: RateLimitEnforcer + 'static,
     BUI: BuildingRepository + 'static,
     CRP: CorporationRepository + 'static,
     B: BusinessRepository + 'static,
     BL: BusinessListingRepository + 'static,
+    Q: ActionQueueable + 'static,
+    GTR: GameTickRepository + 'static,
 {
     async fn query_buildings(
         &self,
@@ -100,7 +116,7 @@ where
         let mut buildings = Vec::with_capacity(total_count);
 
         for o in domain_buildings {
-            buildings.push(BuildingDetails { 
+            buildings.push(BuildingDetails {
                 gml_id: o.gml_id,
                 longitude: o.longitude,
                 latitude: o.latitude,
@@ -262,7 +278,9 @@ where
             BusinessListingSortBy::SortByUnspecified => None,
             BusinessListingSortBy::Price => Some(DomainBusinessListingSortBy::Price),
             BusinessListingSortBy::Name => Some(DomainBusinessListingSortBy::Name),
-            BusinessListingSortBy::OperationExpenses => Some(DomainBusinessListingSortBy::OperationExpenses),
+            BusinessListingSortBy::OperationExpenses => {
+                Some(DomainBusinessListingSortBy::OperationExpenses)
+            }
             BusinessListingSortBy::MarketVolume => Some(DomainBusinessListingSortBy::MarketVolume),
         };
 
@@ -301,7 +319,9 @@ where
                 listing_uuid: listing.listing_uuid.to_string(),
                 business_uuid: listing.business_uuid.to_string(),
                 business_name: listing.business_name,
-                seller_corporation_uuid: listing.seller_corporation_uuid.map(|uuid| uuid.to_string()),
+                seller_corporation_uuid: listing
+                    .seller_corporation_uuid
+                    .map(|uuid| uuid.to_string()),
                 market_uuid: listing.market_uuid.to_string(),
                 asking_price: listing.asking_price,
                 operational_expenses: listing.operational_expenses,
@@ -315,6 +335,44 @@ where
             request_uuid: "".to_string(), // Not used in standalone service
             listings,
             total_count: total_count as i64,
+        }))
+    }
+
+    async fn acquire_listed_business(
+        &self,
+        request: tonic::Request<AcquireListedBusinessRequest>,
+    ) -> Result<tonic::Response<ActionInitResponse>, tonic::Status> {
+        check_rate_limit(
+            self.limit.clone(),
+            request.metadata(),
+            LimiterCategory::Game,
+        )
+        .await
+        .map_err(|status| *status)?;
+
+        let req_user_uuid = match uuid_from_metadata(request.metadata()) {
+            Ok(uuid) => uuid,
+            Err(status) => return Err(*status),
+        };
+
+        let request = request.into_inner();
+        let request_uuid = Uuid::now_v7();
+
+        let business_listing_uuid = Uuid::parse_str(&request.business_listing_uuid)
+            .map_err(|_| tonic::Status::invalid_argument("Invalid business listing UUID"))?;
+
+        self.acquire_listed_business_uc
+            .execute()
+            .req_user_uuid(req_user_uuid)
+            .request_uuid(request_uuid)
+            .business_listing_uuid(business_listing_uuid)
+            .call()
+            .await
+            .map_err(PresentationError::from)?;
+
+        // For the direct service, we return an immediate response indicating the action was queued
+        Ok(Response::new(ActionInitResponse {
+            request_uuid: request_uuid.to_string(),
         }))
     }
 }

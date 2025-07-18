@@ -7,12 +7,14 @@
 import * as grpc from "@grpc/grpc-js";
 import * as interface_v1_economy_pb from "../../interface/v1/economy_pb";
 import * as economy_v1_economy_pb from "../../economy/v1/economy_pb";
+import * as interface_v1_shared_pb from "../../interface/v1/shared_pb";
 
 interface IEconomyServiceService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
     getCurrentCorporation: IEconomyServiceService_IGetCurrentCorporation;
     queryBuildings: IEconomyServiceService_IQueryBuildings;
     queryBusinesses: IEconomyServiceService_IQueryBusinesses;
     queryBusinessListings: IEconomyServiceService_IQueryBusinessListings;
+    acquireListedBusiness: IEconomyServiceService_IAcquireListedBusiness;
 }
 
 interface IEconomyServiceService_IGetCurrentCorporation extends grpc.MethodDefinition<economy_v1_economy_pb.GetCorporationRequest, economy_v1_economy_pb.Corporation> {
@@ -51,6 +53,15 @@ interface IEconomyServiceService_IQueryBusinessListings extends grpc.MethodDefin
     responseSerialize: grpc.serialize<economy_v1_economy_pb.QueryBusinessListingsResponse>;
     responseDeserialize: grpc.deserialize<economy_v1_economy_pb.QueryBusinessListingsResponse>;
 }
+interface IEconomyServiceService_IAcquireListedBusiness extends grpc.MethodDefinition<economy_v1_economy_pb.AcquireListedBusinessRequest, interface_v1_shared_pb.ActionInitResponse> {
+    path: "/syndicode_interface_v1.EconomyService/AcquireListedBusiness";
+    requestStream: false;
+    responseStream: false;
+    requestSerialize: grpc.serialize<economy_v1_economy_pb.AcquireListedBusinessRequest>;
+    requestDeserialize: grpc.deserialize<economy_v1_economy_pb.AcquireListedBusinessRequest>;
+    responseSerialize: grpc.serialize<interface_v1_shared_pb.ActionInitResponse>;
+    responseDeserialize: grpc.deserialize<interface_v1_shared_pb.ActionInitResponse>;
+}
 
 export const EconomyServiceService: IEconomyServiceService;
 
@@ -59,6 +70,7 @@ export interface IEconomyServiceServer extends grpc.UntypedServiceImplementation
     queryBuildings: grpc.handleUnaryCall<economy_v1_economy_pb.QueryBuildingsRequest, economy_v1_economy_pb.QueryBuildingsResponse>;
     queryBusinesses: grpc.handleUnaryCall<economy_v1_economy_pb.QueryBusinessesRequest, economy_v1_economy_pb.QueryBusinessesResponse>;
     queryBusinessListings: grpc.handleUnaryCall<economy_v1_economy_pb.QueryBusinessListingsRequest, economy_v1_economy_pb.QueryBusinessListingsResponse>;
+    acquireListedBusiness: grpc.handleUnaryCall<economy_v1_economy_pb.AcquireListedBusinessRequest, interface_v1_shared_pb.ActionInitResponse>;
 }
 
 export interface IEconomyServiceClient {
@@ -74,6 +86,9 @@ export interface IEconomyServiceClient {
     queryBusinessListings(request: economy_v1_economy_pb.QueryBusinessListingsRequest, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBusinessListingsResponse) => void): grpc.ClientUnaryCall;
     queryBusinessListings(request: economy_v1_economy_pb.QueryBusinessListingsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBusinessListingsResponse) => void): grpc.ClientUnaryCall;
     queryBusinessListings(request: economy_v1_economy_pb.QueryBusinessListingsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBusinessListingsResponse) => void): grpc.ClientUnaryCall;
+    acquireListedBusiness(request: economy_v1_economy_pb.AcquireListedBusinessRequest, callback: (error: grpc.ServiceError | null, response: interface_v1_shared_pb.ActionInitResponse) => void): grpc.ClientUnaryCall;
+    acquireListedBusiness(request: economy_v1_economy_pb.AcquireListedBusinessRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: interface_v1_shared_pb.ActionInitResponse) => void): grpc.ClientUnaryCall;
+    acquireListedBusiness(request: economy_v1_economy_pb.AcquireListedBusinessRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: interface_v1_shared_pb.ActionInitResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class EconomyServiceClient extends grpc.Client implements IEconomyServiceClient {
@@ -90,4 +105,7 @@ export class EconomyServiceClient extends grpc.Client implements IEconomyService
     public queryBusinessListings(request: economy_v1_economy_pb.QueryBusinessListingsRequest, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBusinessListingsResponse) => void): grpc.ClientUnaryCall;
     public queryBusinessListings(request: economy_v1_economy_pb.QueryBusinessListingsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBusinessListingsResponse) => void): grpc.ClientUnaryCall;
     public queryBusinessListings(request: economy_v1_economy_pb.QueryBusinessListingsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: economy_v1_economy_pb.QueryBusinessListingsResponse) => void): grpc.ClientUnaryCall;
+    public acquireListedBusiness(request: economy_v1_economy_pb.AcquireListedBusinessRequest, callback: (error: grpc.ServiceError | null, response: interface_v1_shared_pb.ActionInitResponse) => void): grpc.ClientUnaryCall;
+    public acquireListedBusiness(request: economy_v1_economy_pb.AcquireListedBusinessRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: interface_v1_shared_pb.ActionInitResponse) => void): grpc.ClientUnaryCall;
+    public acquireListedBusiness(request: economy_v1_economy_pb.AcquireListedBusinessRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: interface_v1_shared_pb.ActionInitResponse) => void): grpc.ClientUnaryCall;
 }

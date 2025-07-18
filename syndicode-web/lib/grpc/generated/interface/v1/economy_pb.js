@@ -23,3 +23,5 @@ var global = (function() {
 
 var economy_v1_economy_pb = require('../../economy/v1/economy_pb.js');
 goog.object.extend(proto, economy_v1_economy_pb);
+var interface_v1_shared_pb = require('../../interface/v1/shared_pb.js');
+goog.object.extend(proto, interface_v1_shared_pb);

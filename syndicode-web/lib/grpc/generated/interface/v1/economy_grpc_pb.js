@@ -3,6 +3,18 @@
 'use strict';
 var grpc = require('@grpc/grpc-js');
 var economy_v1_economy_pb = require('../../economy/v1/economy_pb.js');
+var interface_v1_shared_pb = require('../../interface/v1/shared_pb.js');
+
+function serialize_syndicode_economy_v1_AcquireListedBusinessRequest(arg) {
+  if (!(arg instanceof economy_v1_economy_pb.AcquireListedBusinessRequest)) {
+    throw new Error('Expected argument of type syndicode_economy_v1.AcquireListedBusinessRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_economy_v1_AcquireListedBusinessRequest(buffer_arg) {
+  return economy_v1_economy_pb.AcquireListedBusinessRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
 
 function serialize_syndicode_economy_v1_Corporation(arg) {
   if (!(arg instanceof economy_v1_economy_pb.Corporation)) {
@@ -92,6 +104,17 @@ function deserialize_syndicode_economy_v1_QueryBusinessesResponse(buffer_arg) {
   return economy_v1_economy_pb.QueryBusinessesResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_syndicode_interface_v1_ActionInitResponse(arg) {
+  if (!(arg instanceof interface_v1_shared_pb.ActionInitResponse)) {
+    throw new Error('Expected argument of type syndicode_interface_v1.ActionInitResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_interface_v1_ActionInitResponse(buffer_arg) {
+  return interface_v1_shared_pb.ActionInitResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 
 // EconomyService provides methods for querying economy-related data.
 var EconomyServiceService = exports.EconomyServiceService = {
@@ -142,6 +165,18 @@ queryBusinessListings: {
     requestDeserialize: deserialize_syndicode_economy_v1_QueryBusinessListingsRequest,
     responseSerialize: serialize_syndicode_economy_v1_QueryBusinessListingsResponse,
     responseDeserialize: deserialize_syndicode_economy_v1_QueryBusinessListingsResponse,
+  },
+  // Acquires a listed business for the current corporation.
+acquireListedBusiness: {
+    path: '/syndicode_interface_v1.EconomyService/AcquireListedBusiness',
+    requestStream: false,
+    responseStream: false,
+    requestType: economy_v1_economy_pb.AcquireListedBusinessRequest,
+    responseType: interface_v1_shared_pb.ActionInitResponse,
+    requestSerialize: serialize_syndicode_economy_v1_AcquireListedBusinessRequest,
+    requestDeserialize: deserialize_syndicode_economy_v1_AcquireListedBusinessRequest,
+    responseSerialize: serialize_syndicode_interface_v1_ActionInitResponse,
+    responseDeserialize: deserialize_syndicode_interface_v1_ActionInitResponse,
   },
 };
 
