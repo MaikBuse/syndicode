@@ -176,7 +176,7 @@ pub struct AppProvider<
     pub game_presenter: GamePresenter<R, Q, UNT, CRP, RSR, GTR, BL, B>,
     pub admin_presenter: AdminPresenter<Q, R, P, USR, CRP>,
     pub auth_presenter: AuthPresenter<R, P, J, UOW, USR, VS, Q, CRP>,
-    pub economy_presenter: EconomyPresenter<R, BUI, CRP, B>,
+    pub economy_presenter: EconomyPresenter<R, BUI, CRP, B, BL>,
 }
 
 #[bon]
@@ -433,6 +433,7 @@ impl DefaultProvider {
             .query_buildings_uc(query_buildings_uc.clone())
             .get_corporation_uc(get_corporation_uc.clone())
             .query_businesses_uc(query_businesses_uc.clone())
+            .query_business_listings_uc(query_business_listings_uc.clone())
             .limit(valkey.clone())
             .build();
 

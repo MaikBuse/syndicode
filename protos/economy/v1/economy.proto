@@ -155,6 +155,10 @@ message BusinessListingDetails {
   string market_uuid = 5;
   int64 asking_price = 6;
   int64 operational_expenses = 7;
+  // Headquarter building information for map display
+  string headquarter_building_gml_id = 8;
+  double headquarter_longitude = 9;
+  double headquarter_latitude = 10;
 }
 
 // Response containing the list of matching business listing details.

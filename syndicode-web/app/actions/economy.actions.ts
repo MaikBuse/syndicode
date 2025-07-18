@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import economyService from '@/application/economy-service';
-import type { Corporation, QueryBuildingsResult, QueryBusinessesResult } from '@/domain/economy/economy.types';
+import type { Corporation, QueryBuildingsResult, QueryBusinessesResult, QueryBusinessListingsResult } from '@/domain/economy/economy.types';
 import { cookies, headers } from 'next/headers';
 import { getClientIp } from './utils';
 
@@ -27,6 +27,19 @@ const queryBusinessesSchema = z.object({
   minOperationalExpenses: z.coerce.number().int().optional().nullable(),
   maxOperationalExpenses: z.coerce.number().int().optional().nullable(),
   sortBy: z.number().int().min(0).max(3).optional().nullable(),
+  sortDirection: z.number().int().min(0).max(2).optional().nullable(),
+  limit: z.coerce.number().int().positive().max(100, "Limit cannot exceed 100.").optional().nullable(),
+  offset: z.coerce.number().int().min(0).optional().nullable(),
+});
+
+const queryBusinessListingsSchema = z.object({
+  minAskingPrice: z.coerce.number().int().optional().nullable(),
+  maxAskingPrice: z.coerce.number().int().optional().nullable(),
+  sellerCorporationUuid: z.string().uuid().optional().nullable(),
+  marketUuid: z.string().uuid().optional().nullable(),
+  minOperationalExpenses: z.coerce.number().int().optional().nullable(),
+  maxOperationalExpenses: z.coerce.number().int().optional().nullable(),
+  sortBy: z.number().int().min(0).max(4).optional().nullable(),
   sortDirection: z.number().int().min(0).max(2).optional().nullable(),
   limit: z.coerce.number().int().positive().max(100, "Limit cannot exceed 100.").optional().nullable(),
   offset: z.coerce.number().int().min(0).optional().nullable(),
@@ -127,5 +140,39 @@ export async function queryBusinessesAction(
     // 4. Catch any errors (e.g., from the gRPC call) and return a friendly message.
     console.error("queryBusinessesAction failed:", error);
     return { success: false, message: "An unexpected error occurred while fetching businesses." };
+  }
+}
+
+/**
+ * Server Action to query business listings.
+ */
+export async function queryBusinessListings(
+  values: z.infer<typeof queryBusinessListingsSchema>,
+): Promise<QueryBusinessListingsResult> {
+  // 1. Validate the input from the client.
+  const validatedFields = queryBusinessListingsSchema.safeParse(values);
+  if (!validatedFields.success) {
+    throw new Error("Invalid input provided.");
+  }
+
+  const ipAddress = getClientIp(await headers());
+
+  try {
+    const cookieStore = await cookies();
+    const jwt = cookieStore.get('auth_token')?.value;
+
+    if (!jwt) {
+      throw new Error("Failed to retrieve jwt.");
+    }
+
+    // 2. Call the application service with the validated, clean data.
+    const result = await economyService.getBusinessListings(validatedFields.data, ipAddress, jwt);
+
+    // 3. Return the result directly.
+    return result;
+  } catch (error) {
+    // 4. Catch any errors (e.g., from the gRPC call) and re-throw.
+    console.error("queryBusinessListings failed:", error);
+    throw error;
   }
 }

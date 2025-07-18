@@ -344,6 +344,12 @@ export class BusinessListingDetails extends jspb.Message {
     setAskingPrice(value: number): BusinessListingDetails;
     getOperationalExpenses(): number;
     setOperationalExpenses(value: number): BusinessListingDetails;
+    getHeadquarterBuildingGmlId(): string;
+    setHeadquarterBuildingGmlId(value: string): BusinessListingDetails;
+    getHeadquarterLongitude(): number;
+    setHeadquarterLongitude(value: number): BusinessListingDetails;
+    getHeadquarterLatitude(): number;
+    setHeadquarterLatitude(value: number): BusinessListingDetails;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): BusinessListingDetails.AsObject;
@@ -364,6 +370,9 @@ export namespace BusinessListingDetails {
         marketUuid: string,
         askingPrice: number,
         operationalExpenses: number,
+        headquarterBuildingGmlId: string,
+        headquarterLongitude: number,
+        headquarterLatitude: number,
     }
 }
 

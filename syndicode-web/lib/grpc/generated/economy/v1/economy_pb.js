@@ -2951,7 +2951,10 @@ proto.syndicode_economy_v1.BusinessListingDetails.toObject = function(includeIns
     sellerCorporationUuid: (f = msg.getSellerCorporationUuid()) && google_protobuf_wrappers_pb.StringValue.toObject(includeInstance, f),
     marketUuid: jspb.Message.getFieldWithDefault(msg, 5, ""),
     askingPrice: jspb.Message.getFieldWithDefault(msg, 6, 0),
-    operationalExpenses: jspb.Message.getFieldWithDefault(msg, 7, 0)
+    operationalExpenses: jspb.Message.getFieldWithDefault(msg, 7, 0),
+    headquarterBuildingGmlId: jspb.Message.getFieldWithDefault(msg, 8, ""),
+    headquarterLongitude: jspb.Message.getFloatingPointFieldWithDefault(msg, 9, 0.0),
+    headquarterLatitude: jspb.Message.getFloatingPointFieldWithDefault(msg, 10, 0.0)
   };
 
   if (includeInstance) {
@@ -3016,6 +3019,18 @@ proto.syndicode_economy_v1.BusinessListingDetails.deserializeBinaryFromReader = 
     case 7:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setOperationalExpenses(value);
+      break;
+    case 8:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setHeadquarterBuildingGmlId(value);
+      break;
+    case 9:
+      var value = /** @type {number} */ (reader.readDouble());
+      msg.setHeadquarterLongitude(value);
+      break;
+    case 10:
+      var value = /** @type {number} */ (reader.readDouble());
+      msg.setHeadquarterLatitude(value);
       break;
     default:
       reader.skipField();
@@ -3093,6 +3108,27 @@ proto.syndicode_economy_v1.BusinessListingDetails.serializeBinaryToWriter = func
   if (f !== 0) {
     writer.writeInt64(
       7,
+      f
+    );
+  }
+  f = message.getHeadquarterBuildingGmlId();
+  if (f.length > 0) {
+    writer.writeString(
+      8,
+      f
+    );
+  }
+  f = message.getHeadquarterLongitude();
+  if (f !== 0.0) {
+    writer.writeDouble(
+      9,
+      f
+    );
+  }
+  f = message.getHeadquarterLatitude();
+  if (f !== 0.0) {
+    writer.writeDouble(
+      10,
       f
     );
   }
@@ -3241,6 +3277,60 @@ proto.syndicode_economy_v1.BusinessListingDetails.prototype.getOperationalExpens
  */
 proto.syndicode_economy_v1.BusinessListingDetails.prototype.setOperationalExpenses = function(value) {
   return jspb.Message.setProto3IntField(this, 7, value);
+};
+
+
+/**
+ * optional string headquarter_building_gml_id = 8;
+ * @return {string}
+ */
+proto.syndicode_economy_v1.BusinessListingDetails.prototype.getHeadquarterBuildingGmlId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 8, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.syndicode_economy_v1.BusinessListingDetails} returns this
+ */
+proto.syndicode_economy_v1.BusinessListingDetails.prototype.setHeadquarterBuildingGmlId = function(value) {
+  return jspb.Message.setProto3StringField(this, 8, value);
+};
+
+
+/**
+ * optional double headquarter_longitude = 9;
+ * @return {number}
+ */
+proto.syndicode_economy_v1.BusinessListingDetails.prototype.getHeadquarterLongitude = function() {
+  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 9, 0.0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.syndicode_economy_v1.BusinessListingDetails} returns this
+ */
+proto.syndicode_economy_v1.BusinessListingDetails.prototype.setHeadquarterLongitude = function(value) {
+  return jspb.Message.setProto3FloatField(this, 9, value);
+};
+
+
+/**
+ * optional double headquarter_latitude = 10;
+ * @return {number}
+ */
+proto.syndicode_economy_v1.BusinessListingDetails.prototype.getHeadquarterLatitude = function() {
+  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 10, 0.0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.syndicode_economy_v1.BusinessListingDetails} returns this
+ */
+proto.syndicode_economy_v1.BusinessListingDetails.prototype.setHeadquarterLatitude = function(value) {
+  return jspb.Message.setProto3FloatField(this, 10, value);
 };
 
 

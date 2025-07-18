@@ -8,10 +8,12 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { InfoSidebar } from '@/components/ui/info-sidebar';
 import { BusinessInfoContent } from '@/components/map/business-info-content';
 import { MapLoadingIndicator } from '@/components/map/map-loading-indicator';
+import { MapLayerControls, MapMode } from '@/components/map/map-layer-controls';
 import { useAnimationTime } from '@/hooks/use-animation-time';
 import { useTokyoBoundary } from '@/hooks/use-tokyo-boundary';
 import { useOwnedBusinesses } from '@/hooks/use-owned-businesses';
 import { useBusinessBuildings } from '@/hooks/use-business-buildings';
+import { useBusinessListings } from '@/hooks/use-business-listings';
 import { useMapLayers } from '@/hooks/use-map-layers';
 import type { BusinessDetails } from '@/domain/economy/economy.types';
 import type { PickingInfo } from '@deck.gl/core';
@@ -32,6 +34,7 @@ function AppContent() {
   const [zoom, setZoom] = useState(TOKYO_INITIAL_VIEW_STATE.zoom);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessDetails | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [mapMode, setMapMode] = useState<MapMode>('owned');
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { setOpen } = useSidebar();
@@ -45,11 +48,20 @@ function AppContent() {
     setPrevAuthState(isAuthenticated);
   }, [isAuthenticated, setOpen, prevAuthState]);
 
+  // Close right sidebar and clear selected business when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsSidebarOpen(false);
+      setSelectedBusiness(null);
+    }
+  }, [isAuthenticated]);
+
   const time = useAnimationTime();
   const tokyoBoundary = useTokyoBoundary();
   const ownedBusinesses = useOwnedBusinesses();
+  const { listings: businessListings } = useBusinessListings();
   const { buildings: selectedBusinessBuildings } = useBusinessBuildings(selectedBusiness);
-  const layers = useMapLayers(ownedBusinesses, time, tokyoBoundary, zoom, selectedBusiness, selectedBusinessBuildings);
+  const layers = useMapLayers(ownedBusinesses, businessListings, time, tokyoBoundary, zoom, mapMode, selectedBusiness, selectedBusinessBuildings);
 
   const handleViewStateChange = (evt: ViewStateChangeEvent) => {
     setZoom(evt.viewState.zoom);
@@ -57,7 +69,7 @@ function AppContent() {
 
 
   const handleClick = (info: PickingInfo) => {
-    if (info.layer?.id === 'headquarters-hex' && info.object?.properties?.business) {
+    if ((info.layer?.id === 'headquarters-hex' || info.layer?.id === 'listed-businesses-hex') && info.object?.properties?.business) {
       const business = info.object.properties.business;
       // Toggle selection - if already selected, deselect
       const isAlreadySelected = selectedBusiness?.businessUuid === business.businessUuid;
@@ -92,6 +104,10 @@ function AppContent() {
       </Map>
       <AppSidebar />
       <MapLoadingIndicator />
+      <MapLayerControls
+        currentMode={mapMode}
+        onModeChange={setMapMode}
+      />
 
       {/* Info Sidebar */}
       <InfoSidebar

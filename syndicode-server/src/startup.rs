@@ -41,10 +41,12 @@ pub async fn start_server() -> anyhow::Result<()> {
         .leader_elector(provider.leader_elector.clone())
         .game_tick_processor(provider.game_tick_processor.clone())
         .instance_id(config.general.instance_id.clone())
-        .leader_lock_refresh_interval(config.processor.leader_lock_refresh_interval)
-        .non_leader_acquisition_retry_interval(
-            config.processor.non_leader_acquisition_retry_internal,
-        )
+        .leader_lock_refresh_interval(Duration::from_millis(
+            config.processor.leader_lock_refresh_interval as u64,
+        ))
+        .non_leader_acquisition_retry_interval(Duration::from_millis(
+            config.processor.non_leader_acquisition_retry_internal as u64,
+        ))
         .game_tick_interval(Duration::from_millis(
             config.processor.game_tick_interval as u64,
         ))

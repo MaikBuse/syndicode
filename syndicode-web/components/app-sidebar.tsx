@@ -2,10 +2,7 @@
 
 import * as React from "react"
 import {
-  Building2,
-  Map,
-  Settings2,
-  BarChart3,
+  Building,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -24,69 +21,34 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAuthStore } from "@/stores/use-auth-store"
+import { CorporationDialog } from "@/components/corporation/corporation-dialog"
 
-// Syndicode navigation data
-const syndicodeNavigation = [
-  {
-    title: "Game View",
-    url: "/",
-    icon: Map,
-    isActive: true,
-  },
-  {
-    title: "Economy",
-    url: "#",
-    icon: Building2,
-    items: [
-      {
-        title: "My Businesses",
-        url: "#",
-      },
-      {
-        title: "Market",
-        url: "#",
-      },
-      {
-        title: "Statistics",
-        url: "#",
-      },
-    ],
-  },
-  {
-    title: "Analytics",
-    url: "#",
-    icon: BarChart3,
-    items: [
-      {
-        title: "Performance",
-        url: "#",
-      },
-      {
-        title: "Reports",
-        url: "#",
-      },
-    ],
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings2,
-    items: [
-      {
-        title: "Profile",
-        url: "#",
-      },
-      {
-        title: "Preferences",
-        url: "#",
-      },
-    ],
-  },
-]
+// Syndicode navigation data - only show corporation when authenticated
+const getSyndicodeNavigation = (isAuthenticated: boolean) => {
+  if (!isAuthenticated) {
+    return [];
+  }
+  
+  return [
+    {
+      title: "Corporation",
+      url: "#",
+      icon: Building,
+      onClick: "corporation",
+    },
+  ];
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, isAuthenticated } = useAuthStore()
   const { toggleSidebar } = useSidebar()
+  const [isCorporationDialogOpen, setIsCorporationDialogOpen] = React.useState(false)
+
+  const handleNavItemClick = (action: string) => {
+    if (action === 'corporation') {
+      setIsCorporationDialogOpen(true)
+    }
+  }
 
   return (
     <Sidebar collapsible="icon" className="[&>*]:bg-background bg-background" {...props}>
@@ -125,7 +87,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenu>
           </div>
         )}
-        <NavMain items={syndicodeNavigation} />
+        <NavMain items={getSyndicodeNavigation(isAuthenticated)} onItemClick={handleNavItemClick} />
       </SidebarContent>
       <SidebarFooter>
         {isAuthenticated && user && (
@@ -137,6 +99,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
       </SidebarFooter>
       <SidebarRail />
+      <CorporationDialog
+        isOpen={isCorporationDialogOpen}
+        onClose={() => setIsCorporationDialogOpen(false)}
+      />
     </Sidebar>
   )
 }

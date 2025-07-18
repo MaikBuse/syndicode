@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{application::ports::limiter::LimiterCategory, utils::read_env_var};
-use std::{path::Path, time::Duration};
+use std::path::Path;
 
 pub const CONFIG_FILE_PATH: &str = "server_config.toml";
 
@@ -129,17 +129,17 @@ impl RateLimiterConfig {
 pub struct ProcessorConfig {
     pub game_tick_interval: usize,
     pub leader_lock_ttl: usize,
-    pub leader_lock_refresh_interval: Duration,
-    pub non_leader_acquisition_retry_internal: Duration,
+    pub leader_lock_refresh_interval: usize,
+    pub non_leader_acquisition_retry_internal: usize,
 }
 
 impl Default for ProcessorConfig {
     fn default() -> Self {
         Self {
-            game_tick_interval: 1000,
-            leader_lock_ttl: 30000,
-            leader_lock_refresh_interval: Duration::from_millis(10000),
-            non_leader_acquisition_retry_internal: Duration::from_millis(5000),
+            game_tick_interval: 3000,
+            leader_lock_ttl: 90000,
+            leader_lock_refresh_interval: 30000,
+            non_leader_acquisition_retry_internal: 15000,
         }
     }
 }
@@ -343,10 +343,10 @@ impl ServerConfig {
             config.processor.leader_lock_ttl = val;
         }
         if let Ok(val) = int_from_env("SERVER_LEADER_LOCK_REFRESH_INTERVAL") {
-            config.processor.leader_lock_refresh_interval = Duration::from_millis(val);
+            config.processor.leader_lock_refresh_interval = val;
         }
         if let Ok(val) = int_from_env("SERVER_NON_LEADER_ACQUISITION_RETRY_INTERNAL") {
-            config.processor.non_leader_acquisition_retry_internal = Duration::from_millis(val);
+            config.processor.non_leader_acquisition_retry_internal = val;
         }
 
         // PostgresConfig

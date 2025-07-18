@@ -1,19 +1,24 @@
 import { useMemo } from 'react';
 import type { TokyoBoundaryGeoJSON } from '@/lib/map/types';
-import type { BusinessDetails, BuildingDetails } from '@/domain/economy/economy.types';
+import type { BusinessDetails, BuildingDetails, BusinessListingDetails } from '@/domain/economy/economy.types';
+import type { MapMode } from '@/components/map/map-layer-controls';
 import {
   createBuildingsLayer,
   createHeadquarterHexLayer,
+  createListedBusinessHexLayer,
   createHeadquarterArcLayer,
+  createListedBusinessArcLayer,
   createBoundaryLayersWithSharedAnimation
 } from '@/lib/map/layers';
 
 export const useMapLayers = (
   ownedBusinesses: BusinessDetails[],
+  businessListings: BusinessListingDetails[],
   time: number,
   tokyoBoundary: TokyoBoundaryGeoJSON | null,
   zoom: number,
-  selectedBusiness: BusinessDetails | null = null,
+  mapMode: MapMode,
+  selectedBusiness: BusinessDetails | BusinessListingDetails | null = null,
   selectedBusinessBuildings: BuildingDetails[] = []
 ) => {
   // Memoize the Set creation to avoid recreating it on every render
@@ -41,6 +46,19 @@ export const useMapLayers = (
       'empty';
   }, [selectedBusinessBuildingGmlIds]);
 
+  // Memoize ALL listed business headquarters GML IDs for performance
+  const allListedBusinessGmlIds = useMemo(() => {
+    if (mapMode !== 'market') return new Set<string>();
+    return new Set(businessListings.map(b => b.headquarterBuildingGmlId));
+  }, [businessListings, mapMode]);
+
+  // Memoize all listed business update trigger
+  const allListedBusinessUpdateTrigger = useMemo(() => {
+    return allListedBusinessGmlIds.size > 0 ?
+      Array.from(allListedBusinessGmlIds).sort().join(',') :
+      'empty';
+  }, [allListedBusinessGmlIds]);
+
   return useMemo(() => {
     const layersList = [];
 
@@ -51,24 +69,50 @@ export const useMapLayers = (
     }
 
     // Use memoized GML ID set for buildings layer with selection support
-    layersList.push(createBuildingsLayer(ownedBusinessGmlIds, ownedBusinessesUpdateTrigger, selectedBusinessBuildingGmlIds, selectedBusinessBuildingUpdateTrigger));
+    layersList.push(createBuildingsLayer(
+      ownedBusinessGmlIds,
+      ownedBusinessesUpdateTrigger,
+      selectedBusinessBuildingGmlIds,
+      selectedBusinessBuildingUpdateTrigger,
+      allListedBusinessGmlIds,
+      allListedBusinessUpdateTrigger
+    ));
 
-    // Add hex layer for headquarters (visible from far away) with selection support
-    if (ownedBusinesses.length > 0) {
-      // If a business is selected and has buildings, show arc layer instead of hexagon
-      if (selectedBusiness && selectedBusinessBuildings && selectedBusinessBuildings.length > 0) {
-        layersList.push(createHeadquarterArcLayer(selectedBusiness, selectedBusinessBuildings, time));
-        // Add hexagons for non-selected businesses
-        const nonSelectedBusinesses = ownedBusinesses.filter(b => b.businessUuid !== selectedBusiness.businessUuid);
-        if (nonSelectedBusinesses.length > 0) {
-          layersList.push(createHeadquarterHexLayer(nonSelectedBusinesses, time, zoom));
+    // Add business layers based on map mode
+    if (mapMode === 'owned') {
+      // Show owned businesses
+      if (ownedBusinesses.length > 0) {
+        // If a business is selected and has buildings, show arc layer instead of hexagon
+        if (selectedBusiness && selectedBusinessBuildings && selectedBusinessBuildings.length > 0 && !('listingUuid' in selectedBusiness)) {
+          layersList.push(createHeadquarterArcLayer(selectedBusiness as BusinessDetails, selectedBusinessBuildings, time));
+          // Add hexagons for non-selected businesses
+          const nonSelectedBusinesses = ownedBusinesses.filter(b => b.businessUuid !== selectedBusiness.businessUuid);
+          if (nonSelectedBusinesses.length > 0) {
+            layersList.push(createHeadquarterHexLayer(nonSelectedBusinesses, time, zoom));
+          }
+        } else {
+          // Show all businesses as hexagons
+          layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom));
         }
-      } else {
-        // Show all businesses as hexagons
-        layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom));
+      }
+    } else if (mapMode === 'market') {
+      // Show listed businesses available for purchase
+      if (businessListings.length > 0) {
+        // If a listed business is selected and has buildings, show arc layer instead of hexagon
+        if (selectedBusiness && selectedBusinessBuildings && selectedBusinessBuildings.length > 0 && 'listingUuid' in selectedBusiness) {
+          layersList.push(createListedBusinessArcLayer(selectedBusiness as BusinessListingDetails, selectedBusinessBuildings, time));
+          // Add hexagons for non-selected businesses
+          const nonSelectedBusinesses = businessListings.filter(b => b.businessUuid !== selectedBusiness.businessUuid);
+          if (nonSelectedBusinesses.length > 0) {
+            layersList.push(createListedBusinessHexLayer(nonSelectedBusinesses, time, zoom));
+          }
+        } else {
+          // Show all businesses as hexagons
+          layersList.push(createListedBusinessHexLayer(businessListings, time, zoom));
+        }
       }
     }
 
     return layersList;
-  }, [ownedBusinessGmlIds, ownedBusinessesUpdateTrigger, selectedBusinessBuildingGmlIds, selectedBusinessBuildingUpdateTrigger, ownedBusinesses, time, tokyoBoundary, zoom, selectedBusiness, selectedBusinessBuildings]);
+  }, [ownedBusinessGmlIds, ownedBusinessesUpdateTrigger, selectedBusinessBuildingGmlIds, selectedBusinessBuildingUpdateTrigger, allListedBusinessGmlIds, allListedBusinessUpdateTrigger, ownedBusinesses, businessListings, time, tokyoBoundary, zoom, mapMode, selectedBusiness, selectedBusinessBuildings]);
 };

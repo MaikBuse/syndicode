@@ -163,6 +163,13 @@ pub struct BusinessListingDetails {
     pub asking_price: i64,
     #[prost(int64, tag = "7")]
     pub operational_expenses: i64,
+    /// Headquarter building information for map display
+    #[prost(string, tag = "8")]
+    pub headquarter_building_gml_id: ::prost::alloc::string::String,
+    #[prost(double, tag = "9")]
+    pub headquarter_longitude: f64,
+    #[prost(double, tag = "10")]
+    pub headquarter_latitude: f64,
 }
 /// Response containing the list of matching business listing details.
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -4,9 +4,11 @@ import type {
   QueryBuildingsFilters, 
   QueryBuildingsResult,
   QueryBusinessesFilters,
-  QueryBusinessesResult
+  QueryBusinessesResult,
+  QueryBusinessListingsFilters,
+  QueryBusinessListingsResult
 } from '@/domain/economy/economy.types';
-import { BusinessSortBy, SortDirection } from '@/domain/economy/economy.types';
+import { BusinessSortBy, BusinessListingSortBy, SortDirection } from '@/domain/economy/economy.types';
 import { getEconomyServiceClient } from '@/lib/grpc/economy-client';
 import * as grpc from '@grpc/grpc-js';
 import { 
@@ -15,9 +17,12 @@ import {
   QueryBuildingsResponse,
   QueryBusinessesRequest,
   QueryBusinessesResponse,
+  QueryBusinessListingsRequest,
+  QueryBusinessListingsResponse,
   BusinessSortBy as ProtoBusinessSortBy,
+  BusinessListingSortBy as ProtoBusinessListingSortBy,
 } from '@/lib/grpc/generated/economy/v1/economy_pb';
-import { BuildingDetails, BusinessDetails } from '@/lib/grpc/generated/economy/v1/economy_pb';
+import { BuildingDetails, BusinessDetails, BusinessListingDetails } from '@/lib/grpc/generated/economy/v1/economy_pb';
 import { SortDirection as ProtoSortDirection } from '@/lib/grpc/generated/interface/v1/shared_pb';
 import { CallContext } from './types';
 import { UnknownAuthError } from '@/domain/auth/auth.error';
@@ -52,8 +57,9 @@ export class GrpcEconomyRepository implements EconomyRepository {
           if (response) {
             resolve({
               uuid: response.getUuid(),
+              user_uuid: response.getUserUuid(),
               name: response.getName(),
-              cash_balance: response.getBalance(),
+              balance: response.getBalance(),
             });
           } else {
             // This case is unlikely but good to handle
@@ -219,6 +225,106 @@ export class GrpcEconomyRepository implements EconomyRepository {
         return ProtoBusinessSortBy.BUSINESS_MARKET_VOLUME;
       default:
         return ProtoBusinessSortBy.BUSINESS_SORT_BY_UNSPECIFIED;
+    }
+  }
+
+  async queryBusinessListings(filters: QueryBusinessListingsFilters, ipAddress: string, jwt: string): Promise<QueryBusinessListingsResult> {
+    const grpcRequest = new QueryBusinessListingsRequest();
+
+    if (filters.minAskingPrice != null) {
+      const minPriceValue = new google_protobuf_wrappers_pb.Int64Value();
+      minPriceValue.setValue(filters.minAskingPrice);
+      grpcRequest.setMinAskingPrice(minPriceValue);
+    }
+    if (filters.maxAskingPrice != null) {
+      const maxPriceValue = new google_protobuf_wrappers_pb.Int64Value();
+      maxPriceValue.setValue(filters.maxAskingPrice);
+      grpcRequest.setMaxAskingPrice(maxPriceValue);
+    }
+    if (filters.sellerCorporationUuid) {
+      const uuidValue = new google_protobuf_wrappers_pb.StringValue();
+      uuidValue.setValue(filters.sellerCorporationUuid);
+      grpcRequest.setSellerCorporationUuid(uuidValue);
+    }
+    if (filters.marketUuid) {
+      const marketUuidValue = new google_protobuf_wrappers_pb.StringValue();
+      marketUuidValue.setValue(filters.marketUuid);
+      grpcRequest.setMarketUuid(marketUuidValue);
+    }
+    if (filters.minOperationalExpenses != null) {
+      const minOpExpValue = new google_protobuf_wrappers_pb.Int64Value();
+      minOpExpValue.setValue(filters.minOperationalExpenses);
+      grpcRequest.setMinOperationalExpenses(minOpExpValue);
+    }
+    if (filters.maxOperationalExpenses != null) {
+      const maxOpExpValue = new google_protobuf_wrappers_pb.Int64Value();
+      maxOpExpValue.setValue(filters.maxOperationalExpenses);
+      grpcRequest.setMaxOperationalExpenses(maxOpExpValue);
+    }
+    if (filters.sortBy != null) {
+      grpcRequest.setSortBy(this.mapBusinessListingSortBy(filters.sortBy));
+    }
+    if (filters.sortDirection != null) {
+      grpcRequest.setSortDirection(this.mapSortDirection(filters.sortDirection));
+    }
+    if (filters.limit != null) {
+      const limitValue = new google_protobuf_wrappers_pb.Int64Value();
+      limitValue.setValue(filters.limit);
+      grpcRequest.setLimit(limitValue);
+    }
+    if (filters.offset != null) {
+      const offsetValue = new google_protobuf_wrappers_pb.Int64Value();
+      offsetValue.setValue(filters.offset);
+      grpcRequest.setOffset(offsetValue);
+    }
+
+    const metadata = new grpc.Metadata();
+    const customContext: CallContext = { ipAddress, jwt };
+    const callOptions: grpc.CallOptions & { customContext: CallContext } = {
+      customContext: customContext,
+    };
+
+    const response: QueryBusinessListingsResponse = await new Promise((resolve, reject) => {
+      this.client.queryBusinessListings(grpcRequest, metadata, callOptions, (error, response) => {
+        if (error) {
+          reject(error);
+        } else if (response) {
+          resolve(response);
+        } else {
+          reject(new Error("No response or error received from gRPC call."));
+        }
+      });
+    });
+
+    return {
+      listings: response.getListingsList().map((l: BusinessListingDetails) => ({
+        listingUuid: l.getListingUuid(),
+        businessUuid: l.getBusinessUuid(),
+        businessName: l.getBusinessName(),
+        sellerCorporationUuid: l.getSellerCorporationUuid()?.getValue() || null,
+        marketUuid: l.getMarketUuid(),
+        askingPrice: l.getAskingPrice(),
+        operationalExpenses: l.getOperationalExpenses(),
+        headquarterBuildingGmlId: l.getHeadquarterBuildingGmlId(),
+        headquarterLongitude: l.getHeadquarterLongitude(),
+        headquarterLatitude: l.getHeadquarterLatitude(),
+      })),
+      totalCount: response.getTotalCount(),
+    };
+  }
+
+  private mapBusinessListingSortBy(sortBy: BusinessListingSortBy): ProtoBusinessListingSortBy {
+    switch (sortBy) {
+      case BusinessListingSortBy.PRICE:
+        return ProtoBusinessListingSortBy.PRICE;
+      case BusinessListingSortBy.NAME:
+        return ProtoBusinessListingSortBy.NAME;
+      case BusinessListingSortBy.OPERATION_EXPENSES:
+        return ProtoBusinessListingSortBy.OPERATION_EXPENSES;
+      case BusinessListingSortBy.MARKET_VOLUME:
+        return ProtoBusinessListingSortBy.MARKET_VOLUME;
+      default:
+        return ProtoBusinessListingSortBy.SORT_BY_UNSPECIFIED;
     }
   }
 

@@ -42,6 +42,10 @@ pub struct BusinessListingDetails {
     pub seller_corporation_uuid: Option<Uuid>,
     pub asking_price: i64,
     pub operational_expenses: i64,
+    // Headquarter building information for map display
+    pub headquarter_building_gml_id: String,
+    pub headquarter_longitude: f64,
+    pub headquarter_latitude: f64,
 }
 
 #[async_trait]

@@ -86,17 +86,19 @@ impl PgBusinessListingRepository {
                 bl.business_uuid,
                 b.name AS business_name,
                 m.uuid AS market_uuid,
-                m.name AS market_name,
                 bl.seller_corporation_uuid,
                 bl.asking_price,
                 b.operational_expenses,
-                m.volume AS market_volume
+                hb.gml_id AS headquarter_building_gml_id,
+                ST_X(hb.center) AS headquarter_longitude,
+                ST_Y(hb.center) AS headquarter_latitude
             FROM business_listings bl
             JOIN businesses b ON bl.business_uuid = b.uuid AND b.game_tick = "#,
         );
         qb.push_bind(game_tick);
         qb.push(" JOIN markets m ON b.market_uuid = m.uuid AND m.game_tick = ");
         qb.push_bind(game_tick);
+        qb.push(" JOIN buildings hb ON b.headquarter_building_uuid = hb.uuid");
         qb.push(" WHERE bl.game_tick = ");
         qb.push_bind(game_tick);
 

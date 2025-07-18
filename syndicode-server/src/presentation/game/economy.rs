@@ -178,6 +178,9 @@ where
                     market_uuid: l.market_uuid.to_string(),
                     asking_price: l.asking_price,
                     operational_expenses: l.operational_expenses,
+                    headquarter_building_gml_id: l.headquarter_building_gml_id,
+                    headquarter_longitude: l.headquarter_longitude,
+                    headquarter_latitude: l.headquarter_latitude,
                 };
 
                 listings.push(listing);

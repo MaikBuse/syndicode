@@ -2,6 +2,7 @@ import { User } from '@/domain/auth/auth.types';
 import { create } from 'zustand';
 import { logout as logoutAction } from '@/app/actions/auth';
 import { useAuthModal } from '@/stores/use-auth-modal';
+import { useUserDataStore } from '@/stores/use_user_data_store';
 
 type AuthState = {
   isAuthenticated: boolean;
@@ -23,10 +24,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await logoutAction();
     set({ isAuthenticated: false, user: null });
+    // Clear user data from store
+    useUserDataStore.getState().clearUserData();
   },
   logoutExpired: async () => {
     await logoutAction();
     set({ isAuthenticated: false, user: null });
+    // Clear user data from store
+    useUserDataStore.getState().clearUserData();
     useAuthModal.getState().openModal('login');
   },
   initialize: (initialState) => set(initialState),

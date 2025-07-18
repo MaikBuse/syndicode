@@ -1,7 +1,8 @@
 export type Corporation = {
   uuid: string;
+  user_uuid: string;
   name: string;
-  cash_balance: number,
+  balance: number;
 };
 
 // Represents the filters that can be used to query buildings.
@@ -70,5 +71,48 @@ export type BusinessDetails = {
 // Represents the complete result of a business query.
 export type QueryBusinessesResult = {
   businesses: BusinessDetails[];
+  totalCount: number;
+};
+
+// Represents a business listing (for sale)
+export type BusinessListingDetails = {
+  listingUuid: string;
+  businessUuid: string;
+  businessName: string;
+  sellerCorporationUuid?: string | null;
+  marketUuid: string;
+  askingPrice: number;
+  operationalExpenses: number;
+  // Extended fields for map display
+  headquarterLongitude: number;
+  headquarterLatitude: number;
+  headquarterBuildingGmlId: string;
+};
+
+// Represents the filters that can be used to query business listings.
+export type QueryBusinessListingsFilters = {
+  minAskingPrice?: number | null;
+  maxAskingPrice?: number | null;
+  sellerCorporationUuid?: string | null;
+  marketUuid?: string | null;
+  minOperationalExpenses?: number | null;
+  maxOperationalExpenses?: number | null;
+  sortBy?: BusinessListingSortBy | null;
+  sortDirection?: SortDirection | null;
+  limit?: number | null;
+  offset?: number | null;
+};
+
+export enum BusinessListingSortBy {
+  SORT_BY_UNSPECIFIED = 0,
+  PRICE = 1,
+  NAME = 2,
+  OPERATION_EXPENSES = 3,
+  MARKET_VOLUME = 4,
+}
+
+// Represents the complete result of a business listing query.
+export type QueryBusinessListingsResult = {
+  listings: BusinessListingDetails[];
   totalCount: number;
 };

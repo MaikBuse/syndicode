@@ -11,6 +11,8 @@ interface UserDataState {
   data: UserData | null;
   isLoading: boolean;
   fetchUserData: () => Promise<void>;
+  fetchCorporation: () => Promise<void>;
+  clearUserData: () => void;
 }
 
 
@@ -37,5 +39,21 @@ export const useUserDataStore = create<UserDataState>((set) => ({
     } finally {
       useMapLoadingStore.getState().setCorporationLoading(false);
     }
+  },
+  fetchCorporation: async () => {
+    try {
+      const response = await getCurrentCorporationAction();
+
+      if (response.success) {
+        set((state) => ({
+          data: state.data ? { ...state.data, corporation: response.data } : { corporation: response.data }
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch corporation data", error);
+    }
+  },
+  clearUserData: () => {
+    set({ data: null, isLoading: false });
   },
 }));

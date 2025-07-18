@@ -48,6 +48,28 @@ function deserialize_syndicode_economy_v1_QueryBuildingsResponse(buffer_arg) {
   return economy_v1_economy_pb.QueryBuildingsResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_syndicode_economy_v1_QueryBusinessListingsRequest(arg) {
+  if (!(arg instanceof economy_v1_economy_pb.QueryBusinessListingsRequest)) {
+    throw new Error('Expected argument of type syndicode_economy_v1.QueryBusinessListingsRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_economy_v1_QueryBusinessListingsRequest(buffer_arg) {
+  return economy_v1_economy_pb.QueryBusinessListingsRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_syndicode_economy_v1_QueryBusinessListingsResponse(arg) {
+  if (!(arg instanceof economy_v1_economy_pb.QueryBusinessListingsResponse)) {
+    throw new Error('Expected argument of type syndicode_economy_v1.QueryBusinessListingsResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_syndicode_economy_v1_QueryBusinessListingsResponse(buffer_arg) {
+  return economy_v1_economy_pb.QueryBusinessListingsResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_syndicode_economy_v1_QueryBusinessesRequest(arg) {
   if (!(arg instanceof economy_v1_economy_pb.QueryBusinessesRequest)) {
     throw new Error('Expected argument of type syndicode_economy_v1.QueryBusinessesRequest');
@@ -108,6 +130,18 @@ queryBusinesses: {
     requestDeserialize: deserialize_syndicode_economy_v1_QueryBusinessesRequest,
     responseSerialize: serialize_syndicode_economy_v1_QueryBusinessesResponse,
     responseDeserialize: deserialize_syndicode_economy_v1_QueryBusinessesResponse,
+  },
+  // Queries business listings with optional filters and pagination.
+queryBusinessListings: {
+    path: '/syndicode_interface_v1.EconomyService/QueryBusinessListings',
+    requestStream: false,
+    responseStream: false,
+    requestType: economy_v1_economy_pb.QueryBusinessListingsRequest,
+    responseType: economy_v1_economy_pb.QueryBusinessListingsResponse,
+    requestSerialize: serialize_syndicode_economy_v1_QueryBusinessListingsRequest,
+    requestDeserialize: deserialize_syndicode_economy_v1_QueryBusinessListingsRequest,
+    responseSerialize: serialize_syndicode_economy_v1_QueryBusinessListingsResponse,
+    responseDeserialize: deserialize_syndicode_economy_v1_QueryBusinessListingsResponse,
   },
 };
 

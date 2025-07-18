@@ -4,7 +4,9 @@ import type {
   QueryBuildingsFilters, 
   QueryBuildingsResult,
   QueryBusinessesFilters,
-  QueryBusinessesResult
+  QueryBusinessesResult,
+  QueryBusinessListingsFilters,
+  QueryBusinessListingsResult
 } from '@/domain/economy/economy.types';
 import { GrpcEconomyRepository } from '@/infrastructure/grpc/grpc-economy-repository';
 
@@ -28,6 +30,14 @@ class EconomyService {
    */
   async getBusinesses(filters: QueryBusinessesFilters, ipAddress: string, jwt: string): Promise<QueryBusinessesResult> {
     return this.economyRepository.queryBusinesses(filters, ipAddress, jwt);
+  }
+
+  /**
+   * The "Get Business Listings" use case.
+   * It takes filter data and uses the repository to fetch the results.
+   */
+  async getBusinessListings(filters: QueryBusinessListingsFilters, ipAddress: string, jwt: string): Promise<QueryBusinessListingsResult> {
+    return this.economyRepository.queryBusinessListings(filters, ipAddress, jwt);
   }
 
 }
