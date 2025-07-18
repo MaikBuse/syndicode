@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.17.0](https://github.com/MaikBuse/syndicode/compare/v0.16.0...v0.17.0) (2025-07-18)
+
+
+### Features
+
+* **server:** remove prefecture from building since its always tokyo ([af3a225](https://github.com/MaikBuse/syndicode/commit/af3a2255ad8d0a7aeb53ac6eae75819c7da9a273))
+* **web:** acquire listed businesses ([ca6bc8b](https://github.com/MaikBuse/syndicode/commit/ca6bc8b5ff3c4793d8d204f90e202b3492897760))
+* **web:** draw boundary for tokyo wards ([cf195eb](https://github.com/MaikBuse/syndicode/commit/cf195eb8590ff161c70d9cb94ea5380c09badeac))
+* **web:** handle jwt expiration and other verification errors ([8cb609f](https://github.com/MaikBuse/syndicode/commit/8cb609f0e7e9c54ffc891ae6ad46510d6db923f6))
+* **web:** improve loading state on market map mode ([5536730](https://github.com/MaikBuse/syndicode/commit/5536730ce54cb6f1971c923f25abfab7d0f0d3dd))
+* **web:** introduce new map mode for listed businesses ([34bb22e](https://github.com/MaikBuse/syndicode/commit/34bb22e24b204b6d1ea36824a73c1edca6ed0f06))
+* **web:** put ward labels over buildings ([8844c38](https://github.com/MaikBuse/syndicode/commit/8844c38d5fe18393d8b19e7151cc063e6473857a))
+
+
+### Bug Fixes
+
+* **server:** syntax error in sql insert ([37580f8](https://github.com/MaikBuse/syndicode/commit/37580f8c39133509c81572f4616b8f374972150d))
+* **web:** draw correct fields from token ([2961178](https://github.com/MaikBuse/syndicode/commit/2961178aafea0a19e18c7f42e5c6717891616f98))
+
 ## [0.16.0](https://github.com/MaikBuse/syndicode/compare/v0.15.0...v0.16.0) (2025-07-17)
 
 
