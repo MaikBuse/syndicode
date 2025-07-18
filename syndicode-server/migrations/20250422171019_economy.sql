@@ -96,7 +96,7 @@ CREATE TABLE buildings (
     center GEOMETRY(Point, 4326) NOT NULL,
     footprint GEOMETRY(Polygon, 4326) NOT NULL,
     height DOUBLE PRECISION NOT NULL,
-    volume DOUBLE PRECISION NOT NULL,
+    volume DOUBLE PRECISION NOT NULL
 );
 
 -- Comments explaining the indexes

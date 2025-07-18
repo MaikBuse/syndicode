@@ -69,14 +69,14 @@ impl PgBuildingRepository {
             r#"
             INSERT INTO buildings (
                 uuid, gml_id, name, address, usage, usage_code, class, class_code,
-                city, city_code, center, footprint, height, volume, prefecture
+                city, city_code, center, footprint, height, volume
             )
             SELECT
                 u.uuid, u.gml_id, u.name, u.address, u.usage, u.usage_code, u.class, u.class_code,
                 u.city, u.city_code,
                 -- Use ST_GeomFromText to convert WKT strings to geometry
-                ST_SetSRID(ST_GeomFromText(u.center), $16),
-                ST_SetSRID(ST_GeomFromText(u.footprint), $16),
+                ST_SetSRID(ST_GeomFromText(u.center), $15),
+                ST_SetSRID(ST_GeomFromText(u.footprint), $15),
                 u.height, u.volume
             FROM unnest(
                 $1::UUID[],
@@ -92,7 +92,7 @@ impl PgBuildingRepository {
                 $11::TEXT[],
                 $12::TEXT[],
                 $13::DOUBLE PRECISION[],
-                $14::DOUBLE PRECISION[],
+                $14::DOUBLE PRECISION[]
             ) AS u(
                 uuid, gml_id, name, address, usage, usage_code, class, class_code,
                 city, city_code, center, footprint, height, volume
