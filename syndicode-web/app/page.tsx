@@ -8,7 +8,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { InfoSidebar } from '@/components/ui/info-sidebar';
 import { BusinessInfoContent } from '@/components/map/business-info-content';
 import { MapLoadingIndicator } from '@/components/map/map-loading-indicator';
-import { MapLayerControls, MapMode } from '@/components/map/map-layer-controls';
+import { MapLayerControls, MapMode, MAP_MODES } from '@/components/map/map-layer-controls';
 import { useAnimationTime } from '@/hooks/use-animation-time';
 import { useTokyoBoundary } from '@/hooks/use-tokyo-boundary';
 import { useOwnedBusinesses } from '@/hooks/use-owned-businesses';
@@ -34,7 +34,7 @@ function AppContent() {
   const [zoom, setZoom] = useState(TOKYO_INITIAL_VIEW_STATE.zoom);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessDetails | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [mapMode, setMapMode] = useState<MapMode>('owned');
+  const [mapMode, setMapMode] = useState<MapMode>(MAP_MODES.OWNED);
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { setOpen } = useSidebar();
@@ -58,8 +58,8 @@ function AppContent() {
 
   const time = useAnimationTime();
   const tokyoBoundary = useTokyoBoundary();
-  const ownedBusinesses = useOwnedBusinesses();
-  const { listings: businessListings } = useBusinessListings();
+  const ownedBusinesses = useOwnedBusinesses(mapMode);
+  const { listings: businessListings } = useBusinessListings(mapMode);
   const { buildings: selectedBusinessBuildings } = useBusinessBuildings(selectedBusiness);
   const layers = useMapLayers(ownedBusinesses, businessListings, time, tokyoBoundary, zoom, mapMode, selectedBusiness, selectedBusinessBuildings);
 

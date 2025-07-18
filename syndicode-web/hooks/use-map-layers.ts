@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { TokyoBoundaryGeoJSON } from '@/lib/map/types';
 import type { BusinessDetails, BuildingDetails, BusinessListingDetails } from '@/domain/economy/economy.types';
 import type { MapMode } from '@/components/map/map-layer-controls';
+import { MAP_MODES } from '@/components/map/map-layer-controls';
 import {
   createBuildingsLayer,
   createHeadquarterHexLayer,
@@ -48,7 +49,7 @@ export const useMapLayers = (
 
   // Memoize ALL listed business headquarters GML IDs for performance
   const allListedBusinessGmlIds = useMemo(() => {
-    if (mapMode !== 'market') return new Set<string>();
+    if (mapMode !== MAP_MODES.MARKET) return new Set<string>();
     return new Set(businessListings.map(b => b.headquarterBuildingGmlId));
   }, [businessListings, mapMode]);
 
@@ -79,7 +80,7 @@ export const useMapLayers = (
     ));
 
     // Add business layers based on map mode
-    if (mapMode === 'owned') {
+    if (mapMode === MAP_MODES.OWNED) {
       // Show owned businesses
       if (ownedBusinesses.length > 0) {
         // If a business is selected and has buildings, show arc layer instead of hexagon
@@ -95,7 +96,7 @@ export const useMapLayers = (
           layersList.push(createHeadquarterHexLayer(ownedBusinesses, time, zoom));
         }
       }
-    } else if (mapMode === 'market') {
+    } else if (mapMode === MAP_MODES.MARKET) {
       // Show listed businesses available for purchase
       if (businessListings.length > 0) {
         // If a listed business is selected and has buildings, show arc layer instead of hexagon

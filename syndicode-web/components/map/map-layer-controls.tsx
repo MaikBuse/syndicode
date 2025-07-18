@@ -3,7 +3,12 @@
 import { Building2, ShoppingCart } from 'lucide-react';
 import { useAuthStore } from '@/stores/use-auth-store';
 
-export type MapMode = 'owned' | 'market';
+export const MAP_MODES = {
+  OWNED: 'owned',
+  MARKET: 'market'
+} as const;
+
+export type MapMode = typeof MAP_MODES[keyof typeof MAP_MODES];
 
 interface MapLayerControlsProps {
   currentMode: MapMode;
@@ -20,9 +25,9 @@ export function MapLayerControls({ currentMode, onModeChange }: MapLayerControls
   return (
     <div className="absolute bottom-4 right-4 flex flex-row gap-2">
       <button
-        onClick={() => onModeChange('owned')}
+        onClick={() => onModeChange(MAP_MODES.OWNED)}
         className={`p-3 rounded-lg border transition-all ${
-          currentMode === 'owned'
+          currentMode === MAP_MODES.OWNED
             ? 'bg-primary/20 border-primary text-primary'
             : 'bg-card/80 border-border hover:bg-card/60'
         }`}
@@ -32,9 +37,9 @@ export function MapLayerControls({ currentMode, onModeChange }: MapLayerControls
       </button>
       
       <button
-        onClick={() => onModeChange('market')}
+        onClick={() => onModeChange(MAP_MODES.MARKET)}
         className={`p-3 rounded-lg border transition-all ${
-          currentMode === 'market'
+          currentMode === MAP_MODES.MARKET
             ? 'bg-primary/20 border-primary text-primary'
             : 'bg-card/80 border-border hover:bg-card/60'
         }`}

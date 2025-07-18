@@ -5,8 +5,10 @@ import { useMapLoadingStore } from '@/stores/use-map-loading-store';
 import { queryBusinessesAction } from '@/app/actions/economy.actions';
 import { toast } from 'sonner';
 import type { BusinessDetails } from '@/domain/economy/economy.types';
+import type { MapMode } from '@/components/map/map-layer-controls';
+import { MAP_MODES } from '@/components/map/map-layer-controls';
 
-export const useOwnedBusinesses = () => {
+export const useOwnedBusinesses = (mapMode: MapMode) => {
   const [ownedBusinesses, setOwnedBusinesses] = useState<BusinessDetails[]>([]);
   
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -14,8 +16,10 @@ export const useOwnedBusinesses = () => {
   const setBusinessesLoading = useMapLoadingStore((state) => state.setBusinessesLoading);
 
   useEffect(() => {
+    const shouldFetchOwnedBusinesses = isAuthenticated && corporation?.uuid && mapMode === MAP_MODES.OWNED;
+    
     const fetchOwnedBusinesses = async () => {
-      if (!isAuthenticated || !corporation?.uuid) {
+      if (!shouldFetchOwnedBusinesses) {
         if (ownedBusinesses.length > 0) {
           setOwnedBusinesses([]);
         }
@@ -44,7 +48,7 @@ export const useOwnedBusinesses = () => {
     };
 
     fetchOwnedBusinesses();
-  }, [isAuthenticated, corporation, ownedBusinesses.length, setBusinessesLoading]);
+  }, [isAuthenticated, corporation?.uuid, mapMode, ownedBusinesses.length, setBusinessesLoading]);
 
   return ownedBusinesses;
 };
