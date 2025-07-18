@@ -1,13 +1,16 @@
 import type { FeatureCollection, Polygon } from 'geojson';
 
 export interface TokyoBoundaryProperties {
-  buildings_analyzed: number;
-  total_corner_points: number;
-  points_used_for_hull: number;
-  alpha_value: number;
-  sampling_cell_size: number;
-  smoothing_tolerance: number;
-  buffer_distance: number;
+  city_code: string;
+  name: string;
+  state_name: string;
+  state_name_jp: string;
+  station_name_jp: string | null;
+  county_name_jp: string | null;
+  city_name_jp: string | null;
+  distric_name_jp: string | null;
+  population: number;
+  num_households: number;
 }
 
 export type TokyoBoundaryGeoJSON = FeatureCollection<Polygon, TokyoBoundaryProperties>;
