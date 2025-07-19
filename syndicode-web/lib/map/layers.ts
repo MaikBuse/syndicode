@@ -138,17 +138,17 @@ export const createBuildingsLayer = (
     getElevation: (d: { properties: BuildingProperties }) => d.properties.cal_height_m,
     getFillColor: (d: { properties: BuildingProperties }) => {
       const gmlId = d.properties.gml_id;
-      // Priority: All listed business headquarters (green) > Selected business buildings (purple) > Owned headquarters (gold) > Not owned (gray)
+      // Priority: All listed business headquarters (green) > Owned headquarters (gold) > Selected business buildings (purple) > Not owned (gray)
       if (allListedBusinessGmlIds.has(gmlId)) return listedFill;
-      if (selectedBusinessBuildingGmlIds.has(gmlId)) return selectedFill;
       if (ownedBusinessGmlIds.has(gmlId)) return ownedFill;
+      if (selectedBusinessBuildingGmlIds.has(gmlId)) return selectedFill;
       return notOwnedFill;
     },
     getLineColor: (d: { properties: BuildingProperties }) => {
       const gmlId = d.properties.gml_id;
       if (allListedBusinessGmlIds.has(gmlId)) return listedLine;
-      if (selectedBusinessBuildingGmlIds.has(gmlId)) return selectedLine;
       if (ownedBusinessGmlIds.has(gmlId)) return ownedLine;
+      if (selectedBusinessBuildingGmlIds.has(gmlId)) return selectedLine;
       return notOwnedLine;
     },
     lineWidthMinPixels: 1,
@@ -156,8 +156,8 @@ export const createBuildingsLayer = (
     getLineWidth: (d: { properties: BuildingProperties }) => {
       const gmlId = d.properties.gml_id;
       if (allListedBusinessGmlIds.has(gmlId)) return 2; // Medium outline for all listed business headquarters
-      if (selectedBusinessBuildingGmlIds.has(gmlId)) return 3; // Thicker outline for selected business buildings
       if (ownedBusinessGmlIds.has(gmlId)) return 2; // Medium outline for owned headquarters
+      if (selectedBusinessBuildingGmlIds.has(gmlId)) return 3; // Thicker outline for selected business buildings
       return 1; // Thin outline for not owned
     },
     updateTriggers: {
@@ -366,7 +366,7 @@ export const createHeadquarterArcLayer = (
     getWidth: 4,
     getSourcePosition: (d: { sourcePosition: [number, number] }) => d.sourcePosition,
     getTargetPosition: (d: { targetPosition: [number, number] }) => d.targetPosition,
-    getSourceColor: [255, 215, 0, 75], // Gold from headquarters
+    getSourceColor: [255, 215, 0, 50], // Gold from headquarters
     getTargetColor: [147, 51, 234, 50], // Purple to buildings
     widthMinPixels: 2,
     widthMaxPixels: 8,
