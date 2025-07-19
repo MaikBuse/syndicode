@@ -27,6 +27,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuthStore } from '@/stores/use-auth-store';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileSidebarTrigger } from '@/components/ui/mobile-sidebar-trigger';
 
 function AppContent() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,6 +39,7 @@ function AppContent() {
   const [mapMode, setMapMode] = useState<MapMode>(MAP_MODES.OWNED);
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isMobile = useIsMobile();
   const { setOpen } = useSidebar();
   const [prevAuthState, setPrevAuthState] = useState(isAuthenticated);
 
@@ -98,11 +101,12 @@ function AppContent() {
         <DeckGLOverlay
           layers={layers}
           useDevicePixels={true}
-          pickingRadius={5}
+          pickingRadius={isMobile ? 12 : 5}
           onClick={handleClick}
         />
       </Map>
       <AppSidebar />
+      <MobileSidebarTrigger />
       <MapLoadingIndicator />
       <MapLayerControls
         currentMode={mapMode}

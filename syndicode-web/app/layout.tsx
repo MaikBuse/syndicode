@@ -11,6 +11,12 @@ import { SessionDataInitializer } from '@/components/initializers/session-data-i
 
 export const metadata: Metadata = {
   title: 'Syndicode',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
 };
 
 const firaCode = Fira_Code({

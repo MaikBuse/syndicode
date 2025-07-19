@@ -11,5 +11,7 @@ syndicode-client.log
 # server
 /server_config.toml
 
-# dotenv
-CLAUDE.md
+# playwright outputs
+syndicode-web/playwright-report/
+syndicode-web/mobile-screenshots/
+/test-results/

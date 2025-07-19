@@ -12,6 +12,25 @@ body,
   overflow: hidden;
 }
 
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  html,
+  body,
+  #__next {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 body {
   background-color: var(--background);
   background-image: linear-gradient(

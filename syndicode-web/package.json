@@ -11,6 +11,9 @@
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "lint-and-format": "npm run type-check && npm run lint && npm run format",
     "pre-deploy": "npm run type-check && npm run lint:check && npm run format:check && npm run build"
   },
@@ -52,6 +55,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.54.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/geojson": "^7946.0.16",
     "@types/google-protobuf": "^3.15.12",
