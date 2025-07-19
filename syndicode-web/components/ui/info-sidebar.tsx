@@ -35,7 +35,7 @@ export function InfoSidebar({ isOpen, onClose, title, children }: InfoSidebarPro
             </div>
 
             {/* Content */}
-            <div className="p-3 flex-1 overflow-y-auto">
+            <div className="px-1 py-2 flex-1 overflow-y-auto">
               {children}
             </div>
           </div>
@@ -74,7 +74,7 @@ export function InfoSidebar({ isOpen, onClose, title, children }: InfoSidebarPro
         </div>
 
         {/* Content */}
-        <div className="p-3 flex-1 overflow-y-auto">
+        <div className="px-1 py-2 flex-1 overflow-y-auto">
           {children}
         </div>
       </div>
