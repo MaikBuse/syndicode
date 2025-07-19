@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.18.0](https://github.com/MaikBuse/syndicode/compare/v0.17.0...v0.18.0) (2025-07-19)
+
+
+### Features
+
+* **web:** adjust content organization in business details ([c2a7d47](https://github.com/MaikBuse/syndicode/commit/c2a7d47ec530efc4df535aee2c28ae68473365ec))
+* **web:** adjust scrollbar theme ([b86e59f](https://github.com/MaikBuse/syndicode/commit/b86e59f7e103a0065b45957f3874aab471d265ca))
+* **web:** allign burger menu with design ([fea0d51](https://github.com/MaikBuse/syndicode/commit/fea0d513238463c844de7ee5915d97f1a5ac645f))
+* **web:** handle loading in business info with a skeleton ([95a19e5](https://github.com/MaikBuse/syndicode/commit/95a19e534367894cbd742d52fcd48ddc14b858e5))
+* **web:** handle loading with skeleton in corporation dialog ([02a83e5](https://github.com/MaikBuse/syndicode/commit/02a83e5c2d672600a57eb34db094bdbffc081e39))
+* **web:** improve business acquisition button ([08ecd4f](https://github.com/MaikBuse/syndicode/commit/08ecd4f0adb79059469f5ab55d70399fdc8f9a70))
+* **web:** improve business details ([2ddc31d](https://github.com/MaikBuse/syndicode/commit/2ddc31d06ec291000d16b3f1760d49e679498467))
+* **web:** optimize for mobile use ([9c20d66](https://github.com/MaikBuse/syndicode/commit/9c20d66d8700eda2f7f04dc4db38363ed2fd4771))
+
+
+### Bug Fixes
+
+* error handling on verification code expiration ([d799f39](https://github.com/MaikBuse/syndicode/commit/d799f392264df05c90502a857bdd57d9eee16eaa))
+* **web:** always highlight headquarter building in gold ([3fb6fb7](https://github.com/MaikBuse/syndicode/commit/3fb6fb7eb270cd99762722c399803e4c7922c22d))
+* **web:** consider mobile safety zone ([44838b7](https://github.com/MaikBuse/syndicode/commit/44838b7d7a2627c767100053547d2008f3eff78e))
+* **web:** remove redundant dialog close button on mobile ([026fb9c](https://github.com/MaikBuse/syndicode/commit/026fb9cdc57d0ae65f0e7c377a18bd63a43d0340))
+
 ## [0.17.0](https://github.com/MaikBuse/syndicode/compare/v0.16.0...v0.17.0) (2025-07-18)
 
 
