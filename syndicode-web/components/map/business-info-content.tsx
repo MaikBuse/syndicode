@@ -1,17 +1,21 @@
 'use client';
 
-import type { BusinessDetails, BusinessListingDetails } from '@/domain/economy/economy.types';
+import type { BusinessDetails, BusinessListingDetails, BuildingDetails } from '@/domain/economy/economy.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building, MapPin, DollarSign, ShoppingCart } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown } from 'lucide-react';
 import { acquireListedBusinessAction } from '@/app/actions/economy.actions';
 import { useState } from 'react';
 
 interface BusinessInfoContentProps {
   business: BusinessDetails | BusinessListingDetails | null;
+  buildingsLoading: boolean;
+  buildings: BuildingDetails[];
 }
 
-export function BusinessInfoContent({ business }: BusinessInfoContentProps) {
+export function BusinessInfoContent({ business, buildingsLoading, buildings }: BusinessInfoContentProps) {
   const [isAcquiring, setIsAcquiring] = useState(false);
   const [acquisitionResult, setAcquisitionResult] = useState<string | null>(null);
 
@@ -112,6 +116,45 @@ export function BusinessInfoContent({ business }: BusinessInfoContentProps) {
           <span className="font-medium text-red-600">
             {formatCurrency(business.operationalExpenses)}
           </span>
+        </div>
+
+        {/* Associated Buildings */}
+        <div className="border-t border-border pt-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Associated Buildings</h3>
+          
+          {buildingsLoading ? (
+            // Skeleton loading state
+            <div className="text-xs text-muted-foreground p-2 rounded border border-dashed">
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ) : buildings.length === 0 ? (
+            // No buildings state
+            <div className="text-center py-3 text-muted-foreground text-xs">
+              No properties found
+            </div>
+          ) : (
+            // Collapsible buildings list
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors mb-2 w-full">
+                <span>{buildings.length} {buildings.length === 1 ? 'property' : 'properties'}</span>
+                <ChevronDown className="h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="space-y-2">
+                {buildings.map((building) => (
+                  <div key={building.gmlId} className="flex items-center gap-2 p-2 rounded border border-muted text-xs">
+                    <Home className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <div className="font-medium">Building {building.gmlId?.slice(-8) || 'Unknown'}</div>
+                      <div className="text-muted-foreground">
+                        {building.latitude?.toFixed(4) || 'N/A'}, {building.longitude?.toFixed(4) || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
 
         {/* Actions Section - Only for listed businesses */}

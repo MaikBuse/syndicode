@@ -63,7 +63,7 @@ function AppContent() {
   const tokyoBoundary = useTokyoBoundary();
   const ownedBusinesses = useOwnedBusinesses(mapMode);
   const { listings: businessListings } = useBusinessListings(mapMode);
-  const { buildings: selectedBusinessBuildings } = useBusinessBuildings(selectedBusiness);
+  const { buildings: selectedBusinessBuildings, loading: buildingsLoading } = useBusinessBuildings(selectedBusiness);
   const layers = useMapLayers(ownedBusinesses, businessListings, time, tokyoBoundary, zoom, mapMode, selectedBusiness, selectedBusinessBuildings);
 
   const handleViewStateChange = (evt: ViewStateChangeEvent) => {
@@ -122,7 +122,7 @@ function AppContent() {
         }}
         title="Business Details"
       >
-        <BusinessInfoContent business={selectedBusiness} />
+        <BusinessInfoContent business={selectedBusiness} buildingsLoading={buildingsLoading} buildings={selectedBusinessBuildings} />
       </InfoSidebar>
       <AuthDialog />
     </div>
