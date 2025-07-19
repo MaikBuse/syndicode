@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(just web type-check)",
+      "Bash(just web lint)",
+      "Bash(just web format-check)",
+      "Bash(just server fmt)",
+      "Bash(just server clippy)",
+      "Bash(just server test)",
+      "Bash(just client fmt)",
+      "Bash(just client clippy)",
+      "Bash(just client test)"
+    ],
+    "confirm": [
+      "Bash(just web test)",
+      "Bash(just web test-ui)",
+      "Bash(just docker start)",
+      "Bash(just server run)"
+    ]
+  }
+}

@@ -1,0 +1,275 @@
+# CLAUDE.md
+
+This file provides comprehensive guidance to Claude models when working with the Syndicode codebase. Optimized for efficient parsing and consistent behavior.
+
+## 🎯 Project Overview
+
+**Syndicode**: A competitive strategy game for programmers set in cyberpunk Japan. Built as a gRPC server with no official UI - players build their own clients.
+
+### Components
+- **syndicode-server**: Rust gRPC server (game logic, auth, economy, warfare)
+- **syndicode-client**: Rust TUI client (reference implementation)  
+- **syndicode-web**: Next.js web interface (official web client)
+
+### Architecture Pattern
+**Layered Architecture** with domain-driven design:
+- **Domain Layer**: Core business logic and entities (`domain/`)
+- **Application Layer**: Use cases and application services (`application/`)
+- **Infrastructure Layer**: External concerns - databases, HTTP, gRPC (`infrastructure/`)
+- **Presentation Layer**: API endpoints and user interfaces (`presentation/`)
+
+## 🚨 CRITICAL RULES - ALWAYS FOLLOW
+
+### 1. Planning & Workflow
+- **ALWAYS use Plan Mode** for anything beyond trivial fixes
+- **ALWAYS require manual confirmation** before executing plans
+- **ALWAYS use TodoWrite tool** to track tasks and progress
+- **NEVER create files** unless absolutely necessary - prefer editing existing files
+- **NEVER create documentation** (*.md, README) unless explicitly requested
+- **Boy Scout Rule**: Always leave the code cleaner than you found it
+- **Documentation Updates**: Update this CLAUDE.md file when adding new workflows, patterns, or important project knowledge
+
+### 2. Full-Stack Feature Development
+When implementing features spanning multiple layers, ALWAYS follow this order:
+1. **Analyze Complete Chain**: Check protobuf → server → frontend requirements
+2. **Update Protobuf First**: Modify `.proto` files in `protos/`
+3. **Regenerate Code**: Run `just proto build`
+4. **Implement Server**: Update gRPC services, database, business logic
+5. **Implement Frontend**: Update TypeScript types, UI components, API integration
+6. **Test End-to-End**: Verify complete feature across all layers
+
+### 3. Quality Standards
+- **Test-First**: Write tests before implementation
+- **No unwrap()/expect()**: Use proper error handling in production code
+- **Security**: Never log/expose passwords, tokens, or PII
+- **DRY**: Eliminate duplication, refactor surrounding code
+- **Documentation**: Add doc comments for all public APIs and complex business logic
+
+### 4. Maintenance Requirements
+- **Justfile Maintenance**: When adding new functionality, update relevant justfiles with appropriate commands
+- **CI/CD Maintenance**: Update GitHub Actions workflows (in `.github/workflows/`) when adding:
+  - New components or packages to test/build
+  - New dependencies requiring installation (e.g., protoc, PostgreSQL client)
+  - New build steps or environment variables
+  - New services for integration tests (databases, caches)
+
+### 5. Mandatory Quality Checks
+Before marking work complete, ALWAYS run:
+- **Universal**: `just fmt` (formatting across all components)
+- **Server**: `just server fmt`, `just server clippy`, `just server test`
+- **Client**: `just client fmt`, `just client clippy`
+- **Web**: `just web type-check`, `just web lint`, `just web format-check`
+
+## 📋 Quick Command Reference
+
+### Essential Commands
+```bash
+just help                    # Show all available commands
+just fmt                     # Format entire codebase
+just proto build            # Regenerate gRPC clients after proto changes
+just db add <name>          # Create new migration
+just db migrate             # Run pending migrations
+just docker start           # Start PostgreSQL and Valkey
+just server run             # Start game server
+just web dev                # Start web development server
+```
+
+### Quality Checks (Auto-allowed)
+```bash
+just fmt                    # Universal formatting
+just server fmt             # Rust server formatting
+just server clippy          # Rust server linting
+just server test            # Rust server unit tests
+just client fmt             # Rust client formatting  
+just client clippy          # Rust client linting
+just web type-check         # TypeScript validation
+just web lint               # ESLint checks
+just web format-check       # Prettier validation
+```
+
+### Commands Requiring Confirmation
+```bash
+just web test               # Playwright E2E tests (headless)
+just web test-ui            # Playwright E2E tests (with UI)
+just client test            # Integration tests
+just docker start           # Start infrastructure
+just server run             # Start server (resource intensive)
+```
+
+### Command Organization
+- **Universal commands**: [`justfile`](./justfile) - workspace-wide formatting and linting
+- **Server commands**: [`server.just`](./server.just) - build, run, test, Docker image
+- **Client commands**: [`client.just`](./client.just) - build, run, integration tests  
+- **Web commands**: [`web.just`](./web.just) - dev server, quality checks, map processing
+- **Database commands**: [`db.just`](./db.just) - migrations, setup, utilities
+- **Protocol buffers**: [`proto.just`](./proto.just) - gRPC client generation
+- **Docker**: [`docker.just`](./docker.just) - container management
+- **gRPC testing**: [`grpcurl.just`](./grpcurl.just) - service reflection and testing
+
+## 🔧 Environment Setup
+
+### Prerequisites
+1. Copy `.env.example` to `.env` in project root
+2. Required environment variables:
+   - `DATABASE_URL`: PostgreSQL connection string
+   - `JWT_SECRET`: Secret for token signing  
+   - `ADMIN_PASSWORD`: Default admin user password
+   - PostgreSQL connection details (`SERVER_POSTGRES_*`)
+
+### Local Testing Environment
+
+For running integration tests and E2E tests locally, follow this sequence:
+
+#### 1. Start Infrastructure
+```bash
+just docker start  # Start PostgreSQL and Valkey containers
+```
+
+#### 2. Start Server
+```bash
+just server run     # Start syndicode-server
+# Wait for server to process game ticks before proceeding
+```
+
+#### 3. Run Tests
+Once the server is processing game ticks:
+```bash
+# Integration tests (syndicode-client)
+just client test
+
+# E2E tests (syndicode-web)
+just web test       # headless
+just web test-ui    # with UI for debugging
+```
+
+**Important**: The server must be fully started and processing game ticks before running integration or E2E tests, as tests depend on a live server instance.
+
+### Claude Code E2E/Integration Test Workflow
+
+When Claude Code needs to run integration or E2E tests:
+
+1. **Environment Check**: Claude will first prompt you to ensure the testing environment is ready
+2. **Manual Setup**: You should manually start infrastructure and server using the commands above
+3. **Confirmation Required**: Claude will wait for your explicit confirmation before running any tests
+4. **Test Execution**: Only after confirmation will Claude proceed with test commands
+
+This workflow ensures proper environment setup and gives you control over when resource-intensive tests are executed.
+
+## 💻 Component-Specific Standards
+
+### syndicode-server (Rust gRPC Server)
+
+#### Testing Standards
+- **Unit Tests**: Write as `#[cfg(test)] mod tests` modules next to functional code
+- **Mocking**: ALWAYS use `#[cfg_attr(test, automock)]` on all traits for dependency injection
+- **Test Pattern**:
+  ```rust
+  #[cfg(test)]
+  use mockall::{automock, predicate::*};
+  
+  #[cfg_attr(test, automock)]
+  #[async_trait]
+  pub trait YourRepository: Send + Sync {
+      async fn your_method(&self) -> Result<SomeType, Error>;
+  }
+  ```
+
+#### Code Quality Standards
+- **Error Handling**: Use `thiserror` for domain/application errors, `anyhow` for generic error handling
+- **Logging**: Use `tracing` for all structured logging (info, warn, error, debug)
+- **Architecture**: Follow layered architecture but prioritize performance over theoretical purity
+
+#### Development Workflow
+- **Database Changes**: Create migrations with `just db add <name>`, test both up and down
+- **gRPC Changes**: Update proto definitions first, regenerate with `just proto build`
+- **Schema Changes with Data**: For database schema changes that affect the game state:
+  1. Make schema changes and run server locally until it processes game ticks
+  2. Create database dump: `just db dump`
+  3. Upload dump to S3 bucket for CI/CD and production use
+
+#### Key Technologies
+- **gRPC Services**: Authentication, economy, warfare, admin
+- **Database**: PostgreSQL with SQLx migrations
+- **Game Systems**: Real-time economy and warfare simulation
+- **Authentication**: JWT-based with user verification
+
+### syndicode-client (Rust TUI Client)
+
+#### Testing Standards
+- **Integration Tests**: Write black box tests in `tests/` directory that test full system behavior
+- **Focus**: Test complete user workflows and gRPC communication
+- **Execution**: Tests run with `--test-threads=1` due to shared resources
+
+#### Code Quality Standards
+- **Same Rust standards as server**: thiserror, anyhow, tracing, automock
+
+#### Key Technologies
+- **TUI Interface**: Custom presentation layer with real-time updates
+- **Communication**: gRPC streaming for live game state
+- **Testing**: Comprehensive integration test suite
+
+### syndicode-web (Next.js Web Interface)
+
+#### Testing Standards
+- **E2E Tests**: Write Playwright tests for critical user flows in `e2e/` directory
+- **Focus**: Authentication flows, navigation, map interactions, responsive design including mobile
+
+#### Code Quality Standards
+- **TypeScript**: Strict type checking, proper error boundaries in React
+- **UI Standards**: Radix UI (implemented with shadcn) + Tailwind CSS patterns, desktop-first with mobile optimization responsive design
+
+#### UI & Design Standards
+- **Design Consistency**: Always maintain visual consistency across components
+- **Component Reference**: When creating new components, examine existing components in `components/` to understand patterns and styling
+- **Theme System**: Use CSS custom properties and color tokens defined in `app/globals.css`
+- **Shadcn Components**: Prefer shadcn/ui components when available - check `components/ui/` for existing implementations
+- **Responsive Design**: Desktop-first approach with mobile optimizations using Tailwind responsive prefixes
+- **Component Patterns**: Follow established patterns for layout, spacing, typography, and interactive states
+
+#### Key Technologies
+- **Framework**: Next.js 15 with React 19, App Router
+- **UI**: Radix UI components + Tailwind CSS via Shadcn
+- **State**: Zustand stores for auth and user data
+- **Maps**: Deck.gl with MapLibre for Tokyo visualization
+- **Communication**: Generated TypeScript gRPC clients
+
+## 🗄️ Technical Details
+
+### Proto Definitions
+- **Location**: `protos/` directory
+- **Organization**: By domain (`interface/`, `economy/`, `warfare/`)
+- **Generated Code**: `syndicode-proto/` crate and `syndicode-web/lib/grpc/generated/`
+
+### Server Initialization
+
+#### Bootstrap Mode (Default)
+When starting without `--restore` flag, the server performs resource-intensive bootstrapping:
+
+1. **Admin Creation**: Creates default admin user and corporation
+2. **Economy Bootstrap**: Processes all 23 Tokyo district parquet files from `assets/parquet/`
+3. **Game State Creation**: Generates buildings, businesses, markets, and business listings
+4. **Progress Tracking**: Uses progress bars and parallel processing for efficiency
+
+**Note**: This process is resource-intensive and can take several minutes depending on hardware.
+
+#### Restore Mode
+When starting with `--restore <url>` flag, the server:
+
+1. Downloads database dump from provided URL
+2. Restores database using `pg_restore`
+3. Skips bootstrap process entirely
+
+#### Usage in Different Environments
+- **Local Development**: Typically uses bootstrap mode for full initialization
+- **CI/CD**: Uses restore mode with pre-built dump (`$SERVER_DB_DUMP_URL`) for faster startup
+- **Production**: Uses restore mode with production database dump
+
+### Database Dump Workflow
+After making schema changes that affect game data:
+
+1. Run server locally in bootstrap mode until it processes game ticks
+2. Create dump: `just db dump`
+3. Upload dump to S3 for CI and production use
+
+### Game Data
+The `assets/parquet/` directory contains building data for Tokyo districts (LOD0 building models). This data powers the game's economy system where players can own and operate businesses in real Tokyo locations.
