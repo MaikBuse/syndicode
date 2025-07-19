@@ -29,20 +29,20 @@ test.describe('Navigation', () => {
     }
   });
 
-  test('should handle dashboard navigation', async ({ page }) => {
-    await page.goto('/dashboard');
+  test('should handle map interface on main page', async ({ page }) => {
+    await page.goto('/');
     
-    // Dashboard might redirect to login if not authenticated
-    // OR show dashboard content if public
-    // Either behavior is valid - test both paths
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
     
-    const currentUrl = page.url();
-    if (currentUrl.includes('/dashboard')) {
-      // Dashboard is accessible
-      await expect(page.getByText(/dashboard|map|overview/i)).toBeVisible();
+    // Should show the main page with map or auth interface
+    const authButton = page.getByRole('button', { name: /sign in|login/i });
+    if (await authButton.isVisible()) {
+      // Not authenticated, should show auth interface
+      await expect(authButton).toBeVisible();
     } else {
-      // Redirected to auth
-      await expect(page.getByRole('button', { name: /sign in|login/i })).toBeVisible();
+      // Should show map interface or other main content
+      await expect(page.getByText(/syndicode/i)).toBeVisible();
     }
   });
 

@@ -1,29 +1,36 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Map Interaction', () => {
-  test('should load map on dashboard', async ({ page }) => {
-    await page.goto('/dashboard');
+  test('should load map on main page', async ({ page }) => {
+    await page.goto('/');
     
     // Wait for map container to load
     const mapContainer = page.locator('[data-testid="map-container"], .maplibregl-map, .deck-canvas');
     
-    // Map might be behind auth, so check if we're redirected
-    const currentUrl = page.url();
-    if (currentUrl.includes('/dashboard')) {
-      // We're on dashboard, map should load
-      await expect(mapContainer.first()).toBeVisible({ timeout: 10000 });
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Map should be visible on main page or show auth interface
+    const authButton = page.getByRole('button', { name: /sign in|login/i });
+    if (await authButton.isVisible()) {
+      // Not authenticated, should show auth interface
+      await expect(authButton).toBeVisible();
     } else {
-      // Redirected to auth - that's ok for this test
-      await expect(page.getByRole('button', { name: /sign in|login/i })).toBeVisible();
+      // Should show map
+      await expect(mapContainer.first()).toBeVisible({ timeout: 10000 });
     }
   });
 
   test('should show map controls when map is loaded', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/');
     
-    // Skip test if redirected to auth
-    if (!page.url().includes('/dashboard')) {
-      test.skip(true, 'Dashboard requires authentication');
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Skip test if not authenticated (map controls only show for authenticated users)
+    const authButton = page.getByRole('button', { name: /sign in|login/i });
+    if (await authButton.isVisible()) {
+      test.skip(true, 'Map controls require authentication');
     }
     
     // Look for map layer controls or zoom controls
@@ -35,11 +42,15 @@ test.describe('Map Interaction', () => {
   });
 
   test('should handle map loading states', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/');
     
-    // Skip test if redirected to auth
-    if (!page.url().includes('/dashboard')) {
-      test.skip(true, 'Dashboard requires authentication');
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Skip test if not authenticated
+    const authButton = page.getByRole('button', { name: /sign in|login/i });
+    if (await authButton.isVisible()) {
+      test.skip(true, 'Map requires authentication');
     }
     
     // Should show loading indicator initially
@@ -55,11 +66,15 @@ test.describe('Map Interaction', () => {
   });
 
   test('should show business information on interaction', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/');
     
-    // Skip test if redirected to auth
-    if (!page.url().includes('/dashboard')) {
-      test.skip(true, 'Dashboard requires authentication');
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Skip test if not authenticated
+    const authButton = page.getByRole('button', { name: /sign in|login/i });
+    if (await authButton.isVisible()) {
+      test.skip(true, 'Business info requires authentication');
     }
     
     // Wait for map to load
@@ -78,11 +93,15 @@ test.describe('Map Interaction', () => {
   });
 
   test('should handle map layer toggles', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/');
     
-    // Skip test if redirected to auth
-    if (!page.url().includes('/dashboard')) {
-      test.skip(true, 'Dashboard requires authentication');
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Skip test if not authenticated
+    const authButton = page.getByRole('button', { name: /sign in|login/i });
+    if (await authButton.isVisible()) {
+      test.skip(true, 'Map layer controls require authentication');
     }
     
     // Wait for page to load

@@ -28,9 +28,12 @@ test.describe('Mobile Screenshots', () => {
       fullPage: true 
     });
     
-    // Try to access dashboard (should redirect to auth or show auth dialog)
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    // Click login button to potentially show auth dialog
+    const loginButton = page.getByRole('button', { name: /sign in|login|log in/i });
+    if (await loginButton.isVisible()) {
+      await loginButton.click();
+      await page.waitForTimeout(500);
+    }
     
     // Screenshot 2: Auth state/login
     await page.screenshot({ 
@@ -75,12 +78,12 @@ test.describe('Mobile Screenshots', () => {
     
     // Try to get to a state where we can see the map interface
     // (This might not work without authentication, but let's try)
-    await page.goto('/dashboard');
+    await page.goto('/');
     await page.waitForTimeout(2000);
     
-    // Screenshot 5: Dashboard/Map interface with hamburger menu
+    // Screenshot 5: Main page map interface with hamburger menu
     await page.screenshot({ 
-      path: getScreenshotPath('05-dashboard-map.png'),
+      path: getScreenshotPath('05-main-page-map.png'),
       fullPage: true 
     });
     
@@ -129,7 +132,7 @@ test.describe('Mobile Screenshots', () => {
     // Use mobile viewport
     await page.setViewportSize({ width: 390, height: 844 });
     
-    await page.goto('/dashboard');
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
     
     // Try to interact with map elements (if visible)

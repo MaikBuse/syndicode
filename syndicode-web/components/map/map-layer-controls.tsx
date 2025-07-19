@@ -25,7 +25,7 @@ export function MapLayerControls({ currentMode, onModeChange }: MapLayerControls
   }
 
   return (
-    <div className={`absolute ${isMobile ? 'bottom-2 right-2' : 'bottom-4 right-4'} flex flex-row gap-2`}>
+    <div className={`absolute ${isMobile ? 'bottom-2-safe right-2' : 'bottom-4 right-4'} flex flex-row gap-2`}>
       <button
         onClick={() => onModeChange(MAP_MODES.OWNED)}
         className={`${isMobile ? 'p-4 text-base' : 'p-3'} rounded-lg border transition-all touch-manipulation ${

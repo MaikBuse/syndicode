@@ -14,4 +14,4 @@ syndicode-client.log
 # playwright outputs
 syndicode-web/playwright-report/
 syndicode-web/mobile-screenshots/
-/test-results/
+syndicode-web/test-results/

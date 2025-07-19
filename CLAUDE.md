@@ -108,7 +108,6 @@ just server clippy          # Rust server linting
 just server test            # Rust server unit tests
 just client fmt             # Rust client formatting  
 just client clippy          # Rust client linting
-just client test            # Client integration tests
 just web type-check         # TypeScript validation
 just web lint               # ESLint checks
 just web format-check       # Prettier validation
@@ -120,6 +119,7 @@ just web test               # Web unit tests (Vitest)
 just web test-ui            # Web unit tests with UI
 just web test-e2e           # Playwright E2E tests (headless)
 just web test-e2e-ui        # Playwright E2E tests (with UI)
+just client test            # Client integration tests
 just docker start           # Start infrastructure
 just server run             # Start server (resource intensive)
 ```
@@ -166,8 +166,8 @@ Once the server is processing game ticks:
 just client test
 
 # E2E tests (syndicode-web)
-just web test       # headless
-just web test-ui    # with UI for debugging
+just web test-e2e       # headless
+just web test-e2e-ui    # with UI for debugging
 ```
 
 **Important**: The server must be fully started and processing game ticks before running integration or E2E tests, as tests depend on a live server instance.
