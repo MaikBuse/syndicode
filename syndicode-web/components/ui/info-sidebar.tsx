@@ -30,16 +30,8 @@ export function InfoSidebar({ isOpen, onClose, title, children }: InfoSidebarPro
           </SheetHeader>
           <div className="flex h-full w-full flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold">{title}</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="p-0 touch-manipulation h-10 w-10"
-              >
-                <X className="h-5 w-5" />
-              </Button>
             </div>
 
             {/* Content */}
