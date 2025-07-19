@@ -7,7 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown } from 'lucide-react';
 import { acquireListedBusinessAction } from '@/app/actions/economy.actions';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface BusinessInfoContentProps {
   business: BusinessDetails | BusinessListingDetails | null;
@@ -17,7 +18,13 @@ interface BusinessInfoContentProps {
 
 export function BusinessInfoContent({ business, buildingsLoading, buildings }: BusinessInfoContentProps) {
   const [isAcquiring, setIsAcquiring] = useState(false);
-  const [acquisitionResult, setAcquisitionResult] = useState<string | null>(null);
+  const [isAcquired, setIsAcquired] = useState(false);
+
+  // Reset acquisition state when business changes
+  useEffect(() => {
+    setIsAcquired(false);
+    setIsAcquiring(false);
+  }, [business?.businessUuid]);
 
   if (!business) {
     return (
@@ -34,10 +41,9 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
   const isListedBusiness = 'listingUuid' in business;
 
   const handleAcquireBusiness = async () => {
-    if (!isListedBusiness) return;
+    if (!isListedBusiness || isAcquired) return;
     
     setIsAcquiring(true);
-    setAcquisitionResult(null);
     
     try {
       const result = await acquireListedBusinessAction({
@@ -45,12 +51,13 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
       });
       
       if (result.success) {
-        setAcquisitionResult(`Business acquisition has been queued and is being processed. Check your owned businesses to see when it completes.`);
+        setIsAcquired(true);
+        toast.success('Business acquisition queued successfully! Check your owned businesses to track progress.');
       } else {
-        setAcquisitionResult(`Failed to queue business acquisition: ${result.message}`);
+        toast.error(`Acquisition failed: ${result.message}`);
       }
     } catch (error) {
-      setAcquisitionResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Acquisition error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsAcquiring(false);
     }
@@ -164,22 +171,18 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
             <div className="space-y-3">
               <Button 
                 onClick={handleAcquireBusiness}
-                disabled={isAcquiring}
+                disabled={isAcquiring || isAcquired}
                 className="w-full"
                 size="sm"
+                variant={isAcquired ? "secondary" : "default"}
               >
-                {isAcquiring ? 'Queueing Acquisition...' : 'Queue Business Acquisition'}
+                {isAcquiring 
+                  ? 'Queueing Acquisition...' 
+                  : isAcquired 
+                  ? 'Acquisition Queued ✓' 
+                  : 'Queue Business Acquisition'
+                }
               </Button>
-              
-              {acquisitionResult && (
-                <div className={`text-xs p-2 rounded ${
-                  acquisitionResult.includes('queued and is being processed') 
-                    ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                    : 'bg-red-100 text-red-800 border border-red-300'
-                }`}>
-                  {acquisitionResult}
-                </div>
-              )}
             </div>
           </div>
         )}

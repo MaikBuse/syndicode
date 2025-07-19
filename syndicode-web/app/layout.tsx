@@ -39,7 +39,7 @@ export default async function RootLayout({
         <AuthStoreInitializer user={user} />
         {children}
         <AuthDialog />
-        <Toaster />
+        <Toaster position="bottom-center" />
       </body>
     </html>
   );
