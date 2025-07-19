@@ -54,14 +54,29 @@ run-compiled:
 check:
   npm run pre-deploy --prefix syndicode-web
 
-# Run E2E tests headlessly
+# Run unit tests
 [group('npm')]
 test:
+  npm run test --prefix syndicode-web -- --run
+
+# Run unit tests with UI
+[group('npm')]
+test-ui:
+  npm run test:ui --prefix syndicode-web
+
+# Run unit tests with coverage
+[group('npm')]
+test-coverage:
+  npm run test:coverage --prefix syndicode-web
+
+# Run E2E tests headlessly
+[group('npm')]
+test-e2e:
   npm run test:e2e --prefix syndicode-web
 
 # Run E2E tests with UI for debugging
 [group('npm')]
-test-ui:
+test-e2e-ui:
   npm run test:e2e:ui --prefix syndicode-web
 
 # Run TypeScript type checking

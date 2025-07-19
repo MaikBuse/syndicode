@@ -5,7 +5,7 @@ import authService from '@/application/auth-service';
 import { z } from 'zod';
 import { getClientIp } from './utils';
 import { User } from '@/domain/auth/auth.types';
-import { UserInactiveError } from '@/domain/auth/auth.error';
+import { UserInactiveError, VerificationCodeExpired, VerificationCodeFalse } from '@/domain/auth/auth.error';
 
 // Zod schemas for validation
 const loginSchema = z.object({
@@ -90,7 +90,13 @@ export async function verifyUserAction(values: z.infer<typeof verifySchema>): Pr
   try {
     await authService.verifyUser(validatedFields.data, ipAddress);
     return { success: true, message: "Verification successful! You can now log in." };
-  } catch {
+  } catch (error) {
+    if (error instanceof VerificationCodeExpired) {
+      return { success: false, message: "Your verification code has expired. Please request a new one." };
+    }
+    if (error instanceof VerificationCodeFalse) {
+      return { success: false, message: "The verification code is incorrect. Please check and try again." };
+    }
     return { success: false, message: "Verification failed. Please check the code and try again." };
   }
 }

@@ -5,7 +5,7 @@ use code::VerificationCode;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 pub struct UserVerification {
     user_uuid: Uuid,
     code: VerificationCode,

@@ -3,7 +3,7 @@ import type { User, UserCredentials, UserRegistration, VerificationInfo } from '
 import * as grpc from '@grpc/grpc-js';
 
 import { CallContext } from './types';
-import { InvalidCredentialsError, UnauthenticatedError, UniqueConstraint, UnknownAuthError, UserInactiveError, VerificationCodeFalse } from '@/domain/auth/auth.error';
+import { InvalidCredentialsError, UnauthenticatedError, UniqueConstraint, UnknownAuthError, UserInactiveError, VerificationCodeExpired, VerificationCodeFalse } from '@/domain/auth/auth.error';
 import { getAuthServiceClient } from '@/lib/grpc/auth-client';
 import { GetCurrentUserRequest, LoginRequest, RegisterRequest, ResendVerificationEmailRequest, VerifyUserRequest } from '@/lib/grpc/generated/interface/v1/auth_pb';
 
@@ -167,7 +167,7 @@ export class GrpcAuthRepository implements AuthRepository {
         if (error) {
           switch (error.code) {
             case grpc.status.DEADLINE_EXCEEDED:
-              reject(new UserInactiveError());
+              reject(new VerificationCodeExpired());
               break;
 
             case grpc.status.INVALID_ARGUMENT:

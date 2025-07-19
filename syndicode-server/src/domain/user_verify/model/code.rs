@@ -91,4 +91,84 @@ mod tests {
 
         assert!(verification_code.is_expired())
     }
+
+    #[test]
+    fn should_be_expired_when_exactly_at_expiration_time() {
+        // Create a code that expires exactly now (or in the past by a few milliseconds)
+        let now = OffsetDateTime::now_utc();
+        let past_time = now - Duration::milliseconds(1);
+
+        let verification_code = VerificationCode {
+            code: "code".to_string(),
+            expires_at: past_time,
+            created_at: past_time - Duration::minutes(30),
+        };
+
+        assert!(verification_code.is_expired())
+    }
+
+    #[test]
+    fn should_not_be_expired_when_just_before_expiration() {
+        let future_time = OffsetDateTime::now_utc() + Duration::minutes(1);
+
+        let verification_code = VerificationCode {
+            code: "code".to_string(),
+            expires_at: future_time,
+            created_at: OffsetDateTime::now_utc() - Duration::minutes(29),
+        };
+
+        assert!(!verification_code.is_expired())
+    }
+
+    #[test]
+    fn should_correctly_validate_matching_code() {
+        let verification_code = VerificationCode::new();
+        let stored_code = verification_code.code.clone();
+
+        assert!(verification_code.is_code_correct(&stored_code))
+    }
+
+    #[test]
+    fn should_reject_incorrect_code() {
+        let verification_code = VerificationCode::new();
+
+        assert!(!verification_code.is_code_correct("wrongcode"));
+        assert!(!verification_code.is_code_correct(""));
+        assert!(!verification_code.is_code_correct("123456789")); // Different length
+    }
+
+    #[test]
+    fn should_be_case_sensitive_for_code_validation() {
+        let verification_code = VerificationCode {
+            code: "AbCdEfGhIj".to_string(),
+            expires_at: OffsetDateTime::now_utc() + Duration::minutes(30),
+            created_at: OffsetDateTime::now_utc(),
+        };
+
+        assert!(verification_code.is_code_correct("AbCdEfGhIj"));
+        assert!(!verification_code.is_code_correct("abcdefghij"));
+        assert!(!verification_code.is_code_correct("ABCDEFGHIJ"));
+    }
+
+    #[test]
+    fn new_verification_code_should_have_correct_properties() {
+        let verification_code = VerificationCode::new();
+
+        // Should have 10-character code
+        assert_eq!(verification_code.code.len(), VERIFICATION_CODE_LENGTH);
+        
+        // Code should be alphanumeric
+        assert!(verification_code.code.chars().all(|c| c.is_alphanumeric()));
+        
+        // Should not be expired when created
+        assert!(!verification_code.is_expired());
+        
+        // Should expire in approximately 30 minutes
+        let now = OffsetDateTime::now_utc();
+        let expected_expiry = now + Duration::minutes(30);
+        let time_diff = (verification_code.expires_at - expected_expiry).abs();
+        
+        // Allow for small timing differences (up to 1 second)
+        assert!(time_diff < Duration::seconds(1));
+    }
 }
