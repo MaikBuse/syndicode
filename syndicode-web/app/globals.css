@@ -140,6 +140,38 @@ body {
 }
 
 @layer utilities {
+  /* Cyberpunk scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--muted);
+    border-radius: var(--radius);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--accent-foreground);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    box-shadow: 0 0 4px var(--primary);
+  }
+  
+  ::-webkit-scrollbar-corner {
+    background: var(--muted);
+  }
+  
+  /* Firefox scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-foreground) var(--muted);
+  }
+
   /* Safe area utilities for mobile devices */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
