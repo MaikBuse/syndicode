@@ -56,10 +56,11 @@ export function CorporationInfoContent({ corporation }: CorporationInfoContentPr
 
       {/* Corporation UUID at bottom */}
       <div className="pt-4 border-t border-border">
-        <div className="text-center">
-          <span className="text-xs font-mono text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
+          <span className="font-medium">Corporation UUID:</span>
+          <div className="mt-1 font-mono text-xs break-all">
             {corporation.uuid || 'N/A'}
-          </span>
+          </div>
         </div>
       </div>
     </div>

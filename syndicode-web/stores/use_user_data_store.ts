@@ -48,9 +48,14 @@ export const useUserDataStore = create<UserDataState>((set) => ({
         set((state) => ({
           data: state.data ? { ...state.data, corporation: response.data } : { corporation: response.data }
         }));
+      } else {
+        // Throw error so dialog can catch it and show toast
+        throw new Error(response.message);
       }
     } catch (error) {
       console.error("Failed to fetch corporation data", error);
+      // Re-throw to propagate to dialog
+      throw error;
     }
   },
   clearUserData: () => {
