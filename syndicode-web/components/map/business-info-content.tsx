@@ -2,8 +2,8 @@
 
 import type { BusinessDetails, BusinessListingDetails, BuildingDetails } from '@/domain/economy/economy.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ActionButton } from '@/components/ui/action-button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown } from 'lucide-react';
 import { acquireListedBusinessAction } from '@/app/actions/economy.actions';
@@ -42,17 +42,17 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
 
   const handleAcquireBusiness = async () => {
     if (!isListedBusiness || isAcquired) return;
-    
+
     setIsAcquiring(true);
-    
+
     try {
       const result = await acquireListedBusinessAction({
         businessListingUuid: (business as BusinessListingDetails).listingUuid,
       });
-      
+
       if (result.success) {
         setIsAcquired(true);
-        toast.success('Business acquisition queued successfully! Check your owned businesses to track progress.');
+        toast.success('Business acquisition queued! Operation will complete in 1 game tick. Check your owned businesses to track progress.');
       } else {
         toast.error(`Acquisition failed: ${result.message}`);
       }
@@ -62,7 +62,7 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
       setIsAcquiring(false);
     }
   };
-  
+
   const formatCurrency = (amount: number) => {
     // Format as Japanese Digital Yen
     return new Intl.NumberFormat('ja-JP', {
@@ -91,7 +91,7 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
       <CardContent className="pt-0 space-y-4">
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-3">Corporate Intelligence</h3>
-          
+
           {/* Asking Price - Only for listed businesses */}
           {isListedBusiness && (
             <div className="flex items-center gap-2 text-sm p-3 rounded-lg border border-cyan-500 mb-4">
@@ -128,7 +128,7 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
         {/* Associated Buildings */}
         <div className="border-t border-border pt-4">
           <h3 className="text-sm font-semibold text-foreground mb-3">Associated Buildings</h3>
-          
+
           {buildingsLoading ? (
             // Skeleton loading state
             <div className="text-xs text-muted-foreground p-2 rounded border border-dashed">
@@ -146,7 +146,7 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
                 <span>{buildings.length} {buildings.length === 1 ? 'property' : 'properties'}</span>
                 <ChevronDown className="h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="space-y-2">
                 {buildings.map((building) => (
                   <div key={building.gmlId} className="flex items-center gap-2 p-2 rounded border border-muted text-xs">
@@ -169,20 +169,20 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
           <div className="border-t border-border pt-4">
             <h3 className="text-sm font-semibold text-foreground mb-3">Strategic Operations</h3>
             <div className="space-y-3">
-              <Button 
+              <ActionButton
                 onClick={handleAcquireBusiness}
                 disabled={isAcquiring || isAcquired}
-                className="w-full"
-                size="sm"
-                variant={isAcquired ? "secondary" : "default"}
+                tickCost={1}
+                isLoading={isAcquiring}
+                isCompleted={isAcquired}
               >
-                {isAcquiring 
-                  ? 'Queueing Acquisition...' 
-                  : isAcquired 
-                  ? 'Acquisition Queued ✓' 
-                  : 'Queue Business Acquisition'
+                {isAcquiring
+                  ? 'Acquiring...'
+                  : isAcquired
+                    ? 'Acquisition queued'
+                    : 'Acquire Business'
                 }
-              </Button>
+              </ActionButton>
             </div>
           </div>
         )}
@@ -199,21 +199,21 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
                 </div>
               </div>
             )}
-            
+
             <div className="text-xs text-muted-foreground">
               <span className="font-medium">Business UUID:</span>
               <div className="mt-1 font-mono text-xs break-all">
                 {business.businessUuid}
               </div>
             </div>
-            
+
             <div className="text-xs text-muted-foreground">
               <span className="font-medium">Market UUID:</span>
               <div className="mt-1 font-mono text-xs break-all">
                 {business.marketUuid}
               </div>
             </div>
-            
+
             <div className="text-xs text-muted-foreground">
               <span className="font-medium">Headquarter Building:</span>
               <div className="mt-1 font-mono text-xs break-all">
