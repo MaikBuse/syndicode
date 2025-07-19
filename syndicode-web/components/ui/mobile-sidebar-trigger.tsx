@@ -25,7 +25,7 @@ export function MobileSidebarTrigger({ className }: MobileSidebarTriggerProps) {
       size="sm"
       onClick={toggleSidebar}
       className={cn(
-        "fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm border-border/50 hover:bg-background/90 touch-manipulation",
+        "fixed top-4 left-4 z-50 bg-card/80 backdrop-blur-sm border-border hover:bg-card/60 active:bg-card/40 touch-manipulation rounded-lg transition-all",
         "h-10 w-10 p-0",
         className
       )}
