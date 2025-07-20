@@ -137,7 +137,7 @@ mod tests {
         corporations_map.insert(corporation_uuid, corporation);
 
         let market_uuid = Uuid::now_v7();
-        let market_name = MarketName::StreetPharm;
+        let market_name = MarketName::NeurochemicalAdjustments;
         let market = Market {
             uuid: market_uuid,
             name: market_name,

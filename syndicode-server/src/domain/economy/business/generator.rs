@@ -763,70 +763,70 @@ pub fn generate_business_name(market_name: MarketName) -> String {
 
     // 1. Select the appropriate lists and weights based on the market
     let (prefixes, cores, suffixes, adjectives, weights) = match market_name {
-        MarketName::AugmentationCybernetics => (
+        MarketName::ProstheticAssembly => (
             AUG_CYBER_PREFIXES,
             AUG_CYBER_CORES,
             AUG_CYBER_SUFFIXES,
             AUG_CYBER_ADJECTIVES,
             AUG_CYBER_WEIGHTS,
         ),
-        MarketName::WetwareNeural => (
+        MarketName::CyberbrainInterfaces => (
             WETWARE_PREFIXES,
             WETWARE_CORES,
             WETWARE_SUFFIXES,
             WETWARE_ADJECTIVES,
             WETWARE_WEIGHTS,
         ),
-        MarketName::SyndicateData => (
+        MarketName::MemoryExperiences => (
             SYNDICATE_PREFIXES,
             SYNDICATE_CORES,
             SYNDICATE_SUFFIXES,
             SYNDICATE_ADJECTIVES,
             SYNDICATE_WEIGHTS,
         ),
-        MarketName::BlackMarketBio => (
+        MarketName::OrganFabrications => (
             BLACK_BIO_PREFIXES,
             BLACK_BIO_CORES,
             BLACK_BIO_SUFFIXES,
             BLACK_BIO_ADJECTIVES,
             BLACK_BIO_WEIGHTS,
         ),
-        MarketName::AutonomousDrone => (
+        MarketName::AutonomousAISystems => (
             DRONE_PREFIXES,
             DRONE_CORES,
             DRONE_SUFFIXES,
             DRONE_ADJECTIVES,
             DRONE_WEIGHTS,
         ),
-        MarketName::InfoSecCounterIntel => (
+        MarketName::BarrierSecurity => (
             INFOSEC_PREFIXES,
             INFOSEC_CORES,
             INFOSEC_SUFFIXES,
             INFOSEC_ADJECTIVES,
             INFOSEC_WEIGHTS,
         ),
-        MarketName::VirtualSimSense => (
+        MarketName::SimulatedStimulations => (
             VIRTUAL_PREFIXES,
             VIRTUAL_CORES,
             VIRTUAL_SUFFIXES,
             VIRTUAL_ADJECTIVES,
             VIRTUAL_WEIGHTS,
         ),
-        MarketName::StreetPharm => (
+        MarketName::NeurochemicalAdjustments => (
             PHARM_PREFIXES,
             PHARM_CORES,
             PHARM_SUFFIXES,
             PHARM_ADJECTIVES,
             PHARM_WEIGHTS,
         ),
-        MarketName::ZeroDayExploit => (
+        MarketName::ThirdPartyOperations => (
             EXPLOIT_PREFIXES,
             EXPLOIT_CORES,
             EXPLOIT_SUFFIXES,
             EXPLOIT_ADJECTIVES,
             EXPLOIT_WEIGHTS,
         ),
-        MarketName::RestrictedTech => (
+        MarketName::QuantumGrayTechnologies => (
             RESTRICTED_PREFIXES,
             RESTRICTED_CORES,
             RESTRICTED_SUFFIXES,

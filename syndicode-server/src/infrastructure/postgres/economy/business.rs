@@ -6,8 +6,8 @@ use crate::{
             business::{
                 model::Business,
                 repository::{
-                    BusinessDetails, BusinessRepository, BusinessTxRepository, DomainBusinessSortBy,
-                    QueryBusinessesRequest,
+                    BusinessDetails, BusinessRepository, BusinessTxRepository,
+                    DomainBusinessSortBy, QueryBusinessesRequest,
                 },
             },
             market::model::name::MarketName,
@@ -212,7 +212,7 @@ impl PgBusinessRepository {
             .map(|row| {
                 let market_name_i16: i16 = row.get("market_name_i16");
                 let market_name = MarketName::from(market_name_i16).to_string();
-                
+
                 BusinessDetails {
                     business_uuid: row.get("business_uuid"),
                     business_name: row.get("business_name"),

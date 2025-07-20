@@ -64,16 +64,16 @@ const PROGRESS_BAR_TEMPLATE: &str =
 const PROGRESS_BAR_CHARS: &str = "#>-";
 
 const MARKET_NAMES: [MarketName; 10] = [
-    MarketName::AutonomousDrone,
-    MarketName::VirtualSimSense,
-    MarketName::StreetPharm,
-    MarketName::ZeroDayExploit,
-    MarketName::RestrictedTech,
-    MarketName::InfoSecCounterIntel,
-    MarketName::WetwareNeural,
-    MarketName::AugmentationCybernetics,
-    MarketName::SyndicateData,
-    MarketName::BlackMarketBio,
+    MarketName::AutonomousAISystems,
+    MarketName::SimulatedStimulations,
+    MarketName::NeurochemicalAdjustments,
+    MarketName::ThirdPartyOperations,
+    MarketName::QuantumGrayTechnologies,
+    MarketName::BarrierSecurity,
+    MarketName::CyberbrainInterfaces,
+    MarketName::ProstheticAssembly,
+    MarketName::MemoryExperiences,
+    MarketName::OrganFabrications,
 ];
 
 #[derive(Builder)]
