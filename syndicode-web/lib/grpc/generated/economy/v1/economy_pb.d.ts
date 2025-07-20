@@ -263,6 +263,8 @@ export class BusinessDetails extends jspb.Message {
     setOwningCorporationUuid(value?: google_protobuf_wrappers_pb.StringValue): BusinessDetails;
     getMarketUuid(): string;
     setMarketUuid(value: string): BusinessDetails;
+    getMarketName(): string;
+    setMarketName(value: string): BusinessDetails;
     getOperationalExpenses(): number;
     setOperationalExpenses(value: number): BusinessDetails;
     getHeadquarterBuildingUuid(): string;
@@ -290,6 +292,7 @@ export namespace BusinessDetails {
         businessName: string,
         owningCorporationUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
         marketUuid: string,
+        marketName: string,
         operationalExpenses: number,
         headquarterBuildingUuid: string,
         headquarterBuildingGmlId: string,
@@ -340,6 +343,8 @@ export class BusinessListingDetails extends jspb.Message {
     setSellerCorporationUuid(value?: google_protobuf_wrappers_pb.StringValue): BusinessListingDetails;
     getMarketUuid(): string;
     setMarketUuid(value: string): BusinessListingDetails;
+    getMarketName(): string;
+    setMarketName(value: string): BusinessListingDetails;
     getAskingPrice(): number;
     setAskingPrice(value: number): BusinessListingDetails;
     getOperationalExpenses(): number;
@@ -368,6 +373,7 @@ export namespace BusinessListingDetails {
         businessName: string,
         sellerCorporationUuid?: google_protobuf_wrappers_pb.StringValue.AsObject,
         marketUuid: string,
+        marketName: string,
         askingPrice: number,
         operationalExpenses: number,
         headquarterBuildingGmlId: string,

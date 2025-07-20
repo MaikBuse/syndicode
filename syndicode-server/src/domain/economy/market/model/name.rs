@@ -56,20 +56,20 @@ impl Display for MarketName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MarketName::AugmentationCybernetics => {
-                write!(f, "Augmentation & Cybernetics Exchange")
+                write!(f, "Augmentation & Cybernetics")
             }
-            MarketName::WetwareNeural => write!(f, "Wetware & Neural Interface Market"),
-            MarketName::SyndicateData => write!(f, "Syndicate Data Brokerage"),
-            MarketName::BlackMarketBio => write!(f, "Black Market Bioware & Gene-Mods"),
-            MarketName::AutonomousDrone => write!(f, "Autonomous Systems & Drone Bazaar"),
+            MarketName::WetwareNeural => write!(f, "Wetware & Neural Interfaces"),
+            MarketName::SyndicateData => write!(f, "Data Brokerage"),
+            MarketName::BlackMarketBio => write!(f, "Bioware & Gene-Mods"),
+            MarketName::AutonomousDrone => write!(f, "Autonomous Systems"),
             MarketName::InfoSecCounterIntel => write!(f, "InfoSec & Counter-Intel Services"),
             MarketName::VirtualSimSense => {
-                write!(f, "Virtual Constructs & SimSense Experiences")
+                write!(f, "Virtual Constructs & SimSense")
             }
-            MarketName::StreetPharm => write!(f, "Street Pharm & Neuro-Enhancers"),
+            MarketName::StreetPharm => write!(f, "Pharm & Neuro-Enhancers"),
             MarketName::ZeroDayExploit => write!(f, "Zero-Day Exploit & Malware Market"),
             MarketName::RestrictedTech => {
-                write!(f, "Restricted Tech & Prototype Acquisition")
+                write!(f, "Restricted Tech & Prototypes")
             }
             MarketName::Generic => write!(f, "Generic"),
         }

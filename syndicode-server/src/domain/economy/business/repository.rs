@@ -36,6 +36,7 @@ pub struct BusinessDetails {
     pub business_name: String,
     pub owning_corporation_uuid: Option<Uuid>,
     pub market_uuid: Uuid,
+    pub market_name: String,
     pub operational_expenses: i64,
     pub headquarter_building_uuid: Uuid,
     pub headquarter_building_gml_id: String,

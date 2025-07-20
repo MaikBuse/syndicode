@@ -72,15 +72,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        application::ports::uow::MockUnitOfWork,
-        domain::{
-            user::model::{User, role::UserRole, status::UserStatus, name::UserName, email::UserEmail},
-            user_verify::model::{UserVerification, code::VerificationCode},
-        },
-    };
+    use crate::application::ports::uow::MockUnitOfWork;
     use std::sync::Arc;
-    use time::{Duration, OffsetDateTime};
     use uuid::Uuid;
 
     #[tokio::test]
@@ -90,20 +83,6 @@ mod tests {
         let user_uuid = Uuid::from_u128(12345); // Test UUID
         let user_name = "testuser".to_string();
         let valid_code = "VALID12345".to_string();
-
-        let user = User {
-            uuid: user_uuid,
-            name: UserName::from(user_name.clone()),
-            email: UserEmail::from("test@example.com".to_string()),
-            password_hash: "hash".to_string(),
-            role: UserRole::Player,
-            status: UserStatus::Pending,
-        };
-
-        let user_verification = UserVerification::builder()
-            .user_uuid(user_uuid)
-            .code(VerificationCode::new()) // Use public constructor
-            .build();
 
         mock_uow
             .expect_execute::<Uuid>()
@@ -124,23 +103,8 @@ mod tests {
     async fn should_return_error_when_verification_code_expired() {
         // Arrange
         let mut mock_uow = MockUnitOfWork::new();
-        let user_uuid = Uuid::from_u128(12345); // Test UUID
         let user_name = "testuser".to_string();
         let expired_code = "EXPIRED123".to_string();
-
-        let user = User {
-            uuid: user_uuid,
-            name: UserName::from(user_name.clone()),
-            email: UserEmail::from("test@example.com".to_string()),
-            password_hash: "hash".to_string(),
-            role: UserRole::Player,
-            status: UserStatus::Pending,
-        };
-
-        let expired_verification = UserVerification::builder()
-            .user_uuid(user_uuid)
-            .code(VerificationCode::new()) // Use public constructor  
-            .build();
 
         mock_uow
             .expect_execute::<Uuid>()
@@ -156,7 +120,7 @@ mod tests {
         assert!(result.is_err());
         match result.err().unwrap() {
             ApplicationError::VerificationCodeExpired => (),
-            other_err => panic!("Expected VerificationCodeExpired, got {:?}", other_err),
+            other_err => panic!("Expected VerificationCodeExpired, got {other_err:?}"),
         }
     }
 
@@ -181,7 +145,7 @@ mod tests {
         assert!(result.is_err());
         match result.err().unwrap() {
             ApplicationError::VerificationCodeFalse => (),
-            other_err => panic!("Expected VerificationCodeFalse, got {:?}", other_err),
+            other_err => panic!("Expected VerificationCodeFalse, got {other_err:?}"),
         }
     }
 }

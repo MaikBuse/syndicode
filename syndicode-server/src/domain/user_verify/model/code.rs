@@ -156,18 +156,18 @@ mod tests {
 
         // Should have 10-character code
         assert_eq!(verification_code.code.len(), VERIFICATION_CODE_LENGTH);
-        
+
         // Code should be alphanumeric
         assert!(verification_code.code.chars().all(|c| c.is_alphanumeric()));
-        
+
         // Should not be expired when created
         assert!(!verification_code.is_expired());
-        
+
         // Should expire in approximately 30 minutes
         let now = OffsetDateTime::now_utc();
         let expected_expiry = now + Duration::minutes(30);
         let time_diff = (verification_code.expires_at - expected_expiry).abs();
-        
+
         // Allow for small timing differences (up to 1 second)
         assert!(time_diff < Duration::seconds(1));
     }

@@ -123,15 +123,17 @@ pub struct BusinessDetails {
     pub owning_corporation_uuid: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, tag = "4")]
     pub market_uuid: ::prost::alloc::string::String,
-    #[prost(int64, tag = "5")]
+    #[prost(string, tag = "5")]
+    pub market_name: ::prost::alloc::string::String,
+    #[prost(int64, tag = "6")]
     pub operational_expenses: i64,
-    #[prost(string, tag = "6")]
-    pub headquarter_building_uuid: ::prost::alloc::string::String,
     #[prost(string, tag = "7")]
+    pub headquarter_building_uuid: ::prost::alloc::string::String,
+    #[prost(string, tag = "8")]
     pub headquarter_building_gml_id: ::prost::alloc::string::String,
-    #[prost(double, tag = "8")]
-    pub headquarter_longitude: f64,
     #[prost(double, tag = "9")]
+    pub headquarter_longitude: f64,
+    #[prost(double, tag = "10")]
     pub headquarter_latitude: f64,
 }
 /// Response containing the list of matching business details.
@@ -159,16 +161,18 @@ pub struct BusinessListingDetails {
     pub seller_corporation_uuid: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, tag = "5")]
     pub market_uuid: ::prost::alloc::string::String,
-    #[prost(int64, tag = "6")]
-    pub asking_price: i64,
+    #[prost(string, tag = "6")]
+    pub market_name: ::prost::alloc::string::String,
     #[prost(int64, tag = "7")]
+    pub asking_price: i64,
+    #[prost(int64, tag = "8")]
     pub operational_expenses: i64,
     /// Headquarter building information for map display
-    #[prost(string, tag = "8")]
+    #[prost(string, tag = "9")]
     pub headquarter_building_gml_id: ::prost::alloc::string::String,
-    #[prost(double, tag = "9")]
-    pub headquarter_longitude: f64,
     #[prost(double, tag = "10")]
+    pub headquarter_longitude: f64,
+    #[prost(double, tag = "11")]
     pub headquarter_latitude: f64,
 }
 /// Response containing the list of matching business listing details.

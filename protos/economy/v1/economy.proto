@@ -130,11 +130,12 @@ message BusinessDetails {
   string business_name = 2;
   google.protobuf.StringValue owning_corporation_uuid = 3;
   string market_uuid = 4;
-  int64 operational_expenses = 5;
-  string headquarter_building_uuid = 6;
-  string headquarter_building_gml_id = 7;
-  double headquarter_longitude = 8;
-  double headquarter_latitude = 9;
+  string market_name = 5;
+  int64 operational_expenses = 6;
+  string headquarter_building_uuid = 7;
+  string headquarter_building_gml_id = 8;
+  double headquarter_longitude = 9;
+  double headquarter_latitude = 10;
 }
 
 // Response containing the list of matching business details.
@@ -153,12 +154,13 @@ message BusinessListingDetails {
   string business_name = 3;
   google.protobuf.StringValue seller_corporation_uuid = 4;
   string market_uuid = 5;
-  int64 asking_price = 6;
-  int64 operational_expenses = 7;
+  string market_name = 6;
+  int64 asking_price = 7;
+  int64 operational_expenses = 8;
   // Headquarter building information for map display
-  string headquarter_building_gml_id = 8;
-  double headquarter_longitude = 9;
-  double headquarter_latitude = 10;
+  string headquarter_building_gml_id = 9;
+  double headquarter_longitude = 10;
+  double headquarter_latitude = 11;
 }
 
 // Response containing the list of matching business listing details.

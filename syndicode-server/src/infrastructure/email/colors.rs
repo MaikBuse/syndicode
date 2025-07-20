@@ -20,4 +20,3 @@ impl EmailColors {
     pub const CODE_BORDER: &'static str = "#555555"; // Border for code elements
     pub const CODE_TEXT: &'static str = "#6bb6ff"; // Cyan for code text
 }
-

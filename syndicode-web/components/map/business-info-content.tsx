@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ActionButton } from '@/components/ui/action-button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown } from 'lucide-react';
+import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown, Store } from 'lucide-react';
 import { acquireListedBusinessAction } from '@/app/actions/economy.actions';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -77,13 +77,19 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
     <Card className="shadow-lg border-0 bg-background">
       {/* Header Section - Business Name */}
       <CardHeader className="pb-1">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-lg bg-primary/10">
-            <Building className="h-6 w-6 text-primary" />
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-primary/10">
+              <Building className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-lg font-semibold">
+              {business.businessName}
+            </CardTitle>
           </div>
-          <CardTitle className="text-lg font-semibold">
-            {business.businessName}
-          </CardTitle>
+          {/* Market */}
+          <div className="text-sm text-muted-foreground">
+            {business.marketName || 'Unknown Market'}
+          </div>
         </div>
       </CardHeader>
 

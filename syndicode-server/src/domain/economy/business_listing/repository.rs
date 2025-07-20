@@ -37,6 +37,7 @@ pub struct QueryBusinessListingsRequest {
 pub struct BusinessListingDetails {
     pub listing_uuid: Uuid,
     pub market_uuid: Uuid,
+    pub market_name: String,
     pub business_uuid: Uuid,
     pub business_name: String,
     pub seller_corporation_uuid: Option<Uuid>,

@@ -3,13 +3,14 @@ use std::sync::Arc;
 use bon::Builder;
 use syndicode_proto::{
     syndicode_economy_v1::{
-        AcquireListedBusinessRequest, BuildingDetails,
-        BusinessDetails, BusinessListingDetails, BusinessListingSortBy, BusinessSortBy,
-        GetCorporationRequest, QueryBuildingsRequest, QueryBuildingsResponse,
-        QueryBusinessListingsRequest, QueryBusinessListingsResponse, QueryBusinessesRequest,
-        QueryBusinessesResponse,
+        AcquireListedBusinessRequest, BuildingDetails, BusinessDetails, BusinessListingDetails,
+        BusinessListingSortBy, BusinessSortBy, GetCorporationRequest, QueryBuildingsRequest,
+        QueryBuildingsResponse, QueryBusinessListingsRequest, QueryBusinessListingsResponse,
+        QueryBusinessesRequest, QueryBusinessesResponse,
     },
-    syndicode_interface_v1::{economy_service_server::EconomyService, SortDirection, ActionInitResponse},
+    syndicode_interface_v1::{
+        economy_service_server::EconomyService, ActionInitResponse, SortDirection,
+    },
 };
 use tonic::Response;
 
@@ -234,6 +235,7 @@ where
                 business_name: b.business_name,
                 owning_corporation_uuid: b.owning_corporation_uuid.map(|uuid| uuid.to_string()),
                 market_uuid: b.market_uuid.to_string(),
+                market_name: b.market_name,
                 operational_expenses: b.operational_expenses,
                 headquarter_building_uuid: b.headquarter_building_uuid.to_string(),
                 headquarter_building_gml_id: b.headquarter_building_gml_id,
@@ -323,6 +325,7 @@ where
                     .seller_corporation_uuid
                     .map(|uuid| uuid.to_string()),
                 market_uuid: listing.market_uuid.to_string(),
+                market_name: listing.market_name,
                 asking_price: listing.asking_price,
                 operational_expenses: listing.operational_expenses,
                 headquarter_building_gml_id: listing.headquarter_building_gml_id,

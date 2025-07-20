@@ -1,11 +1,14 @@
 use crate::{
     domain::{
-        economy::business_listing::{
-            model::BusinessListing,
-            repository::{
-                BusinessListingDetails, BusinessListingRepository, BusinessListingTxRepository,
-                DomainBusinessListingSortBy, QueryBusinessListingsRequest,
+        economy::{
+            business_listing::{
+                model::BusinessListing,
+                repository::{
+                    BusinessListingDetails, BusinessListingRepository, BusinessListingTxRepository,
+                    DomainBusinessListingSortBy, QueryBusinessListingsRequest,
+                },
             },
+            market::model::name::MarketName,
         },
         repository::RepositoryResult,
     },
@@ -13,7 +16,7 @@ use crate::{
         game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase,
     },
 };
-use sqlx::{Execute, Postgres, QueryBuilder};
+use sqlx::{Execute, Postgres, QueryBuilder, Row};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -86,6 +89,7 @@ impl PgBusinessListingRepository {
                 bl.business_uuid,
                 b.name AS business_name,
                 m.uuid AS market_uuid,
+                m.name AS market_name_i16,
                 bl.seller_corporation_uuid,
                 bl.asking_price,
                 b.operational_expenses,
@@ -166,9 +170,31 @@ impl PgBusinessListingRepository {
 
         // --- Execute Queries ---
         // Fetch the results
-        let query = qb.build_query_as::<BusinessListingDetails>();
+        let query = qb.build();
         tracing::debug!("Executing query: {}", query.sql()); // Log the query for debugging
-        let listings = query.fetch_all(executor).await?;
+        let rows = query.fetch_all(executor).await?;
+
+        let listings = rows
+            .into_iter()
+            .map(|row| {
+                let market_name_i16: i16 = row.get("market_name_i16");
+                let market_name = MarketName::from(market_name_i16).to_string();
+                
+                BusinessListingDetails {
+                    listing_uuid: row.get("listing_uuid"),
+                    business_uuid: row.get("business_uuid"),
+                    business_name: row.get("business_name"),
+                    seller_corporation_uuid: row.get("seller_corporation_uuid"),
+                    market_uuid: row.get("market_uuid"),
+                    market_name,
+                    asking_price: row.get("asking_price"),
+                    operational_expenses: row.get("operational_expenses"),
+                    headquarter_building_gml_id: row.get("headquarter_building_gml_id"),
+                    headquarter_longitude: row.get("headquarter_longitude"),
+                    headquarter_latitude: row.get("headquarter_latitude"),
+                }
+            })
+            .collect();
 
         Ok(listings)
     }

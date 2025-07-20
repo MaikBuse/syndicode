@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use crate::{
     domain::{
-        economy::business::{
-            model::Business,
-            repository::{
-                BusinessDetails, BusinessRepository, BusinessTxRepository, DomainBusinessSortBy,
-                QueryBusinessesRequest,
+        economy::{
+            business::{
+                model::Business,
+                repository::{
+                    BusinessDetails, BusinessRepository, BusinessTxRepository, DomainBusinessSortBy,
+                    QueryBusinessesRequest,
+                },
             },
+            market::model::name::MarketName,
         },
         repository::RepositoryResult,
     },
@@ -15,7 +18,7 @@ use crate::{
         game_tick::PgGameTickRepository, uow::PgTransactionContext, PostgresDatabase,
     },
 };
-use sqlx::{Execute, Postgres, QueryBuilder};
+use sqlx::{Execute, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -140,6 +143,7 @@ impl PgBusinessRepository {
                 b.name AS business_name,
                 b.owning_corporation_uuid,
                 b.market_uuid,
+                m.name AS market_name_i16,
                 b.operational_expenses,
                 b.headquarter_building_uuid,
                 bui.gml_id AS headquarter_building_gml_id,
@@ -199,9 +203,30 @@ impl PgBusinessRepository {
         }
 
         // --- Execute Query ---
-        let query = qb.build_query_as::<BusinessDetails>();
+        let query = qb.build();
         tracing::debug!("Executing query: {}", query.sql());
-        let businesses = query.fetch_all(executor).await?;
+        let rows = query.fetch_all(executor).await?;
+
+        let businesses = rows
+            .into_iter()
+            .map(|row| {
+                let market_name_i16: i16 = row.get("market_name_i16");
+                let market_name = MarketName::from(market_name_i16).to_string();
+                
+                BusinessDetails {
+                    business_uuid: row.get("business_uuid"),
+                    business_name: row.get("business_name"),
+                    owning_corporation_uuid: row.get("owning_corporation_uuid"),
+                    market_uuid: row.get("market_uuid"),
+                    market_name,
+                    operational_expenses: row.get("operational_expenses"),
+                    headquarter_building_uuid: row.get("headquarter_building_uuid"),
+                    headquarter_building_gml_id: row.get("headquarter_building_gml_id"),
+                    headquarter_longitude: row.get("headquarter_longitude"),
+                    headquarter_latitude: row.get("headquarter_latitude"),
+                }
+            })
+            .collect();
 
         Ok(businesses)
     }

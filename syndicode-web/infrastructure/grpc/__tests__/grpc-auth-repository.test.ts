@@ -120,9 +120,10 @@ describe('GrpcAuthRepository - verifyUser error handling', () => {
       getUserUuid: vi.fn(() => 'user-uuid-123'),
     }
 
-    let capturedRequest: any
     mockVerifyUser.mockImplementation((request, metadata, options, callback) => {
-      capturedRequest = request
+      // Verify the request was properly formed
+      expect(request.getUserName()).toBe('testuser')
+      expect(request.getCode()).toBe('1234567890')
       callback(null, mockResponse)
     })
 

@@ -43,7 +43,6 @@ test.describe('Mobile Screenshots', () => {
     
     // Look for auth dialog or login form
     const authDialog = page.locator('[data-testid="auth-dialog"], .auth-dialog, [role="dialog"]');
-    const loginButton = page.getByRole('button', { name: /sign in|login|log in/i });
     
     if (await authDialog.isVisible()) {
       // Screenshot 3: Auth dialog open

@@ -61,6 +61,7 @@ export type BusinessDetails = {
   businessName: string;
   owningCorporationUuid?: string | null;
   marketUuid: string;
+  marketName: string;
   operationalExpenses: number;
   headquarterBuildingUuid: string;
   headquarterBuildingGmlId: string;
@@ -81,6 +82,7 @@ export type BusinessListingDetails = {
   businessName: string;
   sellerCorporationUuid?: string | null;
   marketUuid: string;
+  marketName: string;
   askingPrice: number;
   operationalExpenses: number;
   // Extended fields for map display
