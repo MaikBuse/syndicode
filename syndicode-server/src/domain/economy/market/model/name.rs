@@ -62,14 +62,14 @@ impl Display for MarketName {
             MarketName::MemoryExperiences => write!(f, "Memories & Experiences"),
             MarketName::OrganFabrications => write!(f, "Organ Fabrications"),
             MarketName::AutonomousAISystems => write!(f, "Autonomous AI Systems"),
-            MarketName::BarrierSecurity => write!(f, "Barrier Mazed Security"),
+            MarketName::BarrierSecurity => write!(f, "Digital Defense"),
             MarketName::SimulatedStimulations => {
                 write!(f, "Simulated Stimulations")
             }
             MarketName::NeurochemicalAdjustments => write!(f, "Neurochemical Adjustments"),
             MarketName::ThirdPartyOperations => write!(f, "Third Party Operations"),
             MarketName::QuantumGrayTechnologies => {
-                write!(f, "Quantum Gray Technologies")
+                write!(f, "Quantum Technologies")
             }
             MarketName::Generic => write!(f, "Generic"),
         }
