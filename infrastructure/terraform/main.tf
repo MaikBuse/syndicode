@@ -4,6 +4,11 @@ import {
   id = "cf501f8ff63bd72429ae1dc26a0824df/syndicode-assets"
 }
 
+import {
+  to = cloudflare_record.assets_cname
+  id = "${data.cloudflare_zone.main.id}/${data.cloudflare_record.assets_existing.id}"
+}
+
 # Data sources
 data "cloudflare_zone" "main" {
   name = var.domain_name
@@ -20,7 +25,7 @@ data "cloudflare_record" "assets_existing" {
 resource "cloudflare_r2_bucket" "assets" {
   account_id = var.cloudflare_account_id
   name       = var.r2_bucket_name
-  location   = "WEUR"
+  location   = "EEUR"
 }
 
 # Custom domain for R2 bucket
