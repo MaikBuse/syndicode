@@ -1,6 +1,19 @@
+# Import existing resources
+import {
+  to = cloudflare_r2_bucket.assets
+  id = "cf501f8ff63bd72429ae1dc26a0824df/syndicode-assets"
+}
+
 # Data sources
 data "cloudflare_zone" "main" {
   name = var.domain_name
+}
+
+# Check for existing DNS record
+data "cloudflare_record" "assets_existing" {
+  zone_id  = data.cloudflare_zone.main.id
+  hostname = "${var.assets_subdomain}.${var.domain_name}"
+  type     = "CNAME"
 }
 
 # R2 Bucket (will be imported)
