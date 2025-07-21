@@ -1,5 +1,10 @@
 # Infrastructure management with Terraform
 
+# Build TypeScript Worker
+[group('worker')]
+build-worker:
+  cd infrastructure/terraform/workers && npx esbuild pbf-fallback.ts --bundle --format=iife --outfile=pbf-fallback.js --platform=neutral
+
 # Show Terraform plan
 [group('terraform')]
 plan:
