@@ -10,6 +10,7 @@ mod client
 mod db
 mod docker
 mod web
+mod infra
 
 # Default: Show all available recipes from grouped justfiles
 help:
@@ -27,6 +28,8 @@ help:
   @just --list db --list-heading ""
   @echo "[web]"
   @just --list web --list-heading ""
+  @echo "[infra]"
+  @just --list infra --list-heading ""
 
 # Format relevant workspace members
 [group('cargo')]

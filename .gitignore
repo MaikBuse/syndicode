@@ -15,3 +15,10 @@ syndicode-client.log
 syndicode-web/playwright-report/
 syndicode-web/mobile-screenshots/
 syndicode-web/test-results/
+
+# terraform
+infrastructure/terraform/.terraform/
+infrastructure/terraform/.terraform.lock.hcl
+infrastructure/terraform/terraform.tfstate
+infrastructure/terraform/terraform.tfstate.backup
+infrastructure/terraform/*.tfvars
