@@ -10,7 +10,7 @@ output "assets_domain" {
 
 output "worker_script_name" {
   description = "Name of the Cloudflare Worker script"
-  value       = cloudflare_worker_script.pbf_fallback.name
+  value       = cloudflare_workers_script.pbf_fallback.name
 }
 
 output "cloudflare_zone_id" {

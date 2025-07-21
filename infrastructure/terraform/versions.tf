@@ -17,5 +17,5 @@ terraform {
 }
 
 provider "cloudflare" {
-  # API token will be set via TF_VAR_cloudflare_api_token
+  api_token = var.cloudflare_api_token
 }

@@ -21,7 +21,7 @@ resource "cloudflare_record" "assets_cname" {
 }
 
 # Cloudflare Worker for PBF fallback
-resource "cloudflare_worker_script" "pbf_fallback" {
+resource "cloudflare_workers_script" "pbf_fallback" {
   account_id = var.cloudflare_account_id
   name       = "pbf-fallback"
   content    = file("${path.module}/workers/pbf-fallback.js")
@@ -33,8 +33,8 @@ resource "cloudflare_worker_script" "pbf_fallback" {
 }
 
 # Worker route for assets subdomain
-resource "cloudflare_worker_route" "assets_route" {
+resource "cloudflare_workers_route" "assets_route" {
   zone_id     = data.cloudflare_zone.main.id
   pattern     = "${var.assets_subdomain}.${var.domain_name}/*"
-  script_name = cloudflare_worker_script.pbf_fallback.name
+  script_name = cloudflare_workers_script.pbf_fallback.name
 }
