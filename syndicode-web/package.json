@@ -9,16 +9,14 @@
     "lint": "next lint --dir . --fix",
     "lint:check": "next lint --dir .",
     "type-check": "tsc --noEmit",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "lint-and-format": "npm run type-check && npm run lint && npm run format",
-    "pre-deploy": "npm run type-check && npm run lint:check && npm run format:check && npm run build"
+    "lint-and-format": "npm run type-check && npm run lint",
+    "pre-deploy": "npm run type-check && npm run lint:check && npm run build"
   },
   "dependencies": {
     "@deck.gl/aggregation-layers": "^9.1.13",

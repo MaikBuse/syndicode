@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ActionButton } from '@/components/ui/action-button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown, Store } from 'lucide-react';
+import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown } from 'lucide-react';
 import { acquireListedBusinessAction } from '@/app/actions/economy.actions';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';

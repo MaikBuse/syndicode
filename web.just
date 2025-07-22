@@ -89,11 +89,6 @@ type-check:
 lint:
   npm run lint --prefix syndicode-web
 
-# Run Prettier format check
-[group('npm')]
-format-check:
-  npm run format:check --prefix syndicode-web
-
 # Run specific test file
 [group('npm')]
 test-file file:

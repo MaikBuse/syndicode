@@ -30,7 +30,7 @@ describe('GrpcAuthRepository - verifyUser error handling', () => {
       details: 'The verification code has expired',
     }
 
-    mockVerifyUser.mockImplementation((request, metadata, options, callback) => {
+    mockVerifyUser.mockImplementation((_request, _metadata, _options, callback) => {
       callback(mockError, null)
     })
 
@@ -53,7 +53,7 @@ describe('GrpcAuthRepository - verifyUser error handling', () => {
       details: 'The provided verification code is false',
     }
 
-    mockVerifyUser.mockImplementation((request, metadata, options, callback) => {
+    mockVerifyUser.mockImplementation((_request, _metadata, _options, callback) => {
       callback(mockError, null)
     })
 
@@ -76,7 +76,7 @@ describe('GrpcAuthRepository - verifyUser error handling', () => {
       details: 'Unexpected server error',
     }
 
-    mockVerifyUser.mockImplementation((request, metadata, options, callback) => {
+    mockVerifyUser.mockImplementation((_request, _metadata, _options, callback) => {
       callback(mockError, null)
     })
 
@@ -97,7 +97,7 @@ describe('GrpcAuthRepository - verifyUser error handling', () => {
       getUserUuid: vi.fn(() => 'user-uuid-123'),
     }
 
-    mockVerifyUser.mockImplementation((request, metadata, options, callback) => {
+    mockVerifyUser.mockImplementation((_request, _metadata, _options, callback) => {
       callback(null, mockResponse)
     })
 
@@ -120,7 +120,7 @@ describe('GrpcAuthRepository - verifyUser error handling', () => {
       getUserUuid: vi.fn(() => 'user-uuid-123'),
     }
 
-    mockVerifyUser.mockImplementation((request, metadata, options, callback) => {
+    mockVerifyUser.mockImplementation((request, _metadata, _options, callback) => {
       // Verify the request was properly formed
       expect(request.getUserName()).toBe('testuser')
       expect(request.getCode()).toBe('1234567890')

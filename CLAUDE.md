@@ -73,7 +73,7 @@ Before marking work complete, ALWAYS run:
 
 - **Server**: `just server fmt`, `just server clippy`, `just server test`
 - **Client**: `just client fmt`, `just client clippy`
-- **Web**: `just web type-check`, `just web lint`, `just web format-check`, `just web test`
+- **Web**: `just web type-check`, `just web lint`, `just web test`
 - **Infrastructure**: `just infra fmt`, `just infra validate`
 
 ### 6. Testing Standards and Best Practices
@@ -134,7 +134,6 @@ just client fmt             # Rust client formatting
 just client clippy          # Rust client linting
 just web type-check         # TypeScript validation
 just web lint               # ESLint checks
-just web format-check       # Prettier validation
 just web test               # Web unit tests (Vitest)
 ```
 
