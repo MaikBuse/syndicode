@@ -34,9 +34,6 @@
         const headers2 = new Headers();
         object.writeHttpMetadata(headers2);
         headers2.set("etag", object.etag);
-        if (url.pathname.endsWith(".pbf") && !headers2.has("Content-Encoding")) {
-          headers2.set("Content-Encoding", "gzip");
-        }
         const corsHeaders2 = getCorsHeaders(request);
         corsHeaders2.forEach((value, key2) => {
           headers2.set(key2, value);
@@ -51,9 +48,6 @@
           const headers3 = new Headers();
           headers3.set("Content-Type", "application/x-protobuf");
           headers3.set("Cache-Control", "public, max-age=3600");
-          if (!headers3.has("Content-Encoding")) {
-            headers3.set("Content-Encoding", "gzip");
-          }
           const corsHeaders3 = getCorsHeaders(request);
           corsHeaders3.forEach((value, key2) => {
             headers3.set(key2, value);
