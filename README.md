@@ -11,7 +11,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/MaikBuse/syndicode">
-    <img src="assets/images/logo.svg" alt="Logo" width="160" height="160">
+    <img src="https://assets.syndicode.dev/images/logo.svg" alt="Logo" width="160" height="160">
   </a>
 
 <h3 align="center">Syndicode</h3>
@@ -88,7 +88,6 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 ## 🎮 Gameplay
 
 *Syndicode is a competitive strategy game where players control powerful syndicates in futuristic Tokyo. These factions operate publicly — managing assets, negotiating influence, and executing code-driven decisions across every layer of the city.*
@@ -97,7 +96,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### 💴 Economy
 
-<img src="assets/images/gameplay/economy.png" alt="Economy gameplay" width="100%" />
+<img src="https://assets.syndicode.dev/images/economy/hero.png" alt="Economy gameplay" width="100%" />
 
 *Syndicates influence the city’s markets through trade, logistics, and digital currency. From corporate front operations to underground exchanges, economic power is built in broad daylight.*
 
@@ -105,7 +104,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### 🕶️ Espionage
 
-<img src="assets/images/gameplay/espionage.png" alt="Espionage gameplay" width="100%" />
+<img src="https://assets.syndicode.dev/images/espionage/hero.png" alt="Espionage gameplay" width="100%" />
 
 *Information is currency. Whether gathering intel, intercepting transmissions, or manipulating data flows — espionage operations are quiet, but their consequences are public.*
 
@@ -113,7 +112,7 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### ⚔️ Warfare
 
-<img src="assets/images/gameplay/warfare.png" alt="Warfare gameplay" width="100%" />
+<img src="https://assets.syndicode.dev/images/warfare/hero.png" alt="Warfare gameplay" width="100%" />
 
 *When diplomacy fails, syndicates strike. Automated units, drones, and digital warfare tools are deployed to protect territory, settle disputes, or send a message — sometimes in full view of the city.*
 
@@ -121,14 +120,13 @@ There’s no official UI. You build your own client — script, dashboard, or bo
 
 ### 🕊️ Diplomacy
 
-<img src="assets/images/gameplay/diplomacy.png" alt="Diplomacy gameplay" width="100%" />
+<img src="https://assets.syndicode.dev/images/diplomacy/hero.png" alt="Diplomacy gameplay" width="100%" />
 
 *Broker alliances with politicians, factions, and rival syndicates in ritualized negotiations under glowing sakura and digital crests. Every agreement is a power move — and every peace, temporary.*
 
 ---
 
 > *No single path leads to dominance, but specialization might get you ahead.*
-
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -153,19 +151,19 @@ The only limit is your creativity.
 
 Syndicode uses [gRPC](https://grpc.io/), with support for:
 
-* Rust  
-* C# / .NET
-* C++
-* Dart
-* Go
-* Java
-* Kotlin
-* Node
-* Objective-C
-* PHP
-* Python
-* Ruby
-* …and any other gRPC-compatible language
+- Rust  
+- C# / .NET
+- C++
+- Dart
+- Go
+- Java
+- Kotlin
+- Node
+- Objective-C
+- PHP
+- Python
+- Ruby
+- …and any other gRPC-compatible language
 
 > 💡 **Pro tip**: Choose a language you already know — or maybe one you want to learn!
 
@@ -256,6 +254,7 @@ Once you have the .proto files, use your language’s gRPC tools to generate the
 > 🛠️ This step turns the API definition into usable code — including all request/response types and the client interface.
 
 📦 Rust (using tonic)
+
 ```
 # In your build.rs
 tonic_build::compile_protos("proto/your_api.proto")?;
@@ -265,6 +264,7 @@ protoc --proto_path=./proto --rust_out=./src ./proto/your_api.proto
 ```
 
 🌐 Node.js
+
 ```
 npx grpc-tools generate \
   --proto_path=./proto \
@@ -274,6 +274,7 @@ npx grpc-tools generate \
 ```
 
 🐍 Python
+
 ```
 python -m grpc_tools.protoc \
   -I ./proto \
@@ -283,6 +284,7 @@ python -m grpc_tools.protoc \
 ```
 
 ☕ Java
+
 ```
 protoc \
   --proto_path=./proto \
@@ -297,11 +299,11 @@ protoc \
 
 You now control your syndicate’s digital brain. Build anything:
 
-* A terminal UI
-* A real-time GUI
-* A self-learning AI
-* A turn-based engine
-* Or something no one’s imagined yet
+- A terminal UI
+- A real-time GUI
+- A self-learning AI
+- A turn-based engine
+- Or something no one’s imagined yet
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 <br>
@@ -311,8 +313,8 @@ You now control your syndicate’s digital brain. Build anything:
 Prefer to run your own server? Here's how.
 
 ### Built with
-* [![Rust][Rust]][rust-url]
-* [![PostgreSQL][PostgreSQL]][postgresql-url]
+- [![Rust][Rust]][rust-url]
+- [![PostgreSQL][PostgreSQL]][postgresql-url]
 
 ---
 
@@ -321,14 +323,19 @@ Prefer to run your own server? Here's how.
 Install these tools first:
 
 #### just
+
 A handy command runner that simplifies development workflows with reusable recipes — think of it like a more powerful Makefile for Rust projects.
+
 ```bash
 cargo install just
 ```
+
 You can print out all available recipes with the command `just` while being in the project root directory.
 
 #### sqlx-cli
+
 Enables you to run database migrations and prepare SQLx query metadata for compile-time validation.
+
 ```bash
 cargo install sqlx-cli
 ```
@@ -338,6 +345,7 @@ cargo install sqlx-cli
 ### Installation
 
 1. Clone the repo:
+
    ```bash
    git clone git@github.com:MaikBuse/syndicode.git
    ```
@@ -351,21 +359,25 @@ cargo install sqlx-cli
 | `ADMIN_PASSWORD`| Password for the default admin user (`admin`)                                               | ✅       | `my-great-password`        |
 
 3. Start the database
+
    ```bash
    just db start
    ```
 
 4. Setup the database
+
    ```bash
    just db setup
    ```
 
 5. Start the server:
+
    ```bash
    just server run
    ```
 
 6. Reset Git remote (to avoid pushing to original):
+
    ```bash
    git remote set-url origin git@github.com:your-username/your-repo.git
    git remote -v  # verify changes
@@ -382,7 +394,7 @@ If you have an idea, open a feature request. If you find a bug, submit a report.
 
 > ⭐ Don’t forget to star the project if you like it!
 
-### Getting Started:
+### Getting Started
 
 1. Fork the repo
 2. Create your branch: `git checkout -b feature/AmazingFeature`
@@ -392,7 +404,7 @@ If you have an idea, open a feature request. If you find a bug, submit a report.
 
 See [open issues](https://github.com/MaikBuse/syndicode/issues) for current ideas.
 
-### Top Contributors:
+### Top Contributors
 
 <a href="https://github.com/MaikBuse/syndicode/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=MaikBuse/syndicode" />
@@ -415,17 +427,13 @@ This work is licensed under a
 
 ## 💬 Contact
 
-Maik Buse - [Website](https://maikbuse.com) - contact@maikbuse.com
+Maik Buse - [Website](https://maikbuse.com) - <contact@maikbuse.com>
 
 Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBuse/syndicode)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 <!-- MARKDOWN LINKS & IMAGES -->
-[cc-by]: http://creativecommons.org/licenses/by/4.0/
-[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
-[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
 [contributors-shield]: https://img.shields.io/github/contributors/MaikBuse/syndicode.svg?style=for-the-badge
 [contributors-url]: https://github.com/MaikBuse/syndicode/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/MaikBuse/syndicode.svg?style=for-the-badge
@@ -436,7 +444,7 @@ Project Link: [https://github.com/MaikBuse/syndicode](https://github.com/MaikBus
 [issues-url]: https://github.com/MaikBuse/syndicode/issues
 [license-shield]: https://img.shields.io/github/license/MaikBuse/syndicode.svg?style=for-the-badge
 [license-url]: https://github.com/MaikBuse/syndicode/blob/master/LICENSE.md
-[product-screenshot]: assets/images/hero.png
+[product-screenshot]: https://assets.syndicode.dev/images/hero.png
 [rust]: https://img.shields.io/badge/Rust-4A4A55?style=for-the-badge&logo=rust&logoColor=FF3E00
 [rust-url]: https://rust-lang.org/
 [postgresql]: https://img.shields.io/badge/PostgreSQL-4A4A55?style=for-the-badge&logo=postgresql&logoColor=FF3E00

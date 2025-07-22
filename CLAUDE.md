@@ -11,6 +11,7 @@ This file provides comprehensive guidance to Claude models when working with the
 - **syndicode-server**: Rust gRPC server (game logic, auth, economy, warfare)
 - **syndicode-client**: Rust TUI client (reference implementation)  
 - **syndicode-web**: Next.js web interface (official web client)
+- **infrastructure/**: Terraform configurations for Cloudflare R2, Workers, and CDN
 
 ### Architecture Pattern
 
@@ -20,6 +21,7 @@ This file provides comprehensive guidance to Claude models when working with the
 - **Application Layer**: Use cases and application services (`application/`)
 - **Infrastructure Layer**: External concerns - databases, HTTP, gRPC (`infrastructure/`)
 - **Presentation Layer**: API endpoints and user interfaces (`presentation/`)
+- **Cloud Infrastructure**: Terraform-managed Cloudflare resources (`infrastructure/terraform/`)
 
 ## 🚨 CRITICAL RULES - ALWAYS FOLLOW
 
@@ -60,6 +62,10 @@ When implementing features spanning multiple layers, ALWAYS follow this order:
   - New dependencies requiring installation (e.g., protoc, PostgreSQL client)
   - New build steps or environment variables
   - New services for integration tests (databases, caches)
+- **Infrastructure Maintenance**: When modifying cloud resources:
+  - Update Terraform configurations in `infrastructure/terraform/`
+  - Test changes locally with `just infra plan`
+  - Apply through Terraform Cloud after PR approval
 
 ### 5. Mandatory Quality Checks
 
@@ -68,6 +74,7 @@ Before marking work complete, ALWAYS run:
 - **Server**: `just server fmt`, `just server clippy`, `just server test`
 - **Client**: `just client fmt`, `just client clippy`
 - **Web**: `just web type-check`, `just web lint`, `just web format-check`, `just web test`
+- **Infrastructure**: `just infra fmt`, `just infra validate`
 
 ### 6. Testing Standards and Best Practices
 
@@ -112,6 +119,8 @@ just db migrate             # Run pending migrations
 just docker start           # Start PostgreSQL and Valkey
 just server run             # Start game server
 just web dev                # Start web development server
+just infra plan             # Preview infrastructure changes
+just infra apply            # Apply infrastructure changes
 ```
 
 ### Quality Checks (Auto-allowed)
@@ -138,6 +147,8 @@ just web test-e2e-ui        # Playwright E2E tests (with UI)
 just client test            # Client integration tests
 just docker start           # Start infrastructure
 just server run             # Start server (resource intensive)
+just infra apply            # Apply infrastructure changes (Terraform Cloud)
+just infra destroy          # Destroy infrastructure (use with caution)
 ```
 
 ### Command Organization
@@ -150,6 +161,7 @@ just server run             # Start server (resource intensive)
 - **Protocol buffers**: [`proto.just`](./proto.just) - gRPC client generation
 - **Docker**: [`docker.just`](./docker.just) - container management
 - **gRPC testing**: [`grpcurl.just`](./grpcurl.just) - service reflection and testing
+- **Infrastructure**: [`infra.just`](./infra.just) - Terraform commands for cloud resources
 
 ## 🔧 Environment Setup
 
@@ -161,6 +173,10 @@ just server run             # Start server (resource intensive)
    - `JWT_SECRET`: Secret for token signing  
    - `ADMIN_PASSWORD`: Default admin user password
    - PostgreSQL connection details (`SERVER_POSTGRES_*`)
+3. For infrastructure deployment:
+   - Configure Terraform Cloud workspace
+   - Set `TF_VAR_cloudflare_api_token` in Terraform Cloud
+   - Ensure Cloudflare account ID is configured
 
 ### Local Testing Environment
 
@@ -294,6 +310,7 @@ This workflow ensures proper environment setup and gives you control over when r
 - **State**: Zustand stores for auth and user data
 - **Maps**: Deck.gl with MapLibre for Tokyo visualization
 - **Communication**: Generated TypeScript gRPC clients
+- **Asset Delivery**: Cloudflare R2 via `assets.syndicode.dev` with Worker-based PBF fallback
 
 ## 🗄️ Technical Details
 
@@ -341,4 +358,30 @@ After making schema changes that affect game data:
 ### Game Data
 
 The `assets/parquet/` directory contains building data for Tokyo districts (LOD0 building models). This data powers the game's economy system where players can own and operate businesses in real Tokyo locations.
+
+### Infrastructure (Cloudflare Resources)
+
+#### Overview
+
+The project uses Terraform Cloud to manage Cloudflare infrastructure:
+
+- **R2 Bucket**: `syndicode-assets` for static asset storage (images, map tiles)
+- **Worker**: PBF fallback handler for missing map tiles
+- **Custom Domain**: `assets.syndicode.dev` for CDN delivery
+
+#### Architecture
+
+1. **Asset Requests**: `assets.syndicode.dev` → Cloudflare Worker
+2. **Worker Logic**: 
+   - Fetches from R2 bucket
+   - Returns empty PBF for missing tiles (prevents map errors)
+   - Caches responses at edge
+3. **Deployment**: Managed via Terraform Cloud with GitHub integration
+
+#### Development Workflow
+
+1. **Local Changes**: Modify infrastructure in `infrastructure/terraform/`
+2. **Preview**: Run `just infra plan` to see changes
+3. **Deploy**: Push to GitHub, Terraform Cloud applies automatically
+4. **Import Resources**: Use `just infra import-bucket` for existing resources
 

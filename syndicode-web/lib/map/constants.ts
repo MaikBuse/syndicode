@@ -14,8 +14,8 @@ export const TOKYO_INITIAL_VIEW_STATE: ViewState = {
   padding: { top: 0, bottom: 0, left: 0, right: 0 },
 };
 
-export const TILE_URL = 'https://assets.syndicode.dev/tokyo-buildings/{z}/{x}/{y}.pbf';
+export const TILE_URL = 'https://assets.syndicode.dev/map/buildings/{z}/{x}/{y}.pbf';
 
 export const QUERY_ZOOM_LEVEL_THRESHOLD = 15;
 
-export const MAP_STYLE = 'https://assets.syndicode.dev/alidade_smooth_dark.json';
+export const MAP_STYLE = 'https://assets.syndicode.dev/map/alidade_smooth_dark.json';
