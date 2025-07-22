@@ -47,6 +47,11 @@ async function handleRequest(request: Request): Promise<Response> {
       object.writeHttpMetadata(headers);
       headers.set('etag', object.etag);
       
+      // Add Content-Encoding header for gzipped PBF files so browsers decompress them
+      if (url.pathname.endsWith('.pbf') && !headers.has('Content-Encoding')) {
+        headers.set('Content-Encoding', 'gzip');
+      }
+      
       // Add CORS headers
       const corsHeaders = getCorsHeaders(request);
       corsHeaders.forEach((value, key) => {
@@ -60,13 +65,18 @@ async function handleRequest(request: Request): Promise<Response> {
 
     // File doesn't exist, check if it's a PBF request
     if (url.pathname.endsWith('.pbf')) {
-      // Try to get the default empty PBF file
-      const defaultPbf = await ASSETS_BUCKET.get('default-empty.pbf');
+      // Try to get the empty tile file
+      const emptyTile = await ASSETS_BUCKET.get('map/buildings/empty-tile.pbf');
       
-      if (defaultPbf) {
+      if (emptyTile) {
         const headers = new Headers();
         headers.set('Content-Type', 'application/x-protobuf');
         headers.set('Cache-Control', 'public, max-age=3600');
+        
+        // Add Content-Encoding header if the empty tile is also gzipped
+        if (!headers.has('Content-Encoding')) {
+          headers.set('Content-Encoding', 'gzip');
+        }
         
         // Add CORS headers
         const corsHeaders = getCorsHeaders(request);
@@ -74,16 +84,15 @@ async function handleRequest(request: Request): Promise<Response> {
           headers.set(key, value);
         });
         
-        return new Response(defaultPbf.body, {
+        return new Response(emptyTile.body, {
           headers,
           status: 200,
         });
       }
       
-      // If no default PBF exists, create minimal empty PBF response
+      // If no empty tile exists, return 404
       const headers = new Headers({
-        'Content-Type': 'application/x-protobuf',
-        'Cache-Control': 'public, max-age=3600',
+        'Content-Type': 'text/plain',
       });
       
       // Add CORS headers
@@ -92,10 +101,9 @@ async function handleRequest(request: Request): Promise<Response> {
         headers.set(key, value);
       });
       
-      const emptyPbf = new Uint8Array(0);
-      return new Response(emptyPbf, {
+      return new Response('Empty tile not found', {
         headers,
-        status: 200,
+        status: 404,
       });
     }
 

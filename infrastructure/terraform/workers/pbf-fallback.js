@@ -34,6 +34,9 @@
         const headers2 = new Headers();
         object.writeHttpMetadata(headers2);
         headers2.set("etag", object.etag);
+        if (url.pathname.endsWith(".pbf") && !headers2.has("Content-Encoding")) {
+          headers2.set("Content-Encoding", "gzip");
+        }
         const corsHeaders2 = getCorsHeaders(request);
         corsHeaders2.forEach((value, key2) => {
           headers2.set(key2, value);
@@ -43,32 +46,33 @@
         });
       }
       if (url.pathname.endsWith(".pbf")) {
-        const defaultPbf = await ASSETS_BUCKET.get("default-empty.pbf");
-        if (defaultPbf) {
+        const emptyTile = await ASSETS_BUCKET.get("map/buildings/empty-tile.pbf");
+        if (emptyTile) {
           const headers3 = new Headers();
           headers3.set("Content-Type", "application/x-protobuf");
           headers3.set("Cache-Control", "public, max-age=3600");
+          if (!headers3.has("Content-Encoding")) {
+            headers3.set("Content-Encoding", "gzip");
+          }
           const corsHeaders3 = getCorsHeaders(request);
           corsHeaders3.forEach((value, key2) => {
             headers3.set(key2, value);
           });
-          return new Response(defaultPbf.body, {
+          return new Response(emptyTile.body, {
             headers: headers3,
             status: 200
           });
         }
         const headers2 = new Headers({
-          "Content-Type": "application/x-protobuf",
-          "Cache-Control": "public, max-age=3600"
+          "Content-Type": "text/plain"
         });
         const corsHeaders2 = getCorsHeaders(request);
         corsHeaders2.forEach((value, key2) => {
           headers2.set(key2, value);
         });
-        const emptyPbf = new Uint8Array(0);
-        return new Response(emptyPbf, {
+        return new Response("Empty tile not found", {
           headers: headers2,
-          status: 200
+          status: 404
         });
       }
       const headers = new Headers({
