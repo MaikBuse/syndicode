@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Fira_Code } from 'next/font/google';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './globals.css';
@@ -11,12 +11,13 @@ import { SessionDataInitializer } from '@/components/initializers/session-data-i
 
 export const metadata: Metadata = {
   title: 'Syndicode',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 const firaCode = Fira_Code({
