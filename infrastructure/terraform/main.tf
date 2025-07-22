@@ -44,6 +44,9 @@ resource "cloudflare_workers_script" "pbf_fallback" {
   name       = "pbf-fallback"
   content    = file("${path.module}/workers/pbf-fallback.js")
 
+  # Force redeployment when the script content changes
+  tags = ["hash:${filemd5("${path.module}/workers/pbf-fallback.js")}"]
+
   r2_bucket_binding {
     name        = "ASSETS_BUCKET"
     bucket_name = cloudflare_r2_bucket.assets.name
@@ -56,3 +59,4 @@ resource "cloudflare_workers_route" "assets_route" {
   pattern     = "${var.assets_subdomain}.${var.domain_name}/*"
   script_name = cloudflare_workers_script.pbf_fallback.name
 }
+
