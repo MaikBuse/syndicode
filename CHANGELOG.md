@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.18.0](https://github.com/MaikBuse/syndicode/compare/v0.17.0...v0.18.0) (2025-07-26)
+
+
+### Features
+
+* add script to convert images to webp ([5a6c27f](https://github.com/MaikBuse/syndicode/commit/5a6c27f0298b096e27cb3996828c413a90925af0))
+* **infra:** add existing bucket and domain ([551858d](https://github.com/MaikBuse/syndicode/commit/551858d57b4d49d1753f5e2f23964aa0793dec02))
+* **infra:** change worker script to typescript ([f3b8b7f](https://github.com/MaikBuse/syndicode/commit/f3b8b7fef30099686f667ebf4484457f96471ef9))
+* **infra:** display content-encoding response header ([3e03247](https://github.com/MaikBuse/syndicode/commit/3e0324701a6b9467c9d89156bdbafded56bb3265))
+* **infra:** introducing infrastructure configuration ([bfd0854](https://github.com/MaikBuse/syndicode/commit/bfd08544046eb8bf590c97062388187a1f176922))
+* rename markets ([f57f8f3](https://github.com/MaikBuse/syndicode/commit/f57f8f32f85c712bd98fccd9b54ecdd0fcf1c590))
+* **server:** rename markets ([e941e30](https://github.com/MaikBuse/syndicode/commit/e941e301be9e9515dccf40baecf6ecfae48e3400))
+* show market names on business details ([1fd1fd7](https://github.com/MaikBuse/syndicode/commit/1fd1fd770085f00dac5f9580ce5caac8ed3f9655))
+* **web:** adjust content organization in business details ([c2a7d47](https://github.com/MaikBuse/syndicode/commit/c2a7d47ec530efc4df535aee2c28ae68473365ec))
+* **web:** adjust scrollbar theme ([b86e59f](https://github.com/MaikBuse/syndicode/commit/b86e59f7e103a0065b45957f3874aab471d265ca))
+* **web:** allign burger menu with design ([fea0d51](https://github.com/MaikBuse/syndicode/commit/fea0d513238463c844de7ee5915d97f1a5ac645f))
+* **web:** display images in the business details ([2b09cc0](https://github.com/MaikBuse/syndicode/commit/2b09cc0149554732060e4eedce7667e23f3d48d4))
+* **web:** handle loading in business info with a skeleton ([95a19e5](https://github.com/MaikBuse/syndicode/commit/95a19e534367894cbd742d52fcd48ddc14b858e5))
+* **web:** handle loading with skeleton in corporation dialog ([02a83e5](https://github.com/MaikBuse/syndicode/commit/02a83e5c2d672600a57eb34db094bdbffc081e39))
+* **web:** improve business acquisition button ([08ecd4f](https://github.com/MaikBuse/syndicode/commit/08ecd4f0adb79059469f5ab55d70399fdc8f9a70))
+* **web:** improve business details ([2ddc31d](https://github.com/MaikBuse/syndicode/commit/2ddc31d06ec291000d16b3f1760d49e679498467))
+* **web:** optimize for mobile use ([9c20d66](https://github.com/MaikBuse/syndicode/commit/9c20d66d8700eda2f7f04dc4db38363ed2fd4771))
+
+
+### Bug Fixes
+
+* error handling on verification code expiration ([d799f39](https://github.com/MaikBuse/syndicode/commit/d799f392264df05c90502a857bdd57d9eee16eaa))
+* **infra:** add the encoding header ([16e2e6c](https://github.com/MaikBuse/syndicode/commit/16e2e6c2863ef08b027fe9a1d8a43ea53119dd9f))
+* **infra:** change bucket location ([fd18a39](https://github.com/MaikBuse/syndicode/commit/fd18a39fe9d0640e18d0722de9f53d782e9b1fde))
+* **infra:** disable compression for pbf files ([189ac30](https://github.com/MaikBuse/syndicode/commit/189ac3006c672468cc116ae100544746b498e8a6))
+* **infra:** handle cors on requests ([4fc8948](https://github.com/MaikBuse/syndicode/commit/4fc894861e6a5656a1f93493977f74fb5e0d15e7))
+* **infra:** remove deprecated apis ([36adee6](https://github.com/MaikBuse/syndicode/commit/36adee6652316ae18ffa775e6aaa99c30cea77d3))
+* **infra:** remove encoding header ([f8ff5a0](https://github.com/MaikBuse/syndicode/commit/f8ff5a009604c63b5d4ff3d485c08b41ab3e34a2))
+* **infra:** use WEUR as a location for the r2 bucket ([78c4d25](https://github.com/MaikBuse/syndicode/commit/78c4d25740aea1004fd030ec8d86ec6814acdbdc))
+* update asset urls ([3dd104f](https://github.com/MaikBuse/syndicode/commit/3dd104f317619ba855354c009e53dba8dd01bc5c))
+* **web:** always highlight headquarter building in gold ([3fb6fb7](https://github.com/MaikBuse/syndicode/commit/3fb6fb7eb270cd99762722c399803e4c7922c22d))
+* **web:** consider mobile safety zone ([44838b7](https://github.com/MaikBuse/syndicode/commit/44838b7d7a2627c767100053547d2008f3eff78e))
+* **web:** jwt expiration handling ([d7ff501](https://github.com/MaikBuse/syndicode/commit/d7ff501f0276ca107b9f80a365d4c887e4801a38))
+* **web:** remove redundant dialog close button on mobile ([026fb9c](https://github.com/MaikBuse/syndicode/commit/026fb9cdc57d0ae65f0e7c377a18bd63a43d0340))
+
 ## [0.17.0](https://github.com/MaikBuse/syndicode/compare/v0.16.0...v0.17.0) (2025-07-18)
 
 
