@@ -60,24 +60,4 @@ resource "cloudflare_workers_route" "assets_route" {
   script_name = cloudflare_workers_script.pbf_fallback.name
 }
 
-# Disable compression for PBF files - they're already compressed in R2
-resource "cloudflare_ruleset" "disable_pbf_compression" {
-  zone_id     = data.cloudflare_zone.main.id
-  name        = "Disable compression for PBF files"
-  description = "Bypass compression for pre-compressed PBF files"
-  kind        = "zone" 
-  phase       = "http_response_compression"
-
-  rules {
-    action = "compress_response"
-    action_parameters {
-      algorithms {
-        name = "none"
-      }
-    }
-    expression  = "(http.host eq \"${var.assets_subdomain}.${var.domain_name}\" and ends_with(http.request.uri.path, \".pbf\"))"
-    description = "Disable compression for PBF files"
-    enabled     = true
-  }
-}
 
