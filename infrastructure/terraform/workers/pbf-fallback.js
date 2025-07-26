@@ -36,6 +36,7 @@
         headers2.set("etag", object.etag);
         if (key.endsWith(".pbf")) {
           headers2.set("content-type", "application/x-protobuf");
+          headers2.set("content-encoding", "gzip");
           headers2.set("cache-control", "public, max-age=3600, no-transform");
         }
         const corsHeaders2 = getCorsHeaders(request);
@@ -51,6 +52,7 @@
         if (emptyTile) {
           const headers3 = new Headers();
           headers3.set("Content-Type", "application/x-protobuf");
+          headers3.set("Content-Encoding", "gzip");
           headers3.set("Cache-Control", "public, max-age=3600, no-transform");
           const corsHeaders3 = getCorsHeaders(request);
           corsHeaders3.forEach((value, key2) => {
