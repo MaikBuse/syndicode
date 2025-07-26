@@ -451,6 +451,7 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
             owning_corporation_uuid,
             name,
             operational_expenses,
+            image_number,
             ..
         } => {
             let response = AcquireListedBusinessResponse {
@@ -461,6 +462,7 @@ fn outcome_to_grpc_update(outcome: DomainActionOutcome) -> GameUpdate {
                     owning_corporation_uuid: owning_corporation_uuid.to_string(),
                     name,
                     operational_expenses,
+                    image_number: image_number as i32,
                 }),
             };
             (Update::AcquireListedBusiness(response), tick_effective)

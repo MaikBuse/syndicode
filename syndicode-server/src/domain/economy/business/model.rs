@@ -10,4 +10,5 @@ pub struct Business {
     pub name: String,
     pub operational_expenses: i64,
     pub headquarter_building_uuid: Uuid,
+    pub image_number: i16,
 }

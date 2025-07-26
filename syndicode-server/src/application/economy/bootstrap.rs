@@ -527,6 +527,7 @@ pub fn assign_buildings_to_businesses(
     let mut businesses = Vec::with_capacity(proposals.len());
     let mut building_ownerships = Vec::with_capacity(total_successful_assignments);
     let mut assigned_building_uuids = HashSet::with_capacity(total_successful_assignments);
+    let mut rng = rand::rng();
 
     // This map is needed to get market names later.
     let market_map: std::collections::HashMap<Uuid, MarketName> =
@@ -569,6 +570,7 @@ pub fn assign_buildings_to_businesses(
                     .name(business_name)
                     .operational_expenses(0)
                     .market_uuid(proposal.market_uuid)
+                    .image_number(rng.random_range(1..=10))
                     .build(),
             );
 

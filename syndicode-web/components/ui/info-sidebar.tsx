@@ -35,7 +35,7 @@ export function InfoSidebar({ isOpen, onClose, title, children }: InfoSidebarPro
             </div>
 
             {/* Content */}
-            <div className="px-1 py-2 flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               {children}
             </div>
           </div>
@@ -57,7 +57,7 @@ export function InfoSidebar({ isOpen, onClose, title, children }: InfoSidebarPro
       
       {/* Desktop Sidebar */}
       <div className={cn(
-        "fixed top-0 right-0 h-full bg-background border-l border-border shadow-xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col w-80",
+        "fixed top-0 right-0 h-full bg-background border-l border-border shadow-xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col w-96",
         isOpen ? "translate-x-0" : "translate-x-full"
       )}>
         {/* Header */}
@@ -74,7 +74,7 @@ export function InfoSidebar({ isOpen, onClose, title, children }: InfoSidebarPro
         </div>
 
         {/* Content */}
-        <div className="px-1 py-2 flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {children}
         </div>
       </div>

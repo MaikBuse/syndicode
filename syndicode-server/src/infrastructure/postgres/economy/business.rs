@@ -44,6 +44,7 @@ impl PgBusinessRepository {
         let mut names_vec = Vec::with_capacity(count);
         let mut operational_expenses_vec = Vec::with_capacity(count);
         let mut headquarter_business_uuids: Vec<Uuid> = Vec::with_capacity(count);
+        let mut image_numbers_vec = Vec::with_capacity(count);
 
         for business in businesses {
             uuids_vec.push(business.uuid);
@@ -52,6 +53,7 @@ impl PgBusinessRepository {
             names_vec.push(business.name.clone());
             operational_expenses_vec.push(business.operational_expenses);
             headquarter_business_uuids.push(business.headquarter_building_uuid);
+            image_numbers_vec.push(business.image_number);
         }
 
         sqlx::query(
@@ -63,7 +65,8 @@ impl PgBusinessRepository {
                 owning_corporation_uuid,
                 name,
                 operational_expenses,
-                headquarter_building_uuid
+                headquarter_building_uuid,
+                image_number
             )
             SELECT
                 $1,
@@ -72,14 +75,16 @@ impl PgBusinessRepository {
                 u.owning_corporation_uuid,
                 u.name,
                 u.operational_expenses,
-                u.headquarter_building_uuid
+                u.headquarter_building_uuid,
+                u.image_number
             FROM unnest(
                 $2::UUID[],
                 $3::UUID[],
                 $4::UUID[],
                 $5::TEXT[],
                 $6::BIGINT[],
-                $7::UUID[]
+                $7::UUID[],
+                $8::SMALLINT[]
             )
             AS u(
                 uuid,
@@ -87,7 +92,8 @@ impl PgBusinessRepository {
                 owning_corporation_uuid,
                 name,
                 operational_expenses,
-                headquarter_building_uuid
+                headquarter_building_uuid,
+                image_number
             )
             "#,
         )
@@ -98,6 +104,7 @@ impl PgBusinessRepository {
         .bind(&names_vec)
         .bind(&operational_expenses_vec)
         .bind(&headquarter_business_uuids)
+        .bind(&image_numbers_vec)
         .execute(executor)
         .await?;
 
@@ -117,7 +124,8 @@ impl PgBusinessRepository {
             owning_corporation_uuid,
             name,
             operational_expenses,
-            headquarter_building_uuid
+            headquarter_building_uuid,
+            image_number
         FROM businesses
         WHERE
             game_tick = $1
@@ -149,7 +157,8 @@ impl PgBusinessRepository {
                 bui.gml_id AS headquarter_building_gml_id,
                 ST_X(bui.center) AS headquarter_longitude,
                 ST_Y(bui.center) AS headquarter_latitude,
-                m.volume AS market_volume
+                m.volume AS market_volume,
+                b.image_number
             FROM businesses b
             JOIN markets m ON b.market_uuid = m.uuid AND m.game_tick = "#,
         );
@@ -224,6 +233,8 @@ impl PgBusinessRepository {
                     headquarter_building_gml_id: row.get("headquarter_building_gml_id"),
                     headquarter_longitude: row.get("headquarter_longitude"),
                     headquarter_latitude: row.get("headquarter_latitude"),
+                    image_number: row.get("image_number"),
+                    market_number: market_name_i16,
                 }
             })
             .collect();

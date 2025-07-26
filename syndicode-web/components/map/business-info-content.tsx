@@ -7,6 +7,7 @@ import { ActionButton } from '@/components/ui/action-button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Building, MapPin, DollarSign, ShoppingCart, Home, ChevronDown } from 'lucide-react';
 import { acquireListedBusinessAction } from '@/app/actions/economy.actions';
+import { BusinessImage } from '@/components/business/business-image';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -73,28 +74,47 @@ export function BusinessInfoContent({ business, buildingsLoading, buildings }: B
     }).format(amount).replace('￥', 'Ð￥');
   };
 
+  // Get market number - both BusinessDetails and BusinessListingDetails have it now
+  const marketNumber = business.marketNumber;
+
   return (
-    <Card className="shadow-lg border-0 bg-background">
+    <Card className="shadow-lg border-0 bg-background overflow-hidden p-0">
+      {/* Business Image - Full Width */}
+      <div className="w-full h-48">
+        <BusinessImage
+          marketNumber={marketNumber}
+          imageNumber={business.imageNumber}
+          businessName={business.businessName}
+          className="w-full h-full"
+          priority={true}
+          sizes="(max-width: 768px) 100vw, 400px"
+        />
+      </div>
+      
       {/* Header Section - Business Name */}
-      <CardHeader className="pb-1">
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <Building className="h-6 w-6 text-primary" />
+      <CardHeader className="pb-1 mx-1">
+        <div className="space-y-4">
+          
+          {/* Business Name and Market */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Building className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg font-semibold">
+                {business.businessName}
+              </CardTitle>
             </div>
-            <CardTitle className="text-lg font-semibold">
-              {business.businessName}
-            </CardTitle>
-          </div>
-          {/* Market */}
-          <div className="text-sm text-muted-foreground">
-            {business.marketName || 'Unknown Market'}
+            {/* Market */}
+            <div className="text-sm text-muted-foreground ml-11">
+              {business.marketName || 'Unknown Market'}
+            </div>
           </div>
         </div>
       </CardHeader>
 
       {/* Intel Section - Business Information */}
-      <CardContent className="pt-0 space-y-4">
+      <CardContent className="pt-0 space-y-4 mx-1">
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-3">Corporate Intelligence</h3>
 

@@ -1,7 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { cookies } from 'next/headers'
-import { jwtVerify } from 'jose'
+import { jwtVerify, type JWTVerifyResult } from 'jose'
 import { getCurrentUser, clearExpiredAuthToken } from '../auth'
+
+type MockCookieStore = {
+  get: ReturnType<typeof vi.fn>
+  delete: ReturnType<typeof vi.fn>
+  set: ReturnType<typeof vi.fn>
+  clear: ReturnType<typeof vi.fn>
+  getAll: ReturnType<typeof vi.fn>
+  has: ReturnType<typeof vi.fn>
+  [Symbol.iterator]: ReturnType<typeof vi.fn>
+  size: number
+}
 
 // Mock next/headers
 vi.mock('next/headers', () => ({
@@ -21,14 +32,20 @@ vi.mock('@/config/server', () => ({
 }))
 
 describe('getCurrentUser', () => {
-  const mockCookieStore = {
+  const mockCookieStore: MockCookieStore = {
     get: vi.fn(),
     delete: vi.fn(),
+    set: vi.fn(),
+    clear: vi.fn(),
+    getAll: vi.fn(),
+    has: vi.fn(),
+    [Symbol.iterator]: vi.fn(),
+    size: 0
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(cookies).mockResolvedValue(mockCookieStore as ReturnType<typeof cookies>)
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
   })
 
   it('should return null when no auth token exists', async () => {
@@ -51,8 +68,9 @@ describe('getCurrentUser', () => {
     mockCookieStore.get.mockReturnValue({ value: 'valid-jwt-token' })
     vi.mocked(jwtVerify).mockResolvedValue({ 
       payload: mockJwtPayload,
-      protectedHeader: { alg: 'HS256' }
-    })
+      protectedHeader: { alg: 'HS256' },
+      key: new Uint8Array()
+    } as JWTVerifyResult & { key: Uint8Array })
 
     const result = await getCurrentUser()
 
@@ -87,13 +105,20 @@ describe('getCurrentUser', () => {
 })
 
 describe('clearExpiredAuthToken', () => {
-  const mockCookieStore = {
+  const mockCookieStore: MockCookieStore = {
+    get: vi.fn(),
     delete: vi.fn(),
+    set: vi.fn(),
+    clear: vi.fn(),
+    getAll: vi.fn(),
+    has: vi.fn(),
+    [Symbol.iterator]: vi.fn(),
+    size: 0
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(cookies).mockResolvedValue(mockCookieStore as ReturnType<typeof cookies>)
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
   })
 
   it('should delete auth_token cookie', async () => {

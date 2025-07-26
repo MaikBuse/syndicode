@@ -41,7 +41,7 @@ export const useBusinessListings = (mapMode: MapMode) => {
     };
 
     fetchListings();
-  }, [isAuthenticated, mapMode, setBusinessesLoading]);
+  }, [isAuthenticated, mapMode, setBusinessesLoading, listings.length]);
 
   return { listings, loading, error };
 };

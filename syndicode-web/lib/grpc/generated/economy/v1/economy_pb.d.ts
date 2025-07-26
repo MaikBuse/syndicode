@@ -275,6 +275,10 @@ export class BusinessDetails extends jspb.Message {
     setHeadquarterLongitude(value: number): BusinessDetails;
     getHeadquarterLatitude(): number;
     setHeadquarterLatitude(value: number): BusinessDetails;
+    getImageNumber(): number;
+    setImageNumber(value: number): BusinessDetails;
+    getMarketNumber(): number;
+    setMarketNumber(value: number): BusinessDetails;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): BusinessDetails.AsObject;
@@ -298,6 +302,8 @@ export namespace BusinessDetails {
         headquarterBuildingGmlId: string,
         headquarterLongitude: number,
         headquarterLatitude: number,
+        imageNumber: number,
+        marketNumber: number,
     }
 }
 
@@ -355,6 +361,10 @@ export class BusinessListingDetails extends jspb.Message {
     setHeadquarterLongitude(value: number): BusinessListingDetails;
     getHeadquarterLatitude(): number;
     setHeadquarterLatitude(value: number): BusinessListingDetails;
+    getImageNumber(): number;
+    setImageNumber(value: number): BusinessListingDetails;
+    getMarketNumber(): number;
+    setMarketNumber(value: number): BusinessListingDetails;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): BusinessListingDetails.AsObject;
@@ -379,6 +389,8 @@ export namespace BusinessListingDetails {
         headquarterBuildingGmlId: string,
         headquarterLongitude: number,
         headquarterLatitude: number,
+        imageNumber: number,
+        marketNumber: number,
     }
 }
 
@@ -591,6 +603,8 @@ export class Business extends jspb.Message {
     setName(value: string): Business;
     getOperationalExpenses(): number;
     setOperationalExpenses(value: number): Business;
+    getImageNumber(): number;
+    setImageNumber(value: number): Business;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Business.AsObject;
@@ -609,6 +623,7 @@ export namespace Business {
         owningCorporationUuid: string,
         name: string,
         operationalExpenses: number,
+        imageNumber: number,
     }
 }
 

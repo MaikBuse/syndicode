@@ -182,6 +182,8 @@ where
                     headquarter_building_gml_id: l.headquarter_building_gml_id,
                     headquarter_longitude: l.headquarter_longitude,
                     headquarter_latitude: l.headquarter_latitude,
+                    image_number: l.image_number as i32,
+                    market_number: l.market_number as i32,
                 };
 
                 listings.push(listing);
@@ -272,6 +274,8 @@ where
                     headquarter_building_gml_id: b.headquarter_building_gml_id.to_string(),
                     headquarter_longitude: b.headquarter_longitude,
                     headquarter_latitude: b.headquarter_latitude,
+                    image_number: b.image_number as i32,
+                    market_number: b.market_number as i32,
                 };
 
                 businesses.push(business);

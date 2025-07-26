@@ -2,11 +2,10 @@
 
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { serverConfig } from '@/config/server';
 import { User } from '@/domain/auth/auth.types';
 
 function getJwtSecretKey() {
-  const secret = serverConfig.jwt_secret;
+  const secret = process.env.WEB_JWT_SECRET || 'super-secret-jwt';
   return new TextEncoder().encode(secret);
 }
 

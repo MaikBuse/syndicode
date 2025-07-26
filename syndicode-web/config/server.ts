@@ -32,5 +32,6 @@ export const serverConfig = {
   // The dynamically chosen gRPC credentials object
   grpcCredentials: grpcCredentials,
 
-  jwt_secret: process.env.WEB_JWT_SECRET || 'super-secret-jwt'
+  jwt_secret: process.env.WEB_JWT_SECRET || 'super-secret-jwt',
+
 };

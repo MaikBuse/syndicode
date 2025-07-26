@@ -65,11 +65,11 @@ impl PgBusinessListingRepository {
             AS u(uuid, business_uuid, seller_corporation_uuid, asking_price)
             "#,
         )
-        .bind(game_tick) // Binds to tick_number column via $1
+        .bind(game_tick) // Binds to $1 -> game_tick column
         .bind(&uuids) // Binds to $2 -> u.uuid -> uuid column
-        .bind(&business_uuids) // Binds to $3 -> u.market_uuid -> market_uuid column
-        .bind(&seller_corporation_uuids) // Binds to $4 -> u.owning_corporation_uuid -> owning_corporation_uuid column
-        .bind(&asking_prices) // Binds to $6 -> u.operational_expenses -> operational_expenses column
+        .bind(&business_uuids) // Binds to $3 -> u.business_uuid -> business_uuid column
+        .bind(&seller_corporation_uuids) // Binds to $4 -> u.seller_corporation_uuid -> seller_corporation_uuid column
+        .bind(&asking_prices) // Binds to $5 -> u.asking_price -> asking_price column
         .execute(executor)
         .await?;
 
@@ -95,7 +95,9 @@ impl PgBusinessListingRepository {
                 b.operational_expenses,
                 hb.gml_id AS headquarter_building_gml_id,
                 ST_X(hb.center) AS headquarter_longitude,
-                ST_Y(hb.center) AS headquarter_latitude
+                ST_Y(hb.center) AS headquarter_latitude,
+                b.image_number,
+                m.name AS market_number
             FROM business_listings bl
             JOIN businesses b ON bl.business_uuid = b.uuid AND b.game_tick = "#,
         );
@@ -179,6 +181,7 @@ impl PgBusinessListingRepository {
             .map(|row| {
                 let market_name_i16: i16 = row.get("market_name_i16");
                 let market_name = MarketName::from(market_name_i16).to_string();
+                let market_number_i16: i16 = row.get("market_number");
 
                 BusinessListingDetails {
                     listing_uuid: row.get("listing_uuid"),
@@ -192,6 +195,8 @@ impl PgBusinessListingRepository {
                     headquarter_building_gml_id: row.get("headquarter_building_gml_id"),
                     headquarter_longitude: row.get("headquarter_longitude"),
                     headquarter_latitude: row.get("headquarter_latitude"),
+                    image_number: row.get("image_number"),
+                    market_number: market_number_i16,
                 }
             })
             .collect();

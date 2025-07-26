@@ -209,6 +209,7 @@ pub fn handle_acquire_listed_business(
         })?,
         name: final_business.name.clone(),
         operational_expenses: final_business.operational_expenses,
+        image_number: final_business.image_number,
     })
 }
 
@@ -251,6 +252,7 @@ mod tests {
             name: "Test Biz".to_string(),
             operational_expenses: 100,
             headquarter_building_uuid: Uuid::now_v7(),
+            image_number: 5, // Test with a fixed image number
         };
         let listing = BusinessListing {
             uuid: listing_uuid,

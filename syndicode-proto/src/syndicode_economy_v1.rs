@@ -135,6 +135,10 @@ pub struct BusinessDetails {
     pub headquarter_longitude: f64,
     #[prost(double, tag = "10")]
     pub headquarter_latitude: f64,
+    #[prost(int32, tag = "11")]
+    pub image_number: i32,
+    #[prost(int32, tag = "12")]
+    pub market_number: i32,
 }
 /// Response containing the list of matching business details.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -174,6 +178,10 @@ pub struct BusinessListingDetails {
     pub headquarter_longitude: f64,
     #[prost(double, tag = "11")]
     pub headquarter_latitude: f64,
+    #[prost(int32, tag = "12")]
+    pub image_number: i32,
+    #[prost(int32, tag = "13")]
+    pub market_number: i32,
 }
 /// Response containing the list of matching business listing details.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -269,6 +277,9 @@ pub struct Business {
     /// Operational expenses of the business that accrue every game tick.
     #[prost(int64, tag = "5")]
     pub operational_expenses: i64,
+    /// Image number for the business (1-10).
+    #[prost(int32, tag = "6")]
+    pub image_number: i32,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]

@@ -241,6 +241,8 @@ where
                 headquarter_building_gml_id: b.headquarter_building_gml_id,
                 headquarter_longitude: b.headquarter_longitude,
                 headquarter_latitude: b.headquarter_latitude,
+                image_number: b.image_number as i32,
+                market_number: b.market_number as i32,
             });
         }
 
@@ -331,6 +333,8 @@ where
                 headquarter_building_gml_id: listing.headquarter_building_gml_id,
                 headquarter_longitude: listing.headquarter_longitude,
                 headquarter_latitude: listing.headquarter_latitude,
+                image_number: listing.image_number as i32,
+                market_number: listing.market_number as i32,
             });
         }
 

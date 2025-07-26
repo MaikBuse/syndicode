@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS corporations (
     uuid UUID NOT NULL,
     user_uuid UUID NOT NULL,
     name TEXT NOT NULL,
-    cash_balance BIGINT NOT NULL CHECK (cash_balance >= 0),
+    cash_balance BIGINT NOT NULL,
 
     PRIMARY KEY (game_tick, uuid),
 
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS markets (
     game_tick BIGINT NOT NULL,
     uuid UUID NOT NULL,
     name SMALLINT NOT NULL,
-    volume BIGINT NOT NULL CHECK (volume >= 0),
+    volume BIGINT NOT NULL,
 
     PRIMARY KEY (game_tick, uuid)
 );
@@ -38,8 +38,9 @@ CREATE TABLE IF NOT EXISTS businesses (
     market_uuid UUID NOT NULL,
     owning_corporation_uuid UUID,
     name TEXT NOT NULL,
-    operational_expenses BIGINT NOT NULL CHECK (operational_expenses >= 0),
+    operational_expenses BIGINT NOT NULL,
     headquarter_building_uuid UUID NOT NULL,
+    image_number SMALLINT NOT NULL DEFAULT 1,
 
     PRIMARY KEY (game_tick, uuid)
 );
@@ -57,7 +58,7 @@ CREATE TABLE IF NOT EXISTS business_listings (
     uuid UUID NOT NULL,
     business_uuid UUID NOT NULL,
     seller_corporation_uuid UUID,
-    asking_price BIGINT NOT NULL CHECK (asking_price > 0),
+    asking_price BIGINT NOT NULL,
 
     PRIMARY KEY (game_tick, uuid)
 );
@@ -72,7 +73,7 @@ CREATE TABLE IF NOT EXISTS business_offers (
     business_uuid UUID NOT NULL,
     offering_corporation_uuid UUID NOT NULL,
     target_corporation_uuid UUID,
-    offer_price BIGINT NOT NULL CHECK (offer_price > 0),
+    offer_price BIGINT NOT NULL,
 
     PRIMARY KEY (game_tick, uuid)
 );

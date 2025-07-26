@@ -136,6 +136,8 @@ message BusinessDetails {
   string headquarter_building_gml_id = 8;
   double headquarter_longitude = 9;
   double headquarter_latitude = 10;
+  int32 image_number = 11;
+  int32 market_number = 12;
 }
 
 // Response containing the list of matching business details.
@@ -161,6 +163,8 @@ message BusinessListingDetails {
   string headquarter_building_gml_id = 9;
   double headquarter_longitude = 10;
   double headquarter_latitude = 11;
+  int32 image_number = 12;
+  int32 market_number = 13;
 }
 
 // Response containing the list of matching business listing details.
@@ -243,4 +247,7 @@ message Business {
 
   // Operational expenses of the business that accrue every game tick.
   int64 operational_expenses = 5;
+
+  // Image number for the business (1-10).
+  int32 image_number = 6;
 }

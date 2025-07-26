@@ -56,7 +56,7 @@ export const useBusinessBuildings = (selectedBusiness: BusinessDetails | Busines
     };
 
     fetchBuildings();
-  }, [selectedBusiness?.businessUuid, user, setBuildingsLoading]);
+  }, [selectedBusiness?.businessUuid, selectedBusiness, user, setBuildingsLoading]);
 
   return { buildings, loading, error };
 };

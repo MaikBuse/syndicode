@@ -67,6 +67,8 @@ export type BusinessDetails = {
   headquarterBuildingGmlId: string;
   headquarterLongitude: number;
   headquarterLatitude: number;
+  imageNumber: number;
+  marketNumber: number;
 };
 
 // Represents the complete result of a business query.
@@ -89,6 +91,8 @@ export type BusinessListingDetails = {
   headquarterLongitude: number;
   headquarterLatitude: number;
   headquarterBuildingGmlId: string;
+  imageNumber: number;
+  marketNumber: number;
 };
 
 // Represents the filters that can be used to query business listings.
@@ -126,6 +130,7 @@ export type Business = {
   owningCorporationUuid: string;
   name: string;
   operationalExpenses: number;
+  imageNumber: number;
 };
 
 // Represents the result of acquiring a business (action init response)

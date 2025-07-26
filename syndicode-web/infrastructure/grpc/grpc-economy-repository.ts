@@ -213,6 +213,8 @@ export class GrpcEconomyRepository implements EconomyRepository {
         headquarterBuildingGmlId: b.getHeadquarterBuildingGmlId(),
         headquarterLongitude: b.getHeadquarterLongitude(),
         headquarterLatitude: b.getHeadquarterLatitude(),
+        imageNumber: b.getImageNumber(),
+        marketNumber: b.getMarketNumber(),
       })),
       totalCount: response.getTotalCount(),
     };
@@ -312,6 +314,8 @@ export class GrpcEconomyRepository implements EconomyRepository {
         headquarterBuildingGmlId: l.getHeadquarterBuildingGmlId(),
         headquarterLongitude: l.getHeadquarterLongitude(),
         headquarterLatitude: l.getHeadquarterLatitude(),
+        imageNumber: l.getImageNumber(),
+        marketNumber: l.getMarketNumber(),
       })),
       totalCount: response.getTotalCount(),
     };

@@ -30,6 +30,7 @@ pub enum DomainActionOutcome {
         owning_corporation_uuid: Uuid,
         name: String,
         operational_expenses: i64,
+        image_number: i16,
     },
     UnitSpawned {
         request_uuid: Uuid,

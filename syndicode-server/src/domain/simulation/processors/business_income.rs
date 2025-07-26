@@ -155,6 +155,7 @@ mod tests {
             name: "business-one".to_string(),
             operational_expenses: business_one_op_exp,
             headquarter_building_uuid: Uuid::now_v7(),
+            image_number: 1,
         };
 
         let business_two_uuid = Uuid::now_v7();
@@ -166,6 +167,7 @@ mod tests {
             name: "business-two".to_string(),
             operational_expenses: business_two_op_exp,
             headquarter_building_uuid: Uuid::now_v7(),
+            image_number: 2,
         };
         let mut businesses_map = HashMap::new();
         businesses_map.insert(business_one.uuid, business_one);

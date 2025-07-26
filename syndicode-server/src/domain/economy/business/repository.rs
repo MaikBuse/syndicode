@@ -42,6 +42,8 @@ pub struct BusinessDetails {
     pub headquarter_building_gml_id: String,
     pub headquarter_longitude: f64,
     pub headquarter_latitude: f64,
+    pub image_number: i16,
+    pub market_number: i16,
 }
 
 #[async_trait]
