@@ -47,9 +47,8 @@ async function handleRequest(request: Request): Promise<Response> {
       object.writeHttpMetadata(headers);
       headers.set('etag', object.etag);
       
-      // Explicitly set content-encoding for gzipped PBF files
+      // Set PBF-specific headers (content-encoding handled by R2 metadata)
       if (key.endsWith('.pbf')) {
-        headers.set('content-encoding', 'gzip');
         headers.set('content-type', 'application/x-protobuf');
         headers.set('cache-control', 'public, max-age=3600, no-transform');
       }
@@ -73,7 +72,6 @@ async function handleRequest(request: Request): Promise<Response> {
       if (emptyTile) {
         const headers = new Headers();
         headers.set('Content-Type', 'application/x-protobuf');
-        headers.set('Content-Encoding', 'gzip');
         headers.set('Cache-Control', 'public, max-age=3600, no-transform');
         
         // Add CORS headers
